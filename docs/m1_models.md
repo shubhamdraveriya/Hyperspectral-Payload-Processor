@@ -35,7 +35,7 @@ reference the RTL is checked against in M2–M5 (SPEC.md MDL-01..04).
 | Frame sync | leading garbage, ASM with 2 wrong bits (lock kept), 5 wrong bits (flywheel), 4 misses (loss of lock and reacquisition) | high |
 | End to end | 3 scenes bit-exact over a clean link and at BER 10⁻³ (≈300 bit errors corrected); an uncorrectable burst loses exactly one scene, which is reported missing | high |
 
-Test count: 137 (136 pass, 1 skipped until `reedsolo` is installed).
+Test count: 138 (137 pass, 1 skipped until `reedsolo` is installed).
 
 ## Still open for M1's "done when"
 

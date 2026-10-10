@@ -15,7 +15,7 @@ The full specification is in [SPEC.md](SPEC.md).
 | Milestone | Content | State |
 |---|---|---|
 | M0 | Repository, tool flow, ZCU106 base design with DMA loopback | **done**: 64 MB loopback passes on the board at 3865 MB/s ([notes](docs/m0_bringup.md)) |
-| M1 | Python reference models (CCSDS 123, framing, RS) | models done, 136 tests pass; independent CCSDS 123 check pending ([notes](docs/m1_models.md)) |
+| M1 | Python reference models (CCSDS 123, framing, RS) | models done, 137 tests pass; independent CCSDS 123 check pending ([notes](docs/m1_models.md)) |
 | M2 | CCSDS 123 compressor RTL | — |
 | M3 | Sensor emulator, radiometric correction, corner turn | — |
 | M4 | On-board compression run | — |
