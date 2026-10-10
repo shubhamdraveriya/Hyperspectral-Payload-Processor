@@ -15,9 +15,9 @@ The full specification is in [SPEC.md](SPEC.md).
 | Milestone | Content | State |
 |---|---|---|
 | M0 | Repository, tool flow, ZCU106 base design with DMA loopback | **done**: 64 MB loopback passes on the board at 3865 MB/s ([notes](docs/m0_bringup.md)) |
-| M1 | Python reference models (CCSDS 123, framing, RS) | models done, 138 tests pass; independent CCSDS 123 check pending ([notes](docs/m1_models.md)) |
+| M1 | Python reference models (CCSDS 123, framing, RS) | models done, 142 tests pass; independent CCSDS 123 check pending ([notes](docs/m1_models.md)) |
 | M2 | CCSDS 123 compressor RTL | **done**: bit-exact on 28 configurations; 250 MHz met at 512 × 256 (13.6k LUT, 19 DSP, 8 URAM) ([notes](docs/m2_compressor.md)) |
-| M3 | Sensor emulator, radiometric correction, corner turn | — |
+| M3 | Sensor emulator, radiometric correction, corner turn | **done**: bit-exact with the models through the compressor on 12 tests (incl. line drops with fill lines); 250 MHz met at 512 × 256 (1.1k LUT, 1 DSP, 32 URAM) ([notes](docs/m3_frontend.md)) |
 | M4 | On-board compression run | — |
 | M5 | Downlink chain and optical link | — |
 | M6 | PC ground station | — |
@@ -27,7 +27,9 @@ The full specification is in [SPEC.md](SPEC.md).
 
 ```
 SPEC.md             specification (requirements, interfaces, milestones)
-rtl/common/         shared blocks (AXI-Stream skid buffer, ...)
+rtl/frontend/       sensor emulator, radiometric correction, corner turn
+rtl/ccsds123/       CCSDS 123.0-B-2 compressor
+rtl/common/         shared blocks (RAMs, FIFO, AXI-Stream skid buffer)
 tb/                 self-checking testbenches, tb/run_sim.tcl regression
 model/              Python reference models (stdlib only) and pytest tests
 vivado/             project, block design and build scripts

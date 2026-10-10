@@ -15,6 +15,7 @@ reference the RTL is checked against in M2–M5 (SPEC.md MDL-01..04).
 | `channel.py` | pseudo-randomizer, ASM, CADUs, byte-aligned frame sync with tolerance and flywheel, error injection | §6.7, §6.8, §6.10 |
 | `pipeline.py` | whole chain: raw scenes → CADU stream → recovered scenes, with statistics | §3.1 |
 | `synth.py` | synthetic scenes (spectral mixtures, shared texture, noise) | — |
+| `sensor.py` | sensor emulator test patterns (ramp, LFSR), added in M3 | §6.1 |
 
 `model/hpdp_tool.py` is a command-line front end: `gen`, `compress`, `decompress`,
 `downlink`, `ground` (see its `--help`).
@@ -35,7 +36,7 @@ reference the RTL is checked against in M2–M5 (SPEC.md MDL-01..04).
 | Frame sync | leading garbage, ASM with 2 wrong bits (lock kept), 5 wrong bits (flywheel), 4 misses (loss of lock and reacquisition) | high |
 | End to end | 3 scenes bit-exact over a clean link and at BER 10⁻³ (≈300 bit errors corrected); an uncorrectable burst loses exactly one scene, which is reported missing | high |
 
-Test count: 138, all passing.
+Test count: 142 (138 at M1, 4 added for `sensor.py` in M3), all passing.
 
 ## Still open for M1's "done when"
 

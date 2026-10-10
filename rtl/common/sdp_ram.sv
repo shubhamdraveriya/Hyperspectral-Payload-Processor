@@ -1,12 +1,14 @@
 `timescale 1ns / 1ps
 
-// Simple dual-port RAM, one write and one read port, 2-cycle read latency
-// (memory latch + output register, both advanced by ce). Reads and writes to
-// the same address in the same cycle are not used by the callers.
+// Simple dual-port RAM, one write and one read port. Reads take LATENCY
+// cycles (memory latch + output pipeline, all advanced by ce); deep UltraRAM
+// cascades need LATENCY 3 - 4 to absorb the cascade pipeline registers. Reads
+// and writes to the same address in the same cycle are not used by the callers.
 module sdp_ram #(
-    parameter int WIDTH = 16,
-    parameter int DEPTH = 1024,
-    parameter     STYLE = "block"       // "block", "ultra" or "distributed"
+    parameter int WIDTH   = 16,
+    parameter int DEPTH   = 1024,
+    parameter     STYLE   = "block",    // "block", "ultra" or "distributed"
+    parameter int LATENCY = 2           // >= 2
 ) (
     input  logic                     clk,
     input  logic                     ce,
@@ -17,7 +19,7 @@ module sdp_ram #(
     output logic [WIDTH-1:0]         rdata
 );
     (* ram_style = STYLE *) logic [WIDTH-1:0] mem [DEPTH];
-    logic [WIDTH-1:0] q;
+    logic [WIDTH-1:0] q [LATENCY];
 
     always_ff @(posedge clk) begin
         if (we) mem[waddr] <= wdata;
@@ -25,8 +27,10 @@ module sdp_ram #(
 
     always_ff @(posedge clk) begin
         if (ce) begin
-            q     <= mem[raddr];
-            rdata <= q;
+            q[0] <= mem[raddr];
+            for (int i = 1; i < LATENCY; i++) q[i] <= q[i - 1];
         end
     end
+
+    assign rdata = q[LATENCY - 1];
 endmodule

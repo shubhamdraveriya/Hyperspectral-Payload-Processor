@@ -10,12 +10,14 @@ set out    [file join $repo build ooc_c123]
 set period [expr {[llength $argv] ? [lindex $argv 0] : 4.0}]
 file mkdir $out
 
-set src [concat \
-    [glob [file join $repo rtl ccsds123 c123_pkg.sv]] \
-    [lsearch -all -inline -not -glob [glob [file join $repo rtl ccsds123 *.sv]] *_pkg.sv] \
-    [file join $repo rtl common sdp_ram.sv] \
-    [file join $repo rtl common sync_fifo.sv]]
-# (c123_linebuf.sv is picked up by the rtl/ccsds123 glob)
+# (lists built with lappend: the checkout path may contain spaces)
+set src [list [file join $repo rtl ccsds123 c123_pkg.sv]]
+foreach f [lsort [glob -directory [file join $repo rtl ccsds123] *.sv]] {
+    if {![string match *_pkg.sv $f]} { lappend src $f }
+}
+foreach f {sdp_ram sample_ram sync_fifo} {
+    lappend src [file join $repo rtl common $f.sv]
+}
 read_verilog -sv $src
 
 synth_design -top c123_core -part xczu7ev-ffvc1156-2-e -mode out_of_context \

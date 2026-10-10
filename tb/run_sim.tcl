@@ -4,8 +4,8 @@
 #   vivado -mode batch -source tb/run_sim.tcl -tclargs skid_buffer c123_basic
 #
 # Compiles every rtl/**/*.sv and tb/**/*.sv (packages first), generates the
-# CCSDS 123 vectors from the Python model (one c123_<name> test each), then
-# runs the tests. Builds in build/sim/. Each testbench prints PASS or FAIL; the
+# vectors from the Python model (CCSDS 123 core: c123_<name>; sensor front end
+# with the compressor: fe_<name>), then runs the tests. Builds in build/sim/. Each testbench prints PASS or FAIL; the
 # script raises an error (non-zero exit in batch mode) if any test fails.
 
 #            name          testbench top          plusargs
@@ -46,14 +46,19 @@ proc sources {dir} {
     return $out
 }
 
-# CCSDS 123 vectors from the reference model
+# Vectors from the reference model: one <prefix>_<name> test per generated test
+#            prefix  generator                    testbench top
+set suites {
+    c123    tb/ccsds123/gen_vectors.py   tb_c123_core
+    fe      tb/frontend/gen_vectors.py   tb_frontend
+}
 set selected $argv
-set want_c123 [expr {![llength $selected] || [llength [lsearch -all -glob $selected c123_*]]}]
-if {$want_c123} {
-    run python ../../tb/ccsds123/gen_vectors.py c123
-    set fh [open c123/tests.txt]
+foreach {prefix gen top} $suites {
+    if {[llength $selected] && ![llength [lsearch -all -glob $selected ${prefix}_*]]} continue
+    run python ../../$gen $prefix
+    set fh [open $prefix/tests.txt]
     foreach t [split [string trim [read $fh]] "\n"] {
-        lappend tests c123_$t tb_c123_core [list DIR=c123/$t]
+        lappend tests ${prefix}_$t $top [list DIR=$prefix/$t]
     }
     close $fh
 }

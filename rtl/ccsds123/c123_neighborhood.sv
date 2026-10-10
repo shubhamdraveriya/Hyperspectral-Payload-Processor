@@ -10,7 +10,9 @@
 //                        it comes from a per-band copy of the row's first pixel
 //   NW = s(z, y-1, x-1)  N of the previous pixel (per-band memory)
 // The line buffer is read Nz samples before the same address is overwritten
-// with the current row. Per-band memories need Nz >= 3.
+// with the current row; the line buffer packs four samples per word, so Nz >= 4
+// keeps reads off the word being written (its other lanes were already read).
+// Per-band memories need Nz >= 3.
 module c123_neighborhood import c123_pkg::*; #(
     parameter int NX_MAX = 512,
     parameter int NZ_MAX = 256
@@ -118,7 +120,7 @@ module c123_neighborhood import c123_pkg::*; #(
     // Previous-row line buffer: write s at x*Nz+z, read NE at x*Nz+z+Nz
     logic [15:0] ne_rd;                 // valid in S3
 
-    c123_linebuf #(
+    sample_ram #(
         .DEPTH (NX_MAX * NZ_MAX),
         .STYLE (NX_MAX * NZ_MAX >= 65536 ? "ultra" : "block")
     ) u_line (

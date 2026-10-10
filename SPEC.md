@@ -225,7 +225,7 @@ out[x] = c[x]                          if g[x]
 | CT-01 | Shall reorder each line from BIL to BIP (pixel 0 bands 0..Nz−1, then pixel 1, ...). |
 | CT-02 | Shall use two line buffers in UltraRAM (ping-pong): write line n while reading line n−1. |
 | CT-03 | Throughput 1 sample per cycle on both sides. Latency about one line. |
-| CT-04 | Output may be back-pressured by the compressor. If both buffers are full when a new line starts, the line shall be dropped and counted (`SYS-05`). |
+| CT-04 | Output may be back-pressured by the compressor. If both buffers are full when a new line starts, the line shall be dropped and counted (`SYS-05`), and a fill line of zeros sent in its place, so that scenes keep their geometry and the compressor stays aligned with scene boundaries. |
 
 ### 6.4 CCSDS 123.0-B-2 compressor (CMP)
 
@@ -547,21 +547,24 @@ be checked against the known original.
 
 ## 12. Budgets
 
-### 12.1 Resource estimate (to be replaced by synthesis results)
+### 12.1 Resource estimate
+
+Rows marked * are measured (out-of-context implementation at `NX_MAX` = 512,
+`NZ_MAX` = 256); the others are estimates, replaced as blocks are built.
 
 | Block | LUT | FF | DSP | BRAM36 | URAM |
 |---|---|---|---|---|---|
-| Sensor emulator | 2 k | 3 k | 0 | 8 | 0 |
-| Radiometric correction | 2 k | 2 k | 2 | 2 | 15 |
-| Corner turn | 1 k | 1 k | 0 | 0 | 15 |
-| CCSDS 123 compressor | 15 k | 20 k | 25 | 20 | 8 |
+| Sensor emulator * | 0.5 k | 0.8 k | 0 | 7.5 | 0 |
+| Radiometric correction * | 0.3 k | 0.3 k | 1 | 0 | 16 |
+| Corner turn * | 0.2 k | 0.3 k | 0 | 0 | 16 |
+| CCSDS 123 compressor * | 13.6 k | 6.2 k | 19 | 5.5 | 8 |
 | Packetizer, framer, RS, randomizer, ASM | 4 k | 5 k | 0 | 8 | 0 |
 | Error injector | 1 k | 1 k | 0 | 0 | 0 |
 | Link (GTH wrapper + link layer) | 2 k | 3 k | 0 | 2 | 0 |
 | Ground receiver | 2 k | 3 k | 0 | 4 | 0 |
 | DMA, interconnect, register blocks | 10 k | 15 k | 0 | 15 | 0 |
 | Radiation mitigation (SEM IP, ECC, TMR) | 3 k | 4 k | 0 | 2 | 0 |
-| **Total** | **≈ 42 k (18 %)** | **≈ 57 k (12 %)** | **≈ 27 (2 %)** | **≈ 61 (20 %)** | **≈ 38 (40 %)** |
+| **Total** | **≈ 37 k (16 %)** | **≈ 39 k (8 %)** | **≈ 20 (1 %)** | **≈ 44 (14 %)** | **40 (42 %)** |
 
 ### 12.2 Data-rate budget
 

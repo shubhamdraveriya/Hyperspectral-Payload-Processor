@@ -24,7 +24,7 @@ That allows a deep pipeline at one sample per clock.
 
 | Stage | Module | Work |
 |---|---|---|
-| S1–S3 | `c123_neighborhood`, `c123_linebuf` | position counters; previous-row line buffer (four samples per 64-bit UltraRAM word, lane writes with byte enables, read Nz samples ahead of the write); per-band LUTRAMs for W, N (from the previous pixel's NE), NW, and the row's first pixel |
+| S1–S3 | `c123_neighborhood`, `sample_ram` | position counters; previous-row line buffer (four samples per 64-bit UltraRAM word, lane writes with byte enables, read Nz samples ahead of the write); per-band LUTRAMs for W, N (from the previous pixel's NE), NW, and the row's first pixel |
 | S4–S5 | `c123_localdiff` | local sum (4 types), directional and central differences, last-15 shift register of the previous bands' central differences |
 | P1–P15 | `c123_predictor` | weight RAM (default initialization substituted at t = 1, so no clearing), 18 products, adder tree, mod-R wrap, clipping, double-resolution prediction, mapped index, sign-LMS weight update and write-back |
 | C0–C4 | `c123_coder` | per-band counter and accumulator (LUTRAM), k, length-limited GPO2 codeword (or D raw bits at t = 0 / raw mode) |
