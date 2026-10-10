@@ -15,13 +15,16 @@ package frontend_pkg;
         logic [15:0] nx, ny, nz;       // pixels per line, lines per scene, bands
         logic [4:0]  depth;            // sample depth D, 2..16
         logic [31:0] line_period;      // clk_sensor cycles between line starts
+        logic [31:0] lines;            // lines per run; 0: until run is cleared
         logic [1:0]  source;           // SRC_DMA, SRC_RAMP, SRC_LFSR
-        logic        run;              // emit lines while set (a started line completes)
+        logic        run;              // a rising edge starts a run (a started line completes)
         logic        rc_bypass;        // radiometric correction off
     } fe_cfg_t;
 
-    // Status counters of the sensor emulator (clk_sensor domain)
+    // Status of the sensor emulator (clk_sensor domain). Counters saturate.
     typedef struct packed {
+        logic        busy;             // a run is in progress
+        logic        done;             // the run has emitted its `lines` lines
         logic [23:0] line_timestamp;   // free-running count of line starts
         logic [23:0] scene_timestamp;  // line_timestamp when the current scene started
         logic [31:0] lines_emitted;
@@ -31,13 +34,26 @@ package frontend_pkg;
         logic [31:0] dropped_samples;  // emulator output FIFO full
     } se_status_t;
 
-    // Status counters of the correction and corner turn (clk_sys domain)
+    // Status of the correction and corner turn (clk_sys domain). Counters saturate.
     typedef struct packed {
         logic [31:0] scene_clamped;    // current scene
         logic [31:0] scene_replaced;   // current scene
+        logic [31:0] tbl_words;        // 128-bit beats in the last calibration table load
         logic [31:0] lines_out;
         logic [31:0] dropped_lines;    // sent as fill lines (or lost, below)
         logic [31:0] unfilled_lines;
     } fe_status_t;
+
+    // Calibration table debug access (SPEC RC-02), clk_sys domain
+    typedef struct packed {
+        logic        valid;            // one-cycle request
+        logic        write;            // 1: write wdata, 0: read
+        logic [17:0] addr;             // entry z*Nx + x
+        logic [32:0] wdata;            // {bad, gain, dark}
+    } tbl_cmd_t;
+
+    function automatic logic [31:0] sat_inc(input logic [31:0] v);
+        return (v == 32'hFFFF_FFFF) ? v : v + 32'd1;
+    endfunction
 
 endpackage

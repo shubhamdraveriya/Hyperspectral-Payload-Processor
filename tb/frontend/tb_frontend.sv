@@ -6,8 +6,9 @@
 // Plusarg +DIR=<test directory>.
 //
 // clk_sys 250 MHz, clk_sensor 100 MHz (unrelated phase). Loads the calibration
-// table, prefills the DMA stream (random gaps, dma_pct % of cycles), runs the
-// sensor for all lines, and checks:
+// table, checks the table debug read/write port, prefills the DMA stream
+// (random gaps, dma_pct % of cycles), runs the sensor for all lines (with the
+// emulator's line limit, or by clearing run), and checks:
 //   - every sample and tag at the sensor emulator, correction and corner turn
 //     outputs; the corner turn output may hold zero fill lines only in the drop
 //     test, and as many as it counted
@@ -52,9 +53,17 @@ module tb_frontend;
     se_status_t se_st;
     fe_status_t fe_st;
 
+    tbl_cmd_t    tbl_cmd = '0;
+    logic [32:0] tbl_rdata;
+    logic        tbl_done;
+
     sensor_frontend #(.NX_MAX(NX_MAX), .NZ_MAX(NZ_MAX)) u_fe (
         .clk_sys, .rst_sys, .clk_sensor, .rst_sensor,
-        .cfg           (fe),
+        .cfg_sys        (fe),
+        .cfg_sensor     (fe),
+        .cnt_clr_sys    (1'b0),
+        .cnt_clr_sensor (1'b0),
+        .tbl_cmd, .tbl_rdata, .tbl_done,
         .s_dma_tdata   (dma_tdata),
         .s_dma_tvalid  (dma_tvalid),
         .s_dma_tready  (dma_tready),
@@ -106,7 +115,7 @@ module tb_frontend;
     // Vectors
     // -----------------------------------------------------------------
     string        dir;
-    int           scenes, dma_pct, out_pct, drop_test, overrun_test, line_len, scene_len, total;
+    int           scenes, dma_pct, out_pct, drop_test, overrun_test, limit_test, line_len, scene_len, total;
     int           exp_clamped, exp_replaced;
     logic [15:0]  raw [$], corr [$], bip [$];
     logic [7:0]   expected [$];
@@ -155,10 +164,11 @@ module tb_frontend;
         int source, period, bypass;
         fd = $fopen(path, "r");
         if (fd == 0) $fatal(1, "cannot open %s", path);
-        n = $fscanf(fd, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
+        n = $fscanf(fd, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
                     nx, ny, nz, depth, bands, full, ls, omega, r, vmin, vmax, tinc, umax, g0, gs, kk,
-                    wb, rw, ud, source, period, bypass, scenes, dma_pct, out_pct, drop_test, overrun_test);
-        if (n != 27) $fatal(1, "bad cfg.txt (%0d fields)", n);
+                    wb, rw, ud, source, period, bypass, scenes, dma_pct, out_pct, drop_test, overrun_test,
+                    limit_test);
+        if (n != 28) $fatal(1, "bad cfg.txt (%0d fields)", n);
         $fclose(fd);
         cc.nx = nx;  cc.ny = ny;  cc.nz = nz;  cc.depth = depth;  cc.bands = bands;
         cc.full = full;  cc.local_sum = ls;  cc.omega = omega;  cc.reg_size = r;
@@ -167,6 +177,7 @@ module tb_frontend;
         cc.raw = rw;  cc.user_data = ud;
         fe.nx = nx;  fe.ny = ny;  fe.nz = nz;  fe.depth = depth;
         fe.line_period = period;  fe.source = source;  fe.rc_bypass = bypass;  fe.run = 1'b0;
+        fe.lines = limit_test ? scenes * ny : 0;
         line_len  = nx * nz;
         scene_len = line_len * ny;
     endtask
@@ -296,6 +307,50 @@ module tb_frontend;
     // -----------------------------------------------------------------
     // Test sequence
     // -----------------------------------------------------------------
+    // Calibration table entry i as loaded: {bad, gain, dark}
+    function automatic logic [32:0] tbl_entry(int i);
+        return tbl[i / 2][64 * (i % 2) +: 33];
+    endfunction
+
+    task automatic tbl_access(logic write, int addr, logic [32:0] wdata, output logic [32:0] rdata);
+        @(posedge clk_sys);
+        tbl_cmd <= '{valid: 1'b1, write: write, addr: 18'(addr), wdata: wdata};
+        @(posedge clk_sys);
+        tbl_cmd <= '0;
+        @(posedge clk_sys iff tbl_done);
+        rdata = tbl_rdata;
+    endtask
+
+    // Read back some entries, overwrite one, then restore it
+    int tbl_err = 0;
+    task automatic check_table_port();
+        int n, probe [4];
+        logic [32:0] got, orig, alt;
+        n = fe.nx * fe.nz;
+        probe = '{0, 1, n / 2, n - 1};
+        foreach (probe[k]) begin
+            tbl_access(1'b0, probe[k], '0, got);
+            if (got !== tbl_entry(probe[k])) begin
+                tbl_err++;
+                $display("  table entry %0d: read %09h, loaded %09h", probe[k], got, tbl_entry(probe[k]));
+            end
+        end
+        orig = tbl_entry(n - 1);
+        alt  = orig ^ 33'h1_5A5A_A5A5;
+        tbl_access(1'b1, n - 1, alt, got);
+        tbl_access(1'b0, n - 1, '0, got);
+        if (got !== alt) begin
+            tbl_err++;
+            $display("  table write: read back %09h, wrote %09h", got, alt);
+        end
+        tbl_access(1'b0, n - 2, '0, got);       // the other entry of the word is untouched
+        if (got !== tbl_entry(n - 2)) begin
+            tbl_err++;
+            $display("  table write disturbed entry %0d: %09h", n - 2, got);
+        end
+        tbl_access(1'b1, n - 1, orig, got);
+    endtask
+
     task automatic check(string what, longint got, longint exp, inout int errors);
         if (got != exp) begin
             errors++;
@@ -343,13 +398,18 @@ module tb_frontend;
         @(posedge clk_sys);
         tbl_tvalid <= 1'b0;
         tbl_tlast  <= 1'b0;
+        check_table_port();
 
         // prefill the emulator's DMA buffer, then run the sensor for all lines
         dma_go <= 1'b1;
         repeat (400) @(posedge clk_sys);
         @(posedge clk_sensor) fe.run <= 1'b1;
-        @(posedge clk_sensor iff line_ts == 24'(scenes * fe.ny));
-        fe.run <= 1'b0;
+        if (limit_test) begin
+            @(posedge clk_sensor iff se_st.done);       // run stays set
+        end else begin
+            @(posedge clk_sensor iff line_ts == 24'(scenes * fe.ny));
+            fe.run <= 1'b0;
+        end
 
         timeout = 30 * total * (fe.line_period + 1) / line_len + 100 * total / (out_pct + 1) + 50000;
         fork
@@ -359,7 +419,7 @@ module tb_frontend;
         disable fork;
         repeat (300) @(posedge clk_sys);       // anything extra would show up here
 
-        errors = se_err + rc_err + ct_err + byte_err + last_err;
+        errors = se_err + rc_err + ct_err + byte_err + last_err + tbl_err;
         check("SE samples", se_i, total, errors);
         check("RC samples", rc_i, total, errors);
         check("CT samples", ct_i, total, errors);
@@ -378,6 +438,9 @@ module tb_frontend;
         check("CT dropped_lines", ct_dropped, fill_lines, errors);
         check("CT unfilled_lines", ct_unfilled, 0, errors);
         check("CT drops seen", ct_dropped > 0, drop_test, errors);
+        check("SE done", se_st.done, limit_test, errors);
+        check("SE busy", se_st.busy, 0, errors);
+        check("tbl_words", fe_st.tbl_words, tbl.size(), errors);
         check("cfg_error", cfg_error, 0, errors);
 
         if (errors == 0)

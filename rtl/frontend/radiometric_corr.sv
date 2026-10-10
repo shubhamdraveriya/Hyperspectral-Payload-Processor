@@ -14,7 +14,9 @@
 // UltraRAM word). The table-load stream carries the .cal records as stored in
 // memory, two 8-byte records per 128-bit beat (dark [15:0], gain [31:16],
 // bad [32]; next record at +64), from entry 0; tlast ends the table. Load
-// only while no samples flow.
+// only while no samples flow. tbl_cmd reads or writes one entry (debug,
+// SPEC RC-02): a write takes a cycle without table-load beat, a read a cycle
+// without sample; tbl_done pulses when it is complete (tbl_rdata for a read).
 //
 // Pipeline: S0 input, table read (TL = 4 cycles: the UltraRAM cascade wants 3
 // output pipeline stages), then S3 x - dark, S4 product, S5 rounding, S6 clamp,
@@ -43,8 +45,13 @@ module radiometric_corr import frontend_pkg::*; #(
     output logic [1:0]   m_user,
     output logic         m_last,
 
-    output logic [31:0]  scene_clamped,     // clamp events in the current scene
-    output logic [31:0]  scene_replaced     // bad pixels replaced in the current scene
+    input  tbl_cmd_t     tbl_cmd,
+    output logic [32:0]  tbl_rdata,         // {bad, gain, dark}
+    output logic         tbl_done,
+
+    output logic [31:0]  scene_clamped,     // clamp events in the current scene (saturating)
+    output logic [31:0]  scene_replaced,    // bad pixels replaced in the current scene (saturating)
+    output logic [31:0]  tbl_words          // 128-bit beats in the last table load
 );
     localparam int EB = $clog2(NX_MAX * NZ_MAX);    // entry address
     localparam int WB = EB - 1;                     // word address
@@ -53,34 +60,75 @@ module radiometric_corr import frontend_pkg::*; #(
     // ---------------------------------------------------------------------
     // Table
     // ---------------------------------------------------------------------
-    logic [WB-1:0] tbl_waddr;
+    logic [WB-1:0] load_addr;
     logic [EB-1:0] tbl_raddr;
-    logic [71:0]   tbl_rdata;
+    logic [71:0]   tbl_q;
 
     assign s_tbl_tready = 1'b1;
-    wire tbl_we = s_tbl_tvalid;
+    wire load = s_tbl_tvalid;
 
     always_ff @(posedge clk) begin
-        if (rst)
-            tbl_waddr <= '0;
-        else if (tbl_we)
-            tbl_waddr <= s_tbl_tlast ? '0 : tbl_waddr + 1'b1;
+        if (rst) begin
+            load_addr <= '0;
+            tbl_words <= '0;
+        end else if (load) begin
+            load_addr <= s_tbl_tlast ? '0 : load_addr + 1'b1;
+            if (s_tbl_tlast) tbl_words <= 32'(load_addr) + 32'd1;
+        end
+    end
+
+    // Debug access: a pending command waits for a free port cycle
+    logic          dbg_wr, dbg_rd;
+    logic [EB-1:0] dbg_addr;
+    logic [32:0]   dbg_wdata;
+    wire           dbg_wr_go = dbg_wr && !load;
+    wire           dbg_rd_go = dbg_rd && !s_valid;
+
+    always_ff @(posedge clk) begin
+        if (rst) begin
+            dbg_wr <= 1'b0;
+            dbg_rd <= 1'b0;
+        end else if (tbl_cmd.valid) begin
+            dbg_wr    <= tbl_cmd.write;
+            dbg_rd    <= !tbl_cmd.write;
+            dbg_addr  <= EB'(tbl_cmd.addr);
+            dbg_wdata <= tbl_cmd.wdata;
+        end else begin
+            if (dbg_wr_go) dbg_wr <= 1'b0;
+            if (dbg_rd_go) dbg_rd <= 1'b0;
+        end
+    end
+
+    logic [7:0]    tbl_we;
+    logic [WB-1:0] tbl_waddr;
+    logic [71:0]   tbl_wdata;
+    always_comb begin
+        if (load) begin
+            tbl_we    = 8'hFF;
+            tbl_waddr = load_addr;
+            tbl_wdata = {3'b000, s_tbl_tdata[96], s_tbl_tdata[95:64],
+                         3'b000, s_tbl_tdata[32], s_tbl_tdata[31:0]};
+        end else begin
+            tbl_we    = !dbg_wr ? 8'h00 : dbg_addr[0] ? 8'hF0 : 8'h0F;
+            tbl_waddr = dbg_addr[EB-1:1];
+            tbl_wdata = {2{3'b000, dbg_wdata}};
+        end
     end
 
     sdp_ram #(
-        .WIDTH (72),
-        .DEPTH (NX_MAX * NZ_MAX / 2),
+        .WIDTH   (72),
+        .DEPTH   (NX_MAX * NZ_MAX / 2),
         .STYLE   (NX_MAX * NZ_MAX >= 65536 ? "ultra" : "block"),
-        .LATENCY (TL)
+        .LATENCY (TL),
+        .BYTE_W  (9)
     ) u_table (
         .clk   (clk),
         .ce    (1'b1),
         .we    (tbl_we),
         .waddr (tbl_waddr),
-        .wdata ({3'b000, s_tbl_tdata[96], s_tbl_tdata[95:64],
-                 3'b000, s_tbl_tdata[32], s_tbl_tdata[31:0]}),
+        .wdata (tbl_wdata),
         .raddr (tbl_raddr[EB-1:1]),
-        .rdata (tbl_rdata)
+        .rdata (tbl_q)
     );
 
     // ---------------------------------------------------------------------
@@ -92,7 +140,7 @@ module radiometric_corr import frontend_pkg::*; #(
     wire [EB-1:0] idx0   = s_user[1] ? '0 : idx_cnt;
     wire [15:0]   x0     = s_user[1] ? '0 : x_cnt;
     wire          last_x = (x0 == cfg.nx - 16'd1);
-    assign tbl_raddr = idx0;
+    assign tbl_raddr = dbg_rd_go ? dbg_addr : idx0;
 
     always_ff @(posedge clk) begin
         if (rst) begin
@@ -113,19 +161,29 @@ module radiometric_corr import frontend_pkg::*; #(
     } tag_t;
 
     // delay line alongside the table read; stage TL-1 meets the table data
-    logic vr [TL];
+    logic vr [TL];                      // sample
+    logic dr [TL];                      // debug read
     tag_t tr [TL];
-    logic lr [TL];
+    logic lr [TL];                      // entry lane in the table word
 
     always_ff @(posedge clk) begin
         if (rst) begin
-            for (int i = 0; i < TL; i++) vr[i] <= 1'b0;
+            for (int i = 0; i < TL; i++) begin
+                vr[i] <= 1'b0;
+                dr[i] <= 1'b0;
+            end
+            tbl_done <= 1'b0;
         end else begin
             vr[0] <= s_valid;
-            for (int i = 1; i < TL; i++) vr[i] <= vr[i - 1];
+            dr[0] <= dbg_rd_go;
+            for (int i = 1; i < TL; i++) begin
+                vr[i] <= vr[i - 1];
+                dr[i] <= dr[i - 1];
+            end
+            tbl_done <= dbg_wr_go || dr[TL - 1];
         end
         tr[0] <= '{raw: s_data, user: s_user, last: s_last, first_x: x0 == 16'd0, last_x: last_x};
-        lr[0] <= idx0[0];
+        lr[0] <= tbl_raddr[0];
         for (int i = 1; i < TL; i++) begin
             tr[i] <= tr[i - 1];
             lr[i] <= lr[i - 1];
@@ -142,7 +200,11 @@ module radiometric_corr import frontend_pkg::*; #(
     // ---------------------------------------------------------------------
     // S3 - S6 (after the table read): c = clamp(((x - dark) * gain + 2^13) >>> 14, 0, 2^D - 1)
     // ---------------------------------------------------------------------
-    wire [35:0] entry = lane2 ? tbl_rdata[71:36] : tbl_rdata[35:0];
+    wire [35:0] entry = lane2 ? tbl_q[71:36] : tbl_q[35:0];
+
+    always_ff @(posedge clk) begin
+        if (dr[TL - 1]) tbl_rdata <= entry[32:0];
+    end
 
     logic signed [16:0] diff3;
     logic        [15:0] gain3;
@@ -195,7 +257,7 @@ module radiometric_corr import frontend_pkg::*; #(
         if (rst)
             scene_clamped <= '0;
         else if (v6)
-            scene_clamped <= (t6.user[0] ? 32'd0 : scene_clamped) + 32'(clamp6);
+            scene_clamped <= t6.user[0] ? 32'(clamp6) : clamp6 ? sat_inc(scene_clamped) : scene_clamped;
     end
 
     // ---------------------------------------------------------------------
@@ -229,7 +291,7 @@ module radiometric_corr import frontend_pkg::*; #(
                           rg       ? c6 : 16'd0;
                 pc <= hc;
                 pg <= hg;
-                scene_replaced <= (h.user[0] ? 32'd0 : scene_replaced) + 32'(!hg);
+                scene_replaced <= h.user[0] ? 32'(!hg) : !hg ? sat_inc(scene_replaced) : scene_replaced;
             end
             if (v6) begin
                 h  <= t6;

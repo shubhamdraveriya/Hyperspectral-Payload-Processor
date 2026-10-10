@@ -464,7 +464,12 @@ Capture status word: bits [5:0] ASM mismatched bits, [7:6] sync state (0 SEARCH,
 - All register maps shall be described in **SystemRDL** (`regs/`). PeakRDL generates the
   SystemVerilog register blocks, C headers, Python definitions and HTML documentation, so
   hardware, software and docs never disagree.
-- Counters are 32 bit, saturating, cleared by a write.
+- Counters are 32 bit and saturating. Writing 1 to a block's `CNT_CLEAR` (offset `0x7C`)
+  clears its counters; the block's counters start at `0x80`.
+- The register block runs on `clk_ctrl`; configuration reaches the data-path clocks, and
+  status comes back, as consistent snapshots through XPM handshake crossings (about a
+  microsecond). `SYS.STATUS.cfg_pending` is set until every register write has arrived in
+  every clock domain: software waits for 0 after configuring, before starting DMA or a run.
 
 ### 8.4 Interrupts
 
@@ -594,12 +599,15 @@ Hyperspectral-Payload-Processor/
 │   ├── downlink/      space_packetizer, aos_framer, rs_encoder, randomizer_asm, error_injector
 │   ├── link/          GTH wrapper, link_tx, link_rx
 │   ├── ground/        frame_sync, derandomizer
-│   └── top/           hpdp_top, generated register blocks
-├── regs/              SystemRDL register descriptions
+│   ├── regs/          register block generated from regs/ (PeakRDL)
+│   └── system/        hpdp_core (registers, clock-domain crossings, data path) and its
+│                      block-design wrapper
+├── regs/              SystemRDL register description and generator
 ├── tb/                block and system testbenches
 ├── model/             Python golden models and pytest tests
 ├── sw/
 │   ├── baremetal/     A53 application
+│   ├── host/          PC tools for board runs (JTAG loading, verification)
 │   └── ground/        PC ground station
 ├── vivado/            project and block-design Tcl, constraints
 ├── data/              small test scenes (large datasets fetched by script, not committed)

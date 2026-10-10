@@ -36,7 +36,8 @@ module corner_turn import frontend_pkg::*; #(
     output logic        m_axis_tvalid,
     input  logic        m_axis_tready,
 
-    output logic [31:0] lines_out,
+    input  logic        cnt_clr,
+    output logic [31:0] lines_out,      // counters saturate; cnt_clr clears them
     output logic [31:0] dropped_lines,  // includes unfilled_lines
     output logic [31:0] unfilled_lines
 );
@@ -100,10 +101,14 @@ module corner_turn import frontend_pkg::*; #(
                 wr_drop <= 1'b0;
                 if (wr_now) wb <= !wb;
                 if (drop_now) begin
-                    dropped_lines <= dropped_lines + 1;
-                    if (!dq_push) unfilled_lines <= unfilled_lines + 1;
+                    dropped_lines <= sat_inc(dropped_lines);
+                    if (!dq_push) unfilled_lines <= sat_inc(unfilled_lines);
                 end
             end
+        end
+        if (!rst && cnt_clr) begin
+            dropped_lines  <= '0;
+            unfilled_lines <= '0;
         end
     end
 
@@ -163,9 +168,10 @@ module corner_turn import frontend_pkg::*; #(
                 end
                 if (rd_end) begin
                     rd_on     <= 1'b0;
-                    lines_out <= lines_out + 1;
+                    lines_out <= sat_inc(lines_out);
                 end
             end
+            if (cnt_clr) lines_out <= '0;
             if (dq_pop) begin
                 rd_on <= 1'b1;
                 rd    <= dq_dout;

@@ -6,16 +6,20 @@
 //     -> corner_turn -> m_axis (16-bit BIP samples, to the compressor)
 //
 // Only the corner turn output can be back-pressured; everything before it runs
-// at the sensor's pace, and overflows are counted (SYS-05).
+// at the sensor's pace, and overflows are counted (SYS-05). The configuration
+// comes in once per clock domain (the same values, synchronized by the caller).
 module sensor_frontend import frontend_pkg::*; #(
     parameter int NX_MAX = 512,
     parameter int NZ_MAX = 256
 ) (
     input  logic         clk_sys,
     input  logic         rst_sys,
+    input  fe_cfg_t      cfg_sys,
+    input  logic         cnt_clr_sys,       // clear the clk_sys counters
     input  logic         clk_sensor,
     input  logic         rst_sensor,
-    input  fe_cfg_t      cfg,
+    input  fe_cfg_t      cfg_sensor,
+    input  logic         cnt_clr_sensor,    // clear the clk_sensor counters
 
     input  logic [127:0] s_dma_tdata,       // raw samples, 8 per beat, sample 0 in [15:0]
     input  logic         s_dma_tvalid,
@@ -25,6 +29,10 @@ module sensor_frontend import frontend_pkg::*; #(
     input  logic         s_tbl_tlast,
     input  logic         s_tbl_tvalid,
     output logic         s_tbl_tready,
+
+    input  tbl_cmd_t     tbl_cmd,           // calibration table debug access (clk_sys)
+    output logic [32:0]  tbl_rdata,
+    output logic         tbl_done,
 
     output logic [15:0]  m_axis_tdata,
     output logic [1:0]   m_axis_tuser,      // [0] first sample of a scene, [1] first of a line
@@ -41,28 +49,23 @@ module sensor_frontend import frontend_pkg::*; #(
 
     sensor_emulator u_se (
         .clk_sys, .rst_sys,
-        .s_axis_tdata     (s_dma_tdata),
-        .s_axis_tvalid    (s_dma_tvalid),
-        .s_axis_tready    (s_dma_tready),
-        .m_valid          (se_valid),
-        .m_data           (se_data),
-        .m_user           (se_user),
-        .m_last           (se_last),
+        .s_axis_tdata  (s_dma_tdata),
+        .s_axis_tvalid (s_dma_tvalid),
+        .s_axis_tready (s_dma_tready),
+        .m_valid       (se_valid),
+        .m_data        (se_data),
+        .m_user        (se_user),
+        .m_last        (se_last),
         .clk_sensor, .rst_sensor,
-        .cfg,
-        .line_timestamp   (se_status.line_timestamp),
-        .scene_timestamp  (se_status.scene_timestamp),
-        .lines_emitted    (se_status.lines_emitted),
-        .scenes_started   (se_status.scenes_started),
-        .underrun_samples (se_status.underrun_samples),
-        .period_overruns  (se_status.period_overruns),
-        .dropped_samples  (se_status.dropped_samples)
+        .cfg           (cfg_sensor),
+        .cnt_clr       (cnt_clr_sensor),
+        .status        (se_status)
     );
 
     radiometric_corr #(.NX_MAX(NX_MAX), .NZ_MAX(NZ_MAX)) u_rc (
         .clk            (clk_sys),
         .rst            (rst_sys),
-        .cfg,
+        .cfg            (cfg_sys),
         .s_tbl_tdata, .s_tbl_tlast, .s_tbl_tvalid, .s_tbl_tready,
         .s_valid        (se_valid),
         .s_data         (se_data),
@@ -72,19 +75,22 @@ module sensor_frontend import frontend_pkg::*; #(
         .m_data         (rc_data),
         .m_user         (rc_user),
         .m_last         (rc_last),
+        .tbl_cmd, .tbl_rdata, .tbl_done,
         .scene_clamped  (fe_status.scene_clamped),
-        .scene_replaced (fe_status.scene_replaced)
+        .scene_replaced (fe_status.scene_replaced),
+        .tbl_words      (fe_status.tbl_words)
     );
 
     corner_turn #(.NX_MAX(NX_MAX), .NZ_MAX(NZ_MAX)) u_ct (
         .clk            (clk_sys),
         .rst            (rst_sys),
-        .cfg,
+        .cfg            (cfg_sys),
         .s_valid        (rc_valid),
         .s_data         (rc_data),
         .s_user         (rc_user),
         .s_last         (rc_last),
         .m_axis_tdata, .m_axis_tuser, .m_axis_tlast, .m_axis_tvalid, .m_axis_tready,
+        .cnt_clr        (cnt_clr_sys),
         .lines_out      (fe_status.lines_out),
         .dropped_lines  (fe_status.dropped_lines),
         .unfilled_lines (fe_status.unfilled_lines)

@@ -13,11 +13,13 @@
 //   clk_sys    : sample stream out (no back-pressure: the consumer runs at
 //                clk_sys and always accepts)
 //
-// Setting cfg.run starts a new scene; clearing it stops after the current line.
+// Setting cfg.run starts a run, which begins with a new scene. The run ends
+// after cfg.lines lines (status.done until run is cleared) or, with cfg.lines
+// = 0, when run is cleared (a started line completes).
 // A line takes Nx*Nz + 1 cycles, so line_period must be at least that, or the
 // next line starts late (counted in period_overruns). The output FIFO drains at
 // clk_sys, faster than clk_sensor fills it, so dropped_samples stays 0 unless
-// the clocks are misconfigured (SE-04).
+// the clocks are misconfigured (SE-04). Counters saturate; cnt_clr clears them.
 module sensor_emulator import frontend_pkg::*; (
     input  logic         clk_sys,
     input  logic         rst_sys,
@@ -33,13 +35,8 @@ module sensor_emulator import frontend_pkg::*; (
     input  logic         clk_sensor,
     input  logic         rst_sensor,
     input  fe_cfg_t      cfg,
-    output logic [23:0]  line_timestamp,    // free-running count of line starts
-    output logic [23:0]  scene_timestamp,   // line_timestamp when the current scene started
-    output logic [31:0]  lines_emitted,
-    output logic [31:0]  scenes_started,
-    output logic [31:0]  underrun_samples,  // samples sent as 0: prefetch FIFO empty
-    output logic [31:0]  period_overruns,   // line period shorter than the line
-    output logic [31:0]  dropped_samples    // output FIFO full (not expected)
+    input  logic         cnt_clr,
+    output se_status_t   status
 );
     // ---------------------------------------------------------------------
     // Prefetch FIFO: clk_sys -> clk_sensor
@@ -104,11 +101,21 @@ module sensor_emulator import frontend_pkg::*; (
     logic        active, pending;
     logic [15:0] x, z, y;
     logic [15:0] lfsr;
+    logic [31:0] run_lines;             // lines started in this run
 
-    wire tick       = cfg.run && (tmr == 32'd0);
+    wire limit      = (cfg.lines != 32'd0) && (run_lines == cfg.lines);
+    wire tick       = cfg.run && !limit && (tmr == 32'd0);
     wire last_x     = (x == cfg.nx - 16'd1);
     wire last_z     = (z == cfg.nz - 16'd1);
-    wire start_line = !active && (tick || pending);
+    wire start_line = !active && !limit && (tick || pending);
+
+    se_status_t st;                     // counters and timestamps (busy/done unused)
+    always_comb begin
+        status      = st;
+        status.busy = (cfg.run && !limit) || active;
+        status.done = cfg.run && limit && !active;
+    end
+
     wire emit       = active;
     wire [15:0] mask = 16'((17'd1 << cfg.depth) - 17'd1);
 
@@ -139,12 +146,11 @@ module sensor_emulator import frontend_pkg::*; (
         if (rst_sensor) begin
             tmr <= '0;  active <= 1'b0;  pending <= 1'b0;
             {x, z, y} <= '0;
+            run_lines <= '0;
             lfsr <= 16'hACE1;
             gear_n <= '0;
             o_valid <= 1'b0;
-            line_timestamp <= '0;  scene_timestamp <= '0;
-            lines_emitted <= '0;  scenes_started <= '0;
-            underrun_samples <= '0;  period_overruns <= '0;  dropped_samples <= '0;
+            st <= '0;
         end else begin
             o_valid <= 1'b0;
 
@@ -156,20 +162,24 @@ module sensor_emulator import frontend_pkg::*; (
                 tmr <= (tmr == 32'd0) ? cfg.line_period - 32'd1 : tmr - 32'd1;
                 if (tick && active) begin
                     pending <= 1'b1;
-                    period_overruns <= period_overruns + 1;
+                    st.period_overruns <= sat_inc(st.period_overruns);
                 end
             end
-            if (!cfg.run && !active) y <= '0;
+            if (!cfg.run && !active) begin
+                y         <= '0;
+                run_lines <= '0;
+            end
 
             if (start_line) begin
-                active  <= 1'b1;
-                pending <= 1'b0;
+                active    <= 1'b1;
+                pending   <= 1'b0;
+                run_lines <= run_lines + 32'd1;
                 x <= '0;
                 z <= '0;
-                line_timestamp <= line_timestamp + 24'd1;
+                st.line_timestamp <= st.line_timestamp + 24'd1;
                 if (y == 16'd0) begin
-                    scene_timestamp <= line_timestamp;
-                    scenes_started  <= scenes_started + 1;
+                    st.scene_timestamp <= st.line_timestamp;
+                    st.scenes_started  <= sat_inc(st.scenes_started);
                     lfsr <= 16'hACE1;
                 end
             end
@@ -179,7 +189,7 @@ module sensor_emulator import frontend_pkg::*; (
                 o_data  <= sample;
                 o_user  <= {x == 16'd0 && z == 16'd0, x == 16'd0 && z == 16'd0 && y == 16'd0};
                 o_last  <= last_x && last_z;
-                if (use_dma && !dma_avail) underrun_samples <= underrun_samples + 1;
+                if (use_dma && !dma_avail) st.underrun_samples <= sat_inc(st.underrun_samples);
                 if (cfg.source == SRC_LFSR)
                     lfsr <= lfsr[0] ? (lfsr >> 1) ^ 16'hB400 : lfsr >> 1;
                 // gearbox
@@ -201,13 +211,21 @@ module sensor_emulator import frontend_pkg::*; (
                         z <= z + 16'd1;
                     end else begin
                         active <= 1'b0;
-                        lines_emitted <= lines_emitted + 1;
+                        st.lines_emitted <= sat_inc(st.lines_emitted);
                         y <= (y == cfg.ny - 16'd1) ? 16'd0 : y + 16'd1;
                     end
                 end
             end
 
-            if (o_valid && (of_full || of_wr_busy)) dropped_samples <= dropped_samples + 1;
+            if (o_valid && (of_full || of_wr_busy)) st.dropped_samples <= sat_inc(st.dropped_samples);
+
+            if (cnt_clr) begin
+                st.lines_emitted    <= '0;
+                st.scenes_started   <= '0;
+                st.underrun_samples <= '0;
+                st.period_overruns  <= '0;
+                st.dropped_samples  <= '0;
+            end
         end
     end
 

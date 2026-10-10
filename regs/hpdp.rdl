@@ -1,0 +1,316 @@
+// HPDP register map (SPEC.md section 8), on M_AXI_HPM0_FPD at 0xA000_0000.
+//
+// regs/generate.py turns this file into the SystemVerilog register block
+// (rtl/regs/), the C header (sw/baremetal/common/hpdp_regs.h), address
+// constants for the testbenches and host tools, and HTML documentation.
+//
+// Every block starts with ID at 0x00; CTRL 0x04, STATUS 0x08, IRQ_EN 0x0C and
+// IRQ_STATUS 0x10 where the block has them; block registers from 0x40;
+// CNT_CLEAR at 0x7C and the block's counters from 0x80. Counters are 32 bit
+// and saturate. The register block runs on clk_ctrl; configuration reaches the
+// data path clocks (and status comes back) within about a microsecond:
+// SYS.STATUS.cfg_pending shows when all writes have arrived.
+
+reg block_id #(longint unsigned BLOCK = 0) {
+    name = "Block ID";
+    field { sw = r; hw = na; desc = "Block identifier"; } block[31:16] = BLOCK;
+    field { sw = r; hw = na; desc = "Version (major, minor)"; } version[15:0] = 16'h0100;
+};
+
+reg counter {
+    field { sw = r; hw = w; desc = "Saturating count, cleared through CNT_CLEAR"; } count[31:0];
+};
+
+reg cnt_clear {
+    name = "Counter clear";
+    field {
+        sw = rw; hw = r; singlepulse;
+        desc = "Write 1 to clear this block's counters";
+    } clear[0:0] = 0;
+};
+
+// ---------------------------------------------------------------------------
+regfile hpdp_sys {
+    name = "System";
+    desc = "Identification, global control, image geometry, interrupts";
+
+    block_id #(.BLOCK(16'h4850)) ID @ 0x00;
+
+    reg {
+        name = "Control";
+        field {
+            sw = rw; hw = r;
+            desc = "1: hold the data path (sensor front end, compressor) in reset";
+        } soft_reset[1:1] = 0;
+    } CTRL @ 0x04;
+
+    reg {
+        name = "Status";
+        field { sw = r; hw = w; desc = "Sensor run in progress"; } busy[0:0];
+        field {
+            sw = r; hw = w;
+            desc = "An overflow counter is non-zero (emulator underrun, overrun or drop; corner turn drop)";
+        } error[1:1];
+        field { sw = r; hw = w; desc = "clk_sensor clock (MMCM) locked"; } sensor_locked[2:2];
+        field {
+            sw = r; hw = w;
+            desc = "Register writes not yet applied in every clock domain. Wait for 0 after configuring, before starting DMA or a run";
+        } cfg_pending[3:3];
+    } STATUS @ 0x08;
+
+    reg {
+        name = "Interrupt enables";
+        field { sw = rw; hw = r; desc = "Compressed scene complete"; } scene_done[0:0] = 0;
+        field { sw = rw; hw = r; desc = "Overflow"; } error[1:1] = 0;
+    } IRQ_EN @ 0x0C;
+
+    reg {
+        name = "Interrupt flags";
+        desc = "Write 1 to clear";
+        field { sw = rw; hw = r; onwrite = woclr; hwset; desc = "A compressed scene completed"; } scene_done[0:0] = 0;
+        field { sw = rw; hw = r; onwrite = woclr; hwset; desc = "An overflow counter incremented"; } error[1:1] = 0;
+    } IRQ_STATUS @ 0x10;
+
+    reg {
+        name = "Build identifier";
+        field { sw = r; hw = w; desc = "Git commit (short hash) of the build"; } build_id[31:0];
+    } BUILD_ID @ 0x40;
+
+    reg {
+        name = "Mode";
+        field {
+            sw = rw; hw = r;
+            desc = "1: compressor output to DMA S2MM (CAPTURE_CMP); 0: discarded";
+        } capture[0:0] = 1;
+    } MODE @ 0x44;
+
+    reg {
+        name = "DMA routing";
+        field {
+            sw = rw; hw = r;
+            desc = "1: DMA MM2S stream to the calibration table; 0: to the sensor emulator";
+        } to_table[0:0] = 0;
+    } DMA_ROUTE @ 0x48;
+
+    reg {
+        name = "Pixels per line";
+        field { sw = rw; hw = r; desc = "Nx, 1..NX_MAX"; } value[15:0] = 64;
+    } NX @ 0x50;
+    reg {
+        name = "Lines per scene";
+        field { sw = rw; hw = r; desc = "Ny, 1..65535"; } value[15:0] = 32;
+    } NY @ 0x54;
+    reg {
+        name = "Bands";
+        field { sw = rw; hw = r; desc = "Nz, 16..NZ_MAX"; } value[15:0] = 32;
+    } NZ @ 0x58;
+
+    reg {
+        name = "Sample depth";
+        field { sw = rw; hw = r; desc = "D, 2..16"; } depth[4:0] = 12;
+    } DEPTH @ 0x5C;
+};
+
+// ---------------------------------------------------------------------------
+regfile hpdp_se {
+    name = "Sensor emulator";
+    desc = "SPEC.md 6.1. Runs on clk_sensor.";
+
+    block_id #(.BLOCK(16'h0001)) ID @ 0x00;
+
+    reg {
+        name = "Control";
+        field {
+            sw = rw; hw = r;
+            desc = "Set to start a run (a new scene); the run ends after LINES lines, or when cleared";
+        } run[0:0] = 0;
+    } CTRL @ 0x04;
+
+    reg {
+        name = "Status";
+        field { sw = r; hw = w; desc = "A run is in progress"; } busy[0:0];
+        field { sw = r; hw = w; desc = "The run has emitted LINES lines"; } done[1:1];
+    } STATUS @ 0x08;
+
+    reg {
+        name = "Line period";
+        field {
+            sw = rw; hw = r;
+            desc = "clk_sensor cycles between line starts; at least Nx*Nz + 1";
+        } cycles[31:0] = 32'd1000;
+    } LINE_PERIOD @ 0x40;
+
+    reg {
+        name = "Lines per run";
+        field { sw = rw; hw = r; desc = "0: until CTRL.run is cleared"; } lines[31:0] = 0;
+    } LINES @ 0x44;
+
+    reg {
+        name = "Sample source";
+        field { sw = rw; hw = r; desc = "0: DMA, 1: ramp, 2: LFSR"; } source[1:0] = 0;
+    } SOURCE @ 0x48;
+
+    cnt_clear CNT_CLEAR @ 0x7C;
+
+    reg {
+        name = "Line timestamp";
+        field { sw = r; hw = w; desc = "Free-running count of line starts"; } value[23:0];
+    } LINE_TIMESTAMP @ 0x80;
+    reg {
+        name = "Scene timestamp";
+        field { sw = r; hw = w; desc = "LINE_TIMESTAMP when the current scene started"; } value[23:0];
+    } SCENE_TIMESTAMP @ 0x84;
+    counter LINES_EMITTED @ 0x88;
+    counter SCENES_STARTED @ 0x8C;
+    counter UNDERRUN_SAMPLES @ 0x90;
+    UNDERRUN_SAMPLES -> desc = "Samples sent as 0 because DMA data was late";
+    counter PERIOD_OVERRUNS @ 0x94;
+    PERIOD_OVERRUNS -> desc = "Line starts delayed: line period shorter than a line";
+    counter DROPPED_SAMPLES @ 0x98;
+    DROPPED_SAMPLES -> desc = "Samples lost in the emulator output FIFO";
+};
+
+// ---------------------------------------------------------------------------
+regfile hpdp_rc {
+    name = "Radiometric correction";
+    desc = "SPEC.md 6.2. Table debug access: write TBL_ADDR (and TBL_WDATA_*), then TBL_CMD; wait until STATUS.tbl_busy is 0 before the next command.";
+
+    block_id #(.BLOCK(16'h0002)) ID @ 0x00;
+
+    reg {
+        name = "Control";
+        field { sw = rw; hw = r; desc = "1: correction on; 0: bypass (output = input)"; } enable[0:0] = 1;
+    } CTRL @ 0x04;
+
+    reg {
+        name = "Status";
+        field { sw = r; hw = w; desc = "Table command in progress"; } tbl_busy[0:0];
+    } STATUS @ 0x08;
+
+    reg {
+        name = "Clamps in the current scene";
+        field { sw = r; hw = w; } count[31:0];
+    } SCENE_CLAMPED @ 0x40;
+    reg {
+        name = "Replaced bad pixels in the current scene";
+        field { sw = r; hw = w; } count[31:0];
+    } SCENE_REPLACED @ 0x44;
+    reg {
+        name = "Last table load";
+        field { sw = r; hw = w; desc = "128-bit beats (two entries each) in the last table load"; } words[31:0];
+    } TBL_WORDS @ 0x48;
+
+    reg {
+        name = "Table entry address";
+        field { sw = rw; hw = r; desc = "Entry z*Nx + x"; } addr[17:0] = 0;
+    } TBL_ADDR @ 0x50;
+    reg {
+        name = "Table write data (dark, gain)";
+        field { sw = rw; hw = r; } dark[15:0] = 0;
+        field { sw = rw; hw = r; desc = "Unsigned Q2.14"; } gain[31:16] = 0;
+    } TBL_WDATA_LO @ 0x54;
+    reg {
+        name = "Table write data (flags)";
+        field { sw = rw; hw = r; } bad[0:0] = 0;
+    } TBL_WDATA_HI @ 0x58;
+    reg {
+        name = "Table command";
+        field { sw = rw; hw = r; singlepulse; desc = "Write 1: write TBL_WDATA_* to entry TBL_ADDR"; } write[0:0] = 0;
+        field { sw = rw; hw = r; singlepulse; desc = "Write 1: read entry TBL_ADDR into TBL_RDATA_*"; } read[1:1] = 0;
+    } TBL_CMD @ 0x5C;
+    reg {
+        name = "Table read data (dark, gain)";
+        field { sw = r; hw = w; } dark[15:0];
+        field { sw = r; hw = w; } gain[31:16];
+    } TBL_RDATA_LO @ 0x60;
+    reg {
+        name = "Table read data (flags)";
+        field { sw = r; hw = w; } bad[0:0];
+    } TBL_RDATA_HI @ 0x64;
+};
+
+// ---------------------------------------------------------------------------
+regfile hpdp_ct {
+    name = "Corner turn";
+    desc = "SPEC.md 6.3";
+
+    block_id #(.BLOCK(16'h0003)) ID @ 0x00;
+    cnt_clear CNT_CLEAR @ 0x7C;
+    counter LINES_OUT @ 0x80;
+    counter DROPPED_LINES @ 0x84;
+    DROPPED_LINES -> desc = "Lines dropped (both buffers full) and sent as fill lines";
+    counter UNFILLED_LINES @ 0x88;
+    UNFILLED_LINES -> desc = "Dropped lines that could not be replaced by a fill line";
+};
+
+// ---------------------------------------------------------------------------
+regfile hpdp_cmp {
+    name = "CCSDS 123 compressor";
+    desc = "SPEC.md 6.4. Image size and D come from the system block. Static while a scene is compressed.";
+
+    block_id #(.BLOCK(16'h0004)) ID @ 0x00;
+
+    reg {
+        name = "Status";
+        field { sw = r; hw = w; desc = "A scene is being compressed"; } busy[0:0];
+        field { sw = r; hw = w; desc = "Configuration outside what the core supports"; } cfg_error[1:1];
+    } STATUS @ 0x08;
+
+    reg {
+        name = "Prediction";
+        field { sw = rw; hw = r; desc = "P, previous bands, 0..15"; } bands[3:0] = 3;
+        field { sw = rw; hw = r; desc = "1: full prediction; 0: reduced"; } full[4:4] = 1;
+        field { sw = rw; hw = r; desc = "0 neighbour wide, 1 neighbour narrow, 2 column wide, 3 column narrow"; } local_sum[6:5] = 0;
+        field { sw = rw; hw = r; desc = "Weight resolution omega, 4..19"; } omega[12:8] = 13;
+        field { sw = rw; hw = r; desc = "Register size R, max(32, D + omega + 2)..64"; } reg_size[22:16] = 32;
+    } PRED @ 0x40;
+
+    reg {
+        name = "Weight update";
+        field { sw = rw; hw = r; desc = "nu_min, -6..9 (two's complement)"; } v_min[4:0] = 5'h1F;
+        field { sw = rw; hw = r; desc = "nu_max, nu_min..9 (two's complement)"; } v_max[12:8] = 3;
+        field { sw = rw; hw = r; desc = "log2 t_inc, 4..11"; } t_inc_log2[19:16] = 6;
+    } WUPD @ 0x44;
+
+    reg {
+        name = "Entropy coder and output";
+        field { sw = rw; hw = r; desc = "U_max, 8..32"; } u_max[5:0] = 18;
+        field { sw = rw; hw = r; desc = "gamma_0, 1..8"; } gamma0[11:8] = 1;
+        field { sw = rw; hw = r; desc = "gamma*, max(4, gamma_0 + 1)..11"; } gamma_star[15:12] = 6;
+        field { sw = rw; hw = r; desc = "K, 0..D-2"; } k_init[19:16] = 7;
+        field { sw = rw; hw = r; desc = "Output word size B in bytes, 1..8"; } word_bytes[27:24] = 1;
+    } CODER @ 0x48;
+
+    reg {
+        name = "Options";
+        field { sw = rw; hw = r; desc = "1: bypass (RAW): samples packed at D bits, no header"; } raw[0:0] = 0;
+        field { sw = rw; hw = r; desc = "User data byte in the header"; } user_data[15:8] = 0;
+    } OPTS @ 0x4C;
+
+    cnt_clear CNT_CLEAR @ 0x7C;
+    counter SCENES_DONE @ 0x80;
+    SCENES_DONE -> desc = "Compressed scenes completed (output tlast)";
+    counter SAMPLES_IN @ 0x84;
+    SAMPLES_IN -> desc = "Input samples since the last clear";
+    counter BYTES_OUT @ 0x88;
+    BYTES_OUT -> desc = "Output bytes since the last clear";
+    counter LAST_BYTES @ 0x8C;
+    LAST_BYTES -> desc = "Output bytes of the last completed scene";
+    counter LAST_CYCLES @ 0x90;
+    LAST_CYCLES -> desc = "clk_sys cycles from the last completed scene's first input sample to its last output word";
+    counter OUT_STALLS @ 0x94;
+    OUT_STALLS -> desc = "clk_sys cycles with output valid and not ready";
+};
+
+// ---------------------------------------------------------------------------
+addrmap hpdp_regs {
+    name = "HPDP";
+    desc = "Hyperspectral Payload Data Processor, base 0xA000_0000";
+    default regwidth = 32;
+
+    hpdp_sys sys @ 0x00000;
+    hpdp_se  se  @ 0x10000;
+    hpdp_rc  rc  @ 0x20000;
+    hpdp_ct  ct  @ 0x30000;
+    hpdp_cmp cmp @ 0x40000;
+};

@@ -31,7 +31,7 @@ NX_MAX = NZ_MAX = 64          # tb_frontend parameters
 
 DEFAULT = dict(source=sensor.SOURCE_DMA, pattern="hyperspectral", raw="calibrated", dims=(24, 6, 20),
                depth=12, scenes=2, slack=40, bypass=False, bad_fraction=0.04, dma_pct=100,
-               out_pct=100, cfg={}, drop=False, overrun=False)
+               out_pct=100, cfg={}, drop=False, overrun=False, limit=True)
 
 TESTS = {
     # DMA source, calibration with dark/gain/bad pixels (incl. edge and clustered bad pixels)
@@ -42,7 +42,8 @@ TESTS = {
     "clamp":      dict(raw="noise", pattern="noise"),
     "bypass":     dict(bypass=True),
     "d16":        dict(depth=16, cfg=dict(omega=16)),
-    "ramp":       dict(source=sensor.SOURCE_RAMP, depth=10),
+    # (stopped by clearing run instead of the emulator's line limit)
+    "ramp":       dict(source=sensor.SOURCE_RAMP, depth=10, limit=False),
     "lfsr":       dict(source=sensor.SOURCE_LFSR, depth=16, bypass=True),
     # line period exactly one line + 1 cycle: no overrun
     "min_period": dict(slack=0),
@@ -134,7 +135,7 @@ def write_test(out, name, spec):
               cfg.omega, ctx.register_size, cfg.v_min, cfg.v_max, cfg.t_inc_log2, cfg.u_max, cfg.gamma0,
               cfg.gamma_star, ctx.k_init, cfg.output_word_bytes, 0, cfg.user_data,
               t["source"], period, int(t["bypass"]), t["scenes"], t["dma_pct"], t["out_pct"],
-              int(t["drop"]), int(t["overrun"])]
+              int(t["drop"]), int(t["overrun"]), int(t["limit"])]
 
     d = out / name
     d.mkdir(parents=True, exist_ok=True)

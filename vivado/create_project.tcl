@@ -17,16 +17,23 @@ create_project hpdp $proj_dir -part xczu7ev-ffvc1156-2-e -force
 set_property board_part [lindex [get_board_parts -latest_file_version {*:zcu106:part0:*}] 0] [current_project]
 set_property target_language Verilog [current_project]
 
-# RTL and constraints (blocks are added here as they are written)
-set rtl [glob -nocomplain [file join $repo rtl * *.sv]]
+# RTL and constraints
+set rtl [concat [glob -nocomplain [file join $repo rtl * *.sv]] [glob -nocomplain [file join $repo rtl * *.v]]]
 if {[llength $rtl]} { add_files -norecurse $rtl }
 set xdc [glob -nocomplain [file join $repo vivado constraints *.xdc]]
 if {[llength $xdc]} { add_files -fileset constrs_1 -norecurse $xdc }
 
+update_compile_order -fileset sources_1
+
+# SYS.BUILD_ID: the commit the project was created from (0 outside git)
+if {[catch {exec git -C $repo rev-parse --short=8 HEAD} hash]} { set hash 0 }
+set build_id [format 0x%08X [expr {"0x$hash"}]]
+puts "BUILD_ID $build_id"
+
 # Block design and its wrapper as the top level
-source [file join $repo vivado bd base.tcl]
-make_wrapper -files [get_files base.bd] -top -import
-set_property top base_wrapper [current_fileset]
+source [file join $repo vivado bd system.tcl]
+make_wrapper -files [get_files system.bd] -top -import
+set_property top system_wrapper [current_fileset]
 update_compile_order -fileset sources_1
 
 puts "Created [file join $proj_dir hpdp.xpr]"

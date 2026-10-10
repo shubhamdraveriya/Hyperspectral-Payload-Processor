@@ -5,7 +5,8 @@
 #
 # Compiles every rtl/**/*.sv and tb/**/*.sv (packages first), generates the
 # vectors from the Python model (CCSDS 123 core: c123_<name>; sensor front end
-# with the compressor: fe_<name>), then runs the tests. Builds in build/sim/. Each testbench prints PASS or FAIL; the
+# with the compressor: fe_<name>; hpdp_core through its registers: sys_<name>),
+# then runs the tests. Builds in build/sim/. Each testbench prints PASS or FAIL; the
 # script raises an error (non-zero exit in batch mode) if any test fails.
 
 #            name          testbench top          plusargs
@@ -52,15 +53,26 @@ set suites {
     c123    tb/ccsds123/gen_vectors.py   tb_c123_core
     fe      tb/frontend/gen_vectors.py   tb_frontend
 }
+# System tests (hpdp_core through its registers) reuse front-end vectors
+set sys_tests {dma_basic dma_stalls max_dims}
+
+proc wanted {prefix} {
+    expr {![llength $::selected] || [llength [lsearch -all -glob $::selected ${prefix}_*]]}
+}
+
 set selected $argv
 foreach {prefix gen top} $suites {
-    if {[llength $selected] && ![llength [lsearch -all -glob $selected ${prefix}_*]]} continue
+    if {![wanted $prefix] && !($prefix eq "fe" && [wanted sys])} continue
     run python ../../$gen $prefix
+    if {![wanted $prefix]} continue
     set fh [open $prefix/tests.txt]
     foreach t [split [string trim [read $fh]] "\n"] {
         lappend tests ${prefix}_$t $top [list DIR=$prefix/$t]
     }
     close $fh
+}
+if {[wanted sys]} {
+    foreach t $sys_tests { lappend tests sys_$t tb_hpdp_core [list DIR=fe/$t] }
 }
 
 file copy -force [file join $::env(XILINX_VIVADO) data verilog src glbl.v] .
