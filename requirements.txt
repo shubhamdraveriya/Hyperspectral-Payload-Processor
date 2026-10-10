@@ -1,1 +1,3 @@
 pytest>=8
+# independent Reed-Solomon implementation, used only by test_rs.py's cross-check
+reedsolo>=1.7
