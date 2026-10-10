@@ -24,7 +24,7 @@ That allows a deep pipeline at one sample per clock.
 
 | Stage | Module | Work |
 |---|---|---|
-| S1–S3 | `c123_neighborhood` | position counters; previous-row line buffer (1R1W, read Nz samples ahead of the write); per-band LUTRAMs for W, N (from the previous pixel's NE), NW, and the row's first pixel |
+| S1–S3 | `c123_neighborhood`, `c123_linebuf` | position counters; previous-row line buffer (four samples per 64-bit UltraRAM word, lane writes with byte enables, read Nz samples ahead of the write); per-band LUTRAMs for W, N (from the previous pixel's NE), NW, and the row's first pixel |
 | S4–S5 | `c123_localdiff` | local sum (4 types), directional and central differences, last-15 shift register of the previous bands' central differences |
 | P1–P15 | `c123_predictor` | weight RAM (default initialization substituted at t = 1, so no clearing), 18 products, adder tree, mod-R wrap, clipping, double-resolution prediction, mapped index, sign-LMS weight update and write-back |
 | C0–C4 | `c123_coder` | per-band counter and accumulator (LUTRAM), k, length-limited GPO2 codeword (or D raw bits at t = 0 / raw mode) |
@@ -62,16 +62,17 @@ XCZU7EV-2, NX_MAX = 512, NZ_MAX = 256, 250 MHz:
 
 | | Result |
 |---|---|
-| WNS / WHS | +0.160 ns / +0.019 ns (met) |
-| LUT / FF | 13.6 k (5.9 %) / 6.1 k (1.3 %) |
+| WNS / WHS | +0.380 ns / +0.019 ns (met) |
+| LUT / FF | 13.6 k (5.9 %) / 6.2 k (1.3 %) |
 | DSP48E2 | 19 |
 | BRAM | 5.5 (weight RAM) |
-| UltraRAM | 32 (line buffer, one 16-bit sample per 72-bit word) |
+| UltraRAM | 8 (line buffer, four samples per word) |
 
-Worst path: the line buffer's UltraRAM read mux.
+Worst path: fan-out of the pipeline enable `ce`. Packing the line buffer took it
+from 32 URAM to 8 and raised the slack from +0.160 ns (one sample per word) to
++0.380 ns.
 
 ## Open items
 
-- Pack 4 samples per UltraRAM word in the line buffer: 32 → 8 URAM (SPEC budget).
 - Near-lossless mode (SPEC CMP-10) and the hybrid entropy coder are not implemented.
 - Register block (SystemRDL) and counters (CMP-09) come with system integration (M4).

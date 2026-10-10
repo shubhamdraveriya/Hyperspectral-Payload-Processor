@@ -118,8 +118,7 @@ module c123_neighborhood import c123_pkg::*; #(
     // Previous-row line buffer: write s at x*Nz+z, read NE at x*Nz+z+Nz
     logic [15:0] ne_rd;                 // valid in S3
 
-    sdp_ram #(
-        .WIDTH (16),
+    c123_linebuf #(
         .DEPTH (NX_MAX * NZ_MAX),
         .STYLE (NX_MAX * NZ_MAX >= 65536 ? "ultra" : "block")
     ) u_line (

@@ -15,6 +15,7 @@ set src [concat \
     [lsearch -all -inline -not -glob [glob [file join $repo rtl ccsds123 *.sv]] *_pkg.sv] \
     [file join $repo rtl common sdp_ram.sv] \
     [file join $repo rtl common sync_fifo.sv]]
+# (c123_linebuf.sv is picked up by the rtl/ccsds123 glob)
 read_verilog -sv $src
 
 synth_design -top c123_core -part xczu7ev-ffvc1156-2-e -mode out_of_context \
