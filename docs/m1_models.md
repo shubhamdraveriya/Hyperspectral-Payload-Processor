@@ -29,20 +29,19 @@ reference the RTL is checked against in M2–M5 (SPEC.md MDL-01..04).
 | CCSDS 123 conformance (equations, header bit layout) | written from CCSDS 123.0-B-2; **not yet checked against an independent decoder** | pending O-5 |
 | RS generator and dual basis | generator palindromic (reciprocal root pairs), zero syndromes on codewords, dual-basis table from libfec `ccsds_tal.c` | medium–high |
 | RS decoder | corrects every pattern of ≤ 16 symbol errors tested, flags ≥ 17 as uncorrectable, 64-byte burst at I = 4 corrected | high |
-| RS against an independent implementation | `test_matches_independent_implementation` compares with `reedsolo` (same field and roots); skipped until `reedsolo` is installed | pending |
+| RS against an independent implementation | `test_matches_independent_implementation`: parity identical to `reedsolo` (same field and roots) | high |
 | Randomizer | output starts `FF 48 0E C0 9A 0D 70 BC 8E 2C 93 AD ...`, period 255 | high |
 | Framing | header bit layouts, first header pointer with packets spanning frames, idle-packet fill including the < 7-byte case, resynchronization after a lost frame, idle frames | high |
 | Frame sync | leading garbage, ASM with 2 wrong bits (lock kept), 5 wrong bits (flywheel), 4 misses (loss of lock and reacquisition) | high |
 | End to end | 3 scenes bit-exact over a clean link and at BER 10⁻³ (≈300 bit errors corrected); an uncorrectable burst loses exactly one scene, which is reported missing | high |
 
-Test count: 138 (137 pass, 1 skipped until `reedsolo` is installed).
+Test count: 138, all passing.
 
 ## Still open for M1's "done when"
 
 1. **Independent CCSDS 123.0-B-2 decoder** (SPEC O-5): request ESA WhiteDwarf 2.0
    and/or the CNES tools, then decompress `compress()` output with them, starting with
    the header. Until then conformance rests on implementing the standard's text.
-2. `pip install reedsolo` (listed in `requirements.txt`) to enable the RS cross-check.
 
 ## Notes for M2 (RTL)
 
