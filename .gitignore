@@ -1,0 +1,25 @@
+# Build outputs (Vivado project, simulation, Vitis workspace)
+build/
+
+# Vivado / xsim / Vitis droppings
+.Xil/
+.vivado-ai/
+*.jou
+*.log
+*.str
+*.pb
+*.wdb
+xsim.dir/
+webtalk*
+vivado_pid*.zip
+dfx_runtime.txt
+_ide/
+.analytics
+
+# Python
+__pycache__/
+.pytest_cache/
+*.pyc
+
+# Large datasets are fetched by script, not committed
+data/raw/
