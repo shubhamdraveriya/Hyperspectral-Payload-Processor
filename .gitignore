@@ -13,6 +13,7 @@ xsim.dir/
 webtalk*
 vivado_pid*.zip
 dfx_runtime.txt
+clockInfo.txt
 _ide/
 .analytics
 
