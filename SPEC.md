@@ -555,7 +555,9 @@ be checked against the known original.
 ### 12.1 Resource estimate
 
 Rows marked * are measured (out-of-context implementation at `NX_MAX` = 512,
-`NZ_MAX` = 256); the others are estimates, replaced as blocks are built.
+`NZ_MAX` = 256); the others are estimates, replaced as blocks are built. The M4 design
+(PS, DMA, interconnect, registers, front end, compressor) measures 21.3 k LUT, 20.4 k FF,
+21 BRAM36, 40 URAM and 20 DSP in total.
 
 | Block | LUT | FF | DSP | BRAM36 | URAM |
 |---|---|---|---|---|---|

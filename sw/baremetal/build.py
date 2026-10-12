@@ -9,6 +9,7 @@ builds are unreliable in paths containing spaces, so it stays outside the repo.
 
 import os
 import shutil
+import stat
 import sys
 from pathlib import Path
 
@@ -30,8 +31,14 @@ if not xsa.exists():
 if " " in str(ws):
     sys.exit(f"workspace path contains a space: {ws} (set HPDP_VITIS_WS)")
 
+def _remove_readonly(func, path, _exc):
+    # Vitis leaves some generated files read-only, which rmtree cannot delete on Windows
+    os.chmod(path, stat.S_IWRITE)
+    func(path)
+
+
 if ws.exists():
-    shutil.rmtree(ws)
+    shutil.rmtree(ws, onexc=_remove_readonly)
 client = vitis.create_client()
 client.set_workspace(path=str(ws))
 

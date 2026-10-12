@@ -18,7 +18,7 @@ The full specification is in [SPEC.md](SPEC.md).
 | M1 | Python reference models (CCSDS 123, framing, RS) | models done, 142 tests pass; independent CCSDS 123 check pending ([notes](docs/m1_models.md)) |
 | M2 | CCSDS 123 compressor RTL | **done**: bit-exact on 28 configurations; 250 MHz met at 512 × 256 (13.6k LUT, 19 DSP, 8 URAM) ([notes](docs/m2_compressor.md)) |
 | M3 | Sensor emulator, radiometric correction, corner turn | **done**: bit-exact with the models through the compressor on 12 tests (incl. line drops with fill lines); 250 MHz met at 512 × 256 (1.1k LUT, 1 DSP, 32 URAM) ([notes](docs/m3_frontend.md)) |
-| M4 | On-board compression run | **in progress**: registers, `hpdp_core`, block design, bare-metal app and host tools done and verified in simulation; board run pending ([notes](docs/m4_board_run.md)) |
+| M4 | On-board compression run | **done**: 15 scenes from the board identical to the model and decoded bit-exactly; 99.8 Msamples/s; 250 MHz met on the full chip, CDC clean ([notes](docs/m4_board_run.md)) |
 | M5 | Downlink chain and optical link | — |
 | M6 | PC ground station | — |
 | M7 | Radiation mitigation | — |

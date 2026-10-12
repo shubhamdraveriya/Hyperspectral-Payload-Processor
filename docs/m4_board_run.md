@@ -1,7 +1,8 @@
 # M4: On-board compression run (CAPTURE_CMP)
 
-Status: hardware, software and host tools are done and verified in simulation; the
-board run is pending.
+Status: **done** (2026-10-12). Every compressed scene from the board is identical to
+the Python model and decodes bit-exactly on the PC; throughput 99.8 Msamples/s, the
+full rate of the sensor emulator.
 
 ```
 PS DDR4 ─HP0─ AXI DMA MM2S ──► hpdp_core ──► AXI DMA S2MM ─HP0─ PS DDR4
@@ -83,16 +84,53 @@ Found by the system test: starting the DMA right after writing `DMA_ROUTE` sent 
 first table beats to the sensor emulator, because the route needs about a microsecond
 to cross into `clk_sys`. That led to `cfg_pending`.
 
-## Implementation
+## Implementation (`vivado/build.tcl`, XCZU7EV-2)
 
-To be filled in from `build/reports/` after the full build.
+| | Result |
+|---|---|
+| WNS / WHS | +0.170 ns / +0.011 ns, all clocks met (`clk_sys` 250 MHz, `clk_ctrl` 100 MHz, `clk_sensor` 100 MHz) |
+| Worst path | SmartConnect register → PS `SAXIGP2WDATA` (HP0 write data): routing into the PS block, 0 logic levels |
+| CDC (`report_cdc`) | every crossing safe: 0 unsafe, 0 unknown (handshake and FIFO crossings, max delay datapath-only) |
+| Methodology | 2 advisories on the `clk_sensor` MMCM (could be a PLL; no LOC); no warnings |
+| LUT / FF | 21.3 k (9.2 %) / 20.4 k (4.4 %) |
+| BRAM / URAM / DSP | 21 (6.7 %) / 40 (41.7 %) / 20 (1.2 %) |
 
-## Board run (pending)
+## Board run (2026-10-12)
 
-1. `vivado -mode batch -source vivado/build.tcl` → `build/hpdp.xsa`
-2. `vitis -s sw/baremetal/build.py` → `~/hpdp_vitis/hpdp_run/build/hpdp_run.elf`
-3. `python sw/host/run_m4.py` (default: 4 synthetic scenes 128 × 64 × 64, D = 12,
-   line period Nx·Nz + 1 = 100 Msamples/s offered)
+```
+vivado -mode batch -source vivado/build.tcl          # build/hpdp.xsa
+vitis -s sw/baremetal/build.py                       # hpdp_run.elf
+python sw/host/run_m4.py [options]                   # JTAG load, run, read back, check
+```
 
-Done when (SPEC M4): the compressed output decodes bit-exactly on the PC and the
-throughput is measured.
+Six runs, 15 scenes, all identical to the model and decoded bit-exactly:
+
+| Run | Scenes | Source | Settings | Bits/sample | Ratio | Throughput |
+|---|---|---|---|---|---|---|
+| default | 4 × 128×64×64, D 12 | DMA, corrected | P 3, Ω 13 | 5.92 | 2.03:1 | 99.8 Msamples/s |
+| maximum size | 2 × 512×16×256, D 16 | DMA, corrected | P 15, Ω 16 | 10.9–11.1 | 1.45:1 | 98.8 Msamples/s |
+| reduced | 3 × 64×32×32, D 12 | DMA, corrected | reduced, column narrow, B 8, user data 0xA5 | 6.89 | 1.74:1 | 99.4 Msamples/s |
+| LFSR | 2 × 256×32×64, D 14 | LFSR, bypass | default | 14.50 | 0.97:1 | 99.3 Msamples/s |
+| ramp | 2 × 101×20×48, D 10 | ramp, corrected | default (odd Nx) | 1.20 | 8.30:1 | 98.9 Msamples/s |
+| bypass | 2 × 96×24×40, D 12 | DMA, bypass | P 0 | 8.10 | 1.48:1 | 99.0 Msamples/s |
+
+The line period was Nx·Nz + 1 in every run, so the emulator offered its maximum of
+100 Msamples/s (above the reference mission's 76.8). The measured rate (sensor start to
+the last scene's S2MM completion) is 98.8–99.8 Msamples/s; the difference is the
+pipeline fill and drain. No underruns, overruns or dropped lines, no compressor output
+stalls, and the clamp and replacement counts matched the model in every run. The
+compressor itself runs at up to 250 Msamples/s, so the sensor emulator, not the
+compressor, sets the rate.
+
+The application's self-test (no job: two identical LFSR scenes must give identical
+bitstreams) also passes on the board.
+
+Board notes:
+
+- Vitis leaves some generated files read-only; `sw/baremetal/build.py` now clears the
+  attribute before recreating the workspace.
+- An interrupted Vivado build leaves its runs marked as running; delete `build/vivado`
+  and build again.
+- `list_jtag_targets` of the Vitis MCP server showed only the PS TAP branch while the
+  QSPI image was running; XSDB's `targets` listed PSU / APU / Cortex-A53 as usual, and
+  the run worked.

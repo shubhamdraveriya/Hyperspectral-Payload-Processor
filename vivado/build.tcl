@@ -2,7 +2,9 @@
 #
 #   vivado -mode batch -source vivado/build.tcl
 #
-# Creates the project first if needed (create_project.tcl). Outputs:
+# Creates the project first if needed (create_project.tcl). If a build was
+# interrupted, Vivado may refuse to relaunch its runs ("needs to be reset"):
+# delete build/vivado and run this again. Outputs:
 #   build/hpdp.xsa          hardware platform for Vitis (includes the bitstream)
 #   build/reports/*.rpt     timing, utilization, CDC and methodology reports
 
