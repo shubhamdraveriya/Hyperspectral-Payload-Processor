@@ -1,8 +1,10 @@
 # M5: Downlink chain and optical link
 
-Status: **in progress** (2026-10-12). The whole chain is integrated in `hpdp_core` and
-`hpdp_top`, and it matches the Python model in simulation (VER-05). Board runs (VER-06
-PRBS-31 over the fiber, VER-07 scenes over the link at BER 0, 1e-4, 1e-3) are still to do.
+Status: **done** (2026-10-12). The whole chain is integrated in `hpdp_core` and `hpdp_top`
+and matches the Python model in simulation (VER-05). On the board, PRBS-31 over the fiber
+ran 3.375 × 10^12 bits without an error (VER-06), and scenes sent over the fiber were
+reconstructed bit-exactly at the ground at BER 0, 1e-4 and 1e-3 (VER-07). Open: the
+eye scan with In-System IBERT (LNK-10, *should*).
 
 ```
                          ┌─► AXI DMA S2MM (compressed scenes, CAPTURE_CMP)
@@ -124,7 +126,62 @@ the job and the XSDB script (JTAG only), and checks the result: the compressed s
 as `run_m4.py` does, then the captured records through the model's ground chain
 (`pipeline.ground_records`: RS decoding, deframing, packets, scenes, decompression).
 
-## Board procedure (to do; the board is needed)
+## Board runs (2026-10-12)
+
+Bitstream `build/m5/hpdp.xsa` (build ID `0x0C00D8EA`), `hpdp_run.elf` from
+`~/hpdp_vitis_m5`, JTAG only. Two 1000BASE-SX modules in SFP0 and SFP1 with an OM3
+duplex patch cord between them; the receiver takes SFP1 (fed by SFP0's transmitter).
+Scenes: 4 synthetic 128 × 64 × 64, D = 12, DMA source, correction on, default compressor
+settings (5.92 bits/sample, 2.03:1), 2048-byte packets, 760 packets in 1772 science
+frames; the compressed scenes also went to the capture DMA and matched the model every
+time.
+
+| Run | Link | Result |
+|---|---|---|
+| Downlink, fabric loopback | inside the FPGA | 1772 records, all LOCK, 0 RS corrections; 4/4 scenes bit-exact at the ground |
+| Downlink, near-end PMA loopback | GTH serializer → deserializer | same: 0 code errors, 0 RS corrections, 4/4 scenes |
+| PRBS-31, PMA loopback, 60 s | | 7.5 × 10^10 bits, 16 error words, all in the first 10 s while the SFP modules were being plugged in; none in the remaining 50 s |
+| PRBS-31, PMA loopback, 20 s | | 2.5 × 10^10 bits, 0 errors |
+| PRBS-31, fiber, 60 s | SFP0 → OM3 → SFP1 | 7.5 × 10^10 bits, 0 errors (BER < 4 × 10^-11, 95 %) |
+| **VER-06**: PRBS-31, fiber, 2700 s | SFP0 → OM3 → SFP1 | **3.375 × 10^12 bits, 0 errors: BER < 8.9 × 10^-13 at 95 %**; checker locked throughout, 1.2499 Gb/s, 0 clock corrections, 0 elastic-buffer errors |
+| **VER-07**, fiber, BER 0 | SFP0 → OM3 → SFP1 | 1772 records, all LOCK, 0 code errors, 0 RS corrections; **4/4 scenes bit-exact** |
+| **VER-07**, fiber, BER 1e-4 | | 2187 bits injected, 1432 RS symbols corrected, 0 uncorrectable; **4/4 scenes bit-exact** |
+| **VER-07**, fiber, BER 1e-3 | | 22 200 bits injected, 14 508 RS symbols corrected, 0 uncorrectable, frame sync stayed in LOCK (60 ASM bit errors); **4/4 scenes bit-exact** |
+
+BER sweep beyond (VER-07), same scenes:
+
+| Injected BER | RS symbols corrected | Uncorrectable codeblocks | Scenes bit-exact |
+|---|---|---|---|
+| 2e-3 | 28 931 | 0 / 1772 | 4 / 4 |
+| 3e-3 | 42 957 | 1 | 3 / 4: the lost frame costs only its own scene (SYS-06) |
+| 4e-3 | 56 353 | 24 | 0 / 4 |
+| 6e-3 | 53 256 | 602 | 0 / 4 |
+
+RS(255,223) with I = 4 holds to 2 × 10^-3 and starts to fail at 3 × 10^-3, as expected
+(SPEC VER-07: 3–5 × 10^-3). The frame sync stayed locked throughout (one FLYWHEEL at
+2e-3 and at 6e-3). "Injected bits" divided by all CADUs sent understates the BER a little,
+because idle CADUs after the run (error injector off) are counted too.
+
+Observations:
+
+- End to end, the compressed scenes reach the ground at 582 Mbit/s: the sensor
+  emulator's 99.8 Msamples/s at 5.92 bits/sample, so the link (about 857 Mbit/s of
+  packet capacity) is not the limit. The downlink still back-pressures the compressor
+  in bursts (18 % output stall cycles in the last scene, none in M4) without any dropped
+  line or loss of throughput.
+- 0 clock corrections and 0 elastic-buffer errors: both ends run from the same
+  reference oscillator.
+- The link locked at the first attempt in every run (no RX reset needed).
+- The 16 PRBS error words in the first PMA-loopback run all fell in its first 10 s, while
+  the SFP modules were being hot-plugged (supply transient); the repeat and every later
+  run were clean. Don't plug modules during a measurement.
+- `hpdp_run` prints PRBS progress every 10 s on the UART; the result itself comes back
+  through the result block, so a lost console (as happened on the PC side during VER-06)
+  does not affect the measurement.
+
+## Board procedure
+
+The sequence used for the runs above:
 
 ```
 vivado -mode batch -source vivado/build.tcl                # HPDP_BUILD_DIR=build/m5 -> build/m5/hpdp.xsa
