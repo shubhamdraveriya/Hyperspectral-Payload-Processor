@@ -49,6 +49,14 @@ extern "C" {
 #define HPDP_SYS__IRQ_EN__ERROR_bp 1
 #define HPDP_SYS__IRQ_EN__ERROR_bw 1
 #define HPDP_SYS__IRQ_EN__ERROR_reset 0x0
+#define HPDP_SYS__IRQ_EN__LINK_LOCK_LOSS_bm 0x4
+#define HPDP_SYS__IRQ_EN__LINK_LOCK_LOSS_bp 2
+#define HPDP_SYS__IRQ_EN__LINK_LOCK_LOSS_bw 1
+#define HPDP_SYS__IRQ_EN__LINK_LOCK_LOSS_reset 0x0
+#define HPDP_SYS__IRQ_EN__SYNC_LOSS_bm 0x8
+#define HPDP_SYS__IRQ_EN__SYNC_LOSS_bp 3
+#define HPDP_SYS__IRQ_EN__SYNC_LOSS_bw 1
+#define HPDP_SYS__IRQ_EN__SYNC_LOSS_reset 0x0
 
 // reg - hpdp_sys::IRQ_STATUS
 #define HPDP_SYS__IRQ_STATUS__SCENE_DONE_bm 0x1
@@ -59,6 +67,14 @@ extern "C" {
 #define HPDP_SYS__IRQ_STATUS__ERROR_bp 1
 #define HPDP_SYS__IRQ_STATUS__ERROR_bw 1
 #define HPDP_SYS__IRQ_STATUS__ERROR_reset 0x0
+#define HPDP_SYS__IRQ_STATUS__LINK_LOCK_LOSS_bm 0x4
+#define HPDP_SYS__IRQ_STATUS__LINK_LOCK_LOSS_bp 2
+#define HPDP_SYS__IRQ_STATUS__LINK_LOCK_LOSS_bw 1
+#define HPDP_SYS__IRQ_STATUS__LINK_LOCK_LOSS_reset 0x0
+#define HPDP_SYS__IRQ_STATUS__SYNC_LOSS_bm 0x8
+#define HPDP_SYS__IRQ_STATUS__SYNC_LOSS_bp 3
+#define HPDP_SYS__IRQ_STATUS__SYNC_LOSS_bw 1
+#define HPDP_SYS__IRQ_STATUS__SYNC_LOSS_reset 0x0
 
 // reg - hpdp_sys::BUILD_ID
 #define HPDP_SYS__BUILD_ID__BUILD_ID_bm 0xffffffff
@@ -70,6 +86,10 @@ extern "C" {
 #define HPDP_SYS__MODE__CAPTURE_bp 0
 #define HPDP_SYS__MODE__CAPTURE_bw 1
 #define HPDP_SYS__MODE__CAPTURE_reset 0x1
+#define HPDP_SYS__MODE__DOWNLINK_bm 0x2
+#define HPDP_SYS__MODE__DOWNLINK_bp 1
+#define HPDP_SYS__MODE__DOWNLINK_bw 1
+#define HPDP_SYS__MODE__DOWNLINK_reset 0x0
 
 // reg - hpdp_sys::DMA_ROUTE
 #define HPDP_SYS__DMA_ROUTE__TO_TABLE_bm 0x1
@@ -482,6 +502,401 @@ typedef struct __attribute__ ((__packed__)) {
     uint32_t OUT_STALLS;
 } hpdp_cmp_t;
 
+// reg - block_id_BLOCK_5
+#define BLOCK_ID_BLOCK_5__VERSION_bm 0xffff
+#define BLOCK_ID_BLOCK_5__VERSION_bp 0
+#define BLOCK_ID_BLOCK_5__VERSION_bw 16
+#define BLOCK_ID_BLOCK_5__VERSION_reset 0x100
+#define BLOCK_ID_BLOCK_5__BLOCK_bm 0xffff0000
+#define BLOCK_ID_BLOCK_5__BLOCK_bp 16
+#define BLOCK_ID_BLOCK_5__BLOCK_bw 16
+#define BLOCK_ID_BLOCK_5__BLOCK_reset 0x5
+
+// reg - hpdp_pkt::APID
+#define HPDP_PKT__APID__APID_bm 0x7ff
+#define HPDP_PKT__APID__APID_bp 0
+#define HPDP_PKT__APID__APID_bw 11
+#define HPDP_PKT__APID__APID_reset 0x100
+
+// reg - hpdp_pkt::PKT_DATA
+#define HPDP_PKT__PKT_DATA__BYTES_bm 0xfff
+#define HPDP_PKT__PKT_DATA__BYTES_bp 0
+#define HPDP_PKT__PKT_DATA__BYTES_bw 12
+#define HPDP_PKT__PKT_DATA__BYTES_reset 0x800
+
+// reg - counter_desc_aa60e7cd
+#define COUNTER_DESC_AA60E7CD__COUNT_bm 0xffffffff
+#define COUNTER_DESC_AA60E7CD__COUNT_bp 0
+#define COUNTER_DESC_AA60E7CD__COUNT_bw 32
+
+// regfile - hpdp_pkt
+typedef struct __attribute__ ((__packed__)) {
+    uint32_t ID;
+    uint8_t RESERVED_4_3f[0x3c];
+    uint32_t APID;
+    uint32_t PKT_DATA;
+    uint8_t RESERVED_48_7b[0x34];
+    uint32_t CNT_CLEAR;
+    uint32_t PACKETS;
+    uint32_t SCENES;
+    uint32_t TS_OVERFLOWS;
+} hpdp_pkt_t;
+
+// reg - block_id_BLOCK_6
+#define BLOCK_ID_BLOCK_6__VERSION_bm 0xffff
+#define BLOCK_ID_BLOCK_6__VERSION_bp 0
+#define BLOCK_ID_BLOCK_6__VERSION_bw 16
+#define BLOCK_ID_BLOCK_6__VERSION_reset 0x100
+#define BLOCK_ID_BLOCK_6__BLOCK_bm 0xffff0000
+#define BLOCK_ID_BLOCK_6__BLOCK_bp 16
+#define BLOCK_ID_BLOCK_6__BLOCK_bw 16
+#define BLOCK_ID_BLOCK_6__BLOCK_reset 0x6
+
+// reg - hpdp_aos::CTRL
+#define HPDP_AOS__CTRL__IDLE_EN_bm 0x1
+#define HPDP_AOS__CTRL__IDLE_EN_bp 0
+#define HPDP_AOS__CTRL__IDLE_EN_bw 1
+#define HPDP_AOS__CTRL__IDLE_EN_reset 0x1
+
+// reg - hpdp_aos::FRAME_HDR
+#define HPDP_AOS__FRAME_HDR__SCID_bm 0xff
+#define HPDP_AOS__FRAME_HDR__SCID_bp 0
+#define HPDP_AOS__FRAME_HDR__SCID_bw 8
+#define HPDP_AOS__FRAME_HDR__SCID_reset 0x42
+#define HPDP_AOS__FRAME_HDR__VCID_bm 0x3f00
+#define HPDP_AOS__FRAME_HDR__VCID_bp 8
+#define HPDP_AOS__FRAME_HDR__VCID_bw 6
+#define HPDP_AOS__FRAME_HDR__VCID_reset 0x1
+
+// reg - hpdp_aos::FRAME_GAP
+#define HPDP_AOS__FRAME_GAP__CYCLES_bm 0xffffffff
+#define HPDP_AOS__FRAME_GAP__CYCLES_bp 0
+#define HPDP_AOS__FRAME_GAP__CYCLES_bw 32
+#define HPDP_AOS__FRAME_GAP__CYCLES_reset 0x0
+
+// reg - counter_desc_54b7c695
+#define COUNTER_DESC_54B7C695__COUNT_bm 0xffffffff
+#define COUNTER_DESC_54B7C695__COUNT_bp 0
+#define COUNTER_DESC_54B7C695__COUNT_bw 32
+
+// regfile - hpdp_aos
+typedef struct __attribute__ ((__packed__)) {
+    uint32_t ID;
+    uint32_t CTRL;
+    uint8_t RESERVED_8_3f[0x38];
+    uint32_t FRAME_HDR;
+    uint32_t FRAME_GAP;
+    uint8_t RESERVED_48_7b[0x34];
+    uint32_t CNT_CLEAR;
+    uint32_t SCIENCE_FRAMES;
+    uint32_t IDLE_FRAMES;
+    uint32_t CADUS;
+} hpdp_aos_t;
+
+// reg - block_id_BLOCK_7
+#define BLOCK_ID_BLOCK_7__VERSION_bm 0xffff
+#define BLOCK_ID_BLOCK_7__VERSION_bp 0
+#define BLOCK_ID_BLOCK_7__VERSION_bw 16
+#define BLOCK_ID_BLOCK_7__VERSION_reset 0x100
+#define BLOCK_ID_BLOCK_7__BLOCK_bm 0xffff0000
+#define BLOCK_ID_BLOCK_7__BLOCK_bp 16
+#define BLOCK_ID_BLOCK_7__BLOCK_bw 16
+#define BLOCK_ID_BLOCK_7__BLOCK_reset 0x7
+
+// reg - hpdp_ei::CTRL
+#define HPDP_EI__CTRL__MODE_bm 0x3
+#define HPDP_EI__CTRL__MODE_bp 0
+#define HPDP_EI__CTRL__MODE_bw 2
+#define HPDP_EI__CTRL__MODE_reset 0x0
+
+// reg - hpdp_ei::THRESHOLD
+#define HPDP_EI__THRESHOLD__VALUE_bm 0xffffffff
+#define HPDP_EI__THRESHOLD__VALUE_bp 0
+#define HPDP_EI__THRESHOLD__VALUE_bw 32
+#define HPDP_EI__THRESHOLD__VALUE_reset 0x0
+
+// reg - hpdp_ei::SEED
+#define HPDP_EI__SEED__VALUE_bm 0xffffffff
+#define HPDP_EI__SEED__VALUE_bp 0
+#define HPDP_EI__SEED__VALUE_bw 32
+#define HPDP_EI__SEED__VALUE_reset 0x1
+
+// reg - hpdp_ei::SEED_LOAD
+#define HPDP_EI__SEED_LOAD__LOAD_bm 0x1
+#define HPDP_EI__SEED_LOAD__LOAD_bp 0
+#define HPDP_EI__SEED_LOAD__LOAD_bw 1
+#define HPDP_EI__SEED_LOAD__LOAD_reset 0x0
+
+// reg - hpdp_ei::BURST_LEN
+#define HPDP_EI__BURST_LEN__BITS_bm 0xffff
+#define HPDP_EI__BURST_LEN__BITS_bp 0
+#define HPDP_EI__BURST_LEN__BITS_bw 16
+#define HPDP_EI__BURST_LEN__BITS_reset 0x0
+
+// reg - hpdp_ei::PERIOD
+#define HPDP_EI__PERIOD__VALUE_bm 0xffffffff
+#define HPDP_EI__PERIOD__VALUE_bp 0
+#define HPDP_EI__PERIOD__VALUE_bw 32
+#define HPDP_EI__PERIOD__VALUE_reset 0x1
+
+// reg - hpdp_ei::ASM_BITS
+#define HPDP_EI__ASM_BITS__BITS_bm 0x3f
+#define HPDP_EI__ASM_BITS__BITS_bp 0
+#define HPDP_EI__ASM_BITS__BITS_bw 6
+#define HPDP_EI__ASM_BITS__BITS_reset 0x0
+
+// reg - counter_desc_05d52893
+#define COUNTER_DESC_05D52893__COUNT_bm 0xffffffff
+#define COUNTER_DESC_05D52893__COUNT_bp 0
+#define COUNTER_DESC_05D52893__COUNT_bw 32
+
+// regfile - hpdp_ei
+typedef struct __attribute__ ((__packed__)) {
+    uint32_t ID;
+    uint32_t CTRL;
+    uint8_t RESERVED_8_3f[0x38];
+    uint32_t THRESHOLD;
+    uint32_t SEED;
+    uint32_t SEED_LOAD;
+    uint32_t BURST_LEN;
+    uint32_t PERIOD;
+    uint32_t ASM_BITS;
+    uint8_t RESERVED_58_7b[0x24];
+    uint32_t CNT_CLEAR;
+    uint32_t INJECTED_BITS;
+} hpdp_ei_t;
+
+// reg - block_id_BLOCK_8
+#define BLOCK_ID_BLOCK_8__VERSION_bm 0xffff
+#define BLOCK_ID_BLOCK_8__VERSION_bp 0
+#define BLOCK_ID_BLOCK_8__VERSION_bw 16
+#define BLOCK_ID_BLOCK_8__VERSION_reset 0x100
+#define BLOCK_ID_BLOCK_8__BLOCK_bm 0xffff0000
+#define BLOCK_ID_BLOCK_8__BLOCK_bp 16
+#define BLOCK_ID_BLOCK_8__BLOCK_bw 16
+#define BLOCK_ID_BLOCK_8__BLOCK_reset 0x8
+
+// reg - hpdp_lnk::CTRL
+#define HPDP_LNK__CTRL__TX_ENABLE_bm 0x1
+#define HPDP_LNK__CTRL__TX_ENABLE_bp 0
+#define HPDP_LNK__CTRL__TX_ENABLE_bw 1
+#define HPDP_LNK__CTRL__TX_ENABLE_reset 0x1
+#define HPDP_LNK__CTRL__GT_RESET_bm 0x2
+#define HPDP_LNK__CTRL__GT_RESET_bp 1
+#define HPDP_LNK__CTRL__GT_RESET_bw 1
+#define HPDP_LNK__CTRL__GT_RESET_reset 0x0
+#define HPDP_LNK__CTRL__RX_RESET_bm 0x4
+#define HPDP_LNK__CTRL__RX_RESET_bp 2
+#define HPDP_LNK__CTRL__RX_RESET_bw 1
+#define HPDP_LNK__CTRL__RX_RESET_reset 0x0
+#define HPDP_LNK__CTRL__FABRIC_LOOPBACK_bm 0x8
+#define HPDP_LNK__CTRL__FABRIC_LOOPBACK_bp 3
+#define HPDP_LNK__CTRL__FABRIC_LOOPBACK_bw 1
+#define HPDP_LNK__CTRL__FABRIC_LOOPBACK_reset 0x0
+#define HPDP_LNK__CTRL__RX_SEL_bm 0x10
+#define HPDP_LNK__CTRL__RX_SEL_bp 4
+#define HPDP_LNK__CTRL__RX_SEL_bw 1
+#define HPDP_LNK__CTRL__RX_SEL_reset 0x0
+#define HPDP_LNK__CTRL__GT_LOOPBACK_bm 0x700
+#define HPDP_LNK__CTRL__GT_LOOPBACK_bp 8
+#define HPDP_LNK__CTRL__GT_LOOPBACK_bw 3
+#define HPDP_LNK__CTRL__GT_LOOPBACK_reset 0x0
+#define HPDP_LNK__CTRL__TX_POLARITY_bm 0x1000
+#define HPDP_LNK__CTRL__TX_POLARITY_bp 12
+#define HPDP_LNK__CTRL__TX_POLARITY_bw 1
+#define HPDP_LNK__CTRL__TX_POLARITY_reset 0x0
+#define HPDP_LNK__CTRL__RX_POLARITY_bm 0x2000
+#define HPDP_LNK__CTRL__RX_POLARITY_bp 13
+#define HPDP_LNK__CTRL__RX_POLARITY_bw 1
+#define HPDP_LNK__CTRL__RX_POLARITY_reset 0x0
+#define HPDP_LNK__CTRL__PRBS_SEL_bm 0xf0000
+#define HPDP_LNK__CTRL__PRBS_SEL_bp 16
+#define HPDP_LNK__CTRL__PRBS_SEL_bw 4
+#define HPDP_LNK__CTRL__PRBS_SEL_reset 0x0
+
+// reg - hpdp_lnk::STATUS
+#define HPDP_LNK__STATUS__TX_READY_bm 0x1
+#define HPDP_LNK__STATUS__TX_READY_bp 0
+#define HPDP_LNK__STATUS__TX_READY_bw 1
+#define HPDP_LNK__STATUS__RX_READY_bm 0x2
+#define HPDP_LNK__STATUS__RX_READY_bp 1
+#define HPDP_LNK__STATUS__RX_READY_bw 1
+#define HPDP_LNK__STATUS__ALIGNED_bm 0x4
+#define HPDP_LNK__STATUS__ALIGNED_bp 2
+#define HPDP_LNK__STATUS__ALIGNED_bw 1
+#define HPDP_LNK__STATUS__LOCKED_bm 0x8
+#define HPDP_LNK__STATUS__LOCKED_bp 3
+#define HPDP_LNK__STATUS__LOCKED_bw 1
+#define HPDP_LNK__STATUS__PRBS_LOCKED_bm 0x10
+#define HPDP_LNK__STATUS__PRBS_LOCKED_bp 4
+#define HPDP_LNK__STATUS__PRBS_LOCKED_bw 1
+#define HPDP_LNK__STATUS__CPLL_LOCKED_bm 0x300
+#define HPDP_LNK__STATUS__CPLL_LOCKED_bp 8
+#define HPDP_LNK__STATUS__CPLL_LOCKED_bw 2
+#define HPDP_LNK__STATUS__POWERGOOD_bm 0xc00
+#define HPDP_LNK__STATUS__POWERGOOD_bp 10
+#define HPDP_LNK__STATUS__POWERGOOD_bw 2
+
+// reg - hpdp_lnk::CC_INTERVAL
+#define HPDP_LNK__CC_INTERVAL__WORDS_bm 0xffff
+#define HPDP_LNK__CC_INTERVAL__WORDS_bp 0
+#define HPDP_LNK__CC_INTERVAL__WORDS_bw 16
+#define HPDP_LNK__CC_INTERVAL__WORDS_reset 0x800
+
+// reg - hpdp_lnk::PRBS_INJECT
+#define HPDP_LNK__PRBS_INJECT__INJECT_bm 0x1
+#define HPDP_LNK__PRBS_INJECT__INJECT_bp 0
+#define HPDP_LNK__PRBS_INJECT__INJECT_bw 1
+#define HPDP_LNK__PRBS_INJECT__INJECT_reset 0x0
+
+// reg - cnt_clear_desc_7287de1c
+#define CNT_CLEAR_DESC_7287DE1C__CLEAR_bm 0x1
+#define CNT_CLEAR_DESC_7287DE1C__CLEAR_bp 0
+#define CNT_CLEAR_DESC_7287DE1C__CLEAR_bw 1
+#define CNT_CLEAR_DESC_7287DE1C__CLEAR_reset 0x0
+
+// reg - counter_desc_99cd497d
+#define COUNTER_DESC_99CD497D__COUNT_bm 0xffffffff
+#define COUNTER_DESC_99CD497D__COUNT_bp 0
+#define COUNTER_DESC_99CD497D__COUNT_bw 32
+
+// reg - counter_desc_56957d2a
+#define COUNTER_DESC_56957D2A__COUNT_bm 0xffffffff
+#define COUNTER_DESC_56957D2A__COUNT_bp 0
+#define COUNTER_DESC_56957D2A__COUNT_bw 32
+
+// reg - counter_desc_69ea36a9
+#define COUNTER_DESC_69EA36A9__COUNT_bm 0xffffffff
+#define COUNTER_DESC_69EA36A9__COUNT_bp 0
+#define COUNTER_DESC_69EA36A9__COUNT_bw 32
+
+// reg - counter_desc_36ac81ed
+#define COUNTER_DESC_36AC81ED__COUNT_bm 0xffffffff
+#define COUNTER_DESC_36AC81ED__COUNT_bp 0
+#define COUNTER_DESC_36AC81ED__COUNT_bw 32
+
+// reg - counter_desc_b7b93901
+#define COUNTER_DESC_B7B93901__COUNT_bm 0xffffffff
+#define COUNTER_DESC_B7B93901__COUNT_bp 0
+#define COUNTER_DESC_B7B93901__COUNT_bw 32
+
+// reg - counter_desc_6f55382d
+#define COUNTER_DESC_6F55382D__COUNT_bm 0xffffffff
+#define COUNTER_DESC_6F55382D__COUNT_bp 0
+#define COUNTER_DESC_6F55382D__COUNT_bw 32
+
+// reg - counter_desc_e2ee100a
+#define COUNTER_DESC_E2EE100A__COUNT_bm 0xffffffff
+#define COUNTER_DESC_E2EE100A__COUNT_bp 0
+#define COUNTER_DESC_E2EE100A__COUNT_bw 32
+
+// reg - counter_desc_19cf7aaf
+#define COUNTER_DESC_19CF7AAF__COUNT_bm 0xffffffff
+#define COUNTER_DESC_19CF7AAF__COUNT_bp 0
+#define COUNTER_DESC_19CF7AAF__COUNT_bw 32
+
+// reg - hpdp_lnk::PRBS_WORDS_HI
+#define HPDP_LNK__PRBS_WORDS_HI__COUNT_bm 0xffff
+#define HPDP_LNK__PRBS_WORDS_HI__COUNT_bp 0
+#define HPDP_LNK__PRBS_WORDS_HI__COUNT_bw 16
+
+// regfile - hpdp_lnk
+typedef struct __attribute__ ((__packed__)) {
+    uint32_t ID;
+    uint32_t CTRL;
+    uint32_t STATUS;
+    uint8_t RESERVED_c_3f[0x34];
+    uint32_t CC_INTERVAL;
+    uint32_t PRBS_INJECT;
+    uint8_t RESERVED_48_7b[0x34];
+    uint32_t CNT_CLEAR;
+    uint32_t CODE_ERRORS;
+    uint32_t LOCK_LOSSES;
+    uint32_t RX_WORDS;
+    uint32_t TX_DATA_WORDS;
+    uint32_t TX_IDLE_WORDS;
+    uint32_t RX_OVERFLOWS;
+    uint32_t CLK_CORRECTIONS;
+    uint32_t BUF_ERRORS;
+    uint32_t PRBS_ERRORS;
+    uint32_t PRBS_WORDS_LO;
+    uint32_t PRBS_WORDS_HI;
+} hpdp_lnk_t;
+
+// reg - block_id_BLOCK_9
+#define BLOCK_ID_BLOCK_9__VERSION_bm 0xffff
+#define BLOCK_ID_BLOCK_9__VERSION_bp 0
+#define BLOCK_ID_BLOCK_9__VERSION_bw 16
+#define BLOCK_ID_BLOCK_9__VERSION_reset 0x100
+#define BLOCK_ID_BLOCK_9__BLOCK_bm 0xffff0000
+#define BLOCK_ID_BLOCK_9__BLOCK_bp 16
+#define BLOCK_ID_BLOCK_9__BLOCK_bw 16
+#define BLOCK_ID_BLOCK_9__BLOCK_reset 0x9
+
+// reg - hpdp_gr::CTRL
+#define HPDP_GR__CTRL__CAPTURE_bm 0x1
+#define HPDP_GR__CTRL__CAPTURE_bp 0
+#define HPDP_GR__CTRL__CAPTURE_bw 1
+#define HPDP_GR__CTRL__CAPTURE_reset 0x0
+#define HPDP_GR__CTRL__SKIP_IDLE_bm 0x2
+#define HPDP_GR__CTRL__SKIP_IDLE_bp 1
+#define HPDP_GR__CTRL__SKIP_IDLE_bw 1
+#define HPDP_GR__CTRL__SKIP_IDLE_reset 0x1
+
+// reg - hpdp_gr::STATUS
+#define HPDP_GR__STATUS__SYNC_STATE_bm 0x3
+#define HPDP_GR__STATUS__SYNC_STATE_bp 0
+#define HPDP_GR__STATUS__SYNC_STATE_bw 2
+
+// reg - hpdp_gr::SYNC
+#define HPDP_GR__SYNC__ASM_TOL_bm 0x3f
+#define HPDP_GR__SYNC__ASM_TOL_bp 0
+#define HPDP_GR__SYNC__ASM_TOL_bw 6
+#define HPDP_GR__SYNC__ASM_TOL_reset 0x2
+#define HPDP_GR__SYNC__FLYWHEEL_bm 0xf00
+#define HPDP_GR__SYNC__FLYWHEEL_bp 8
+#define HPDP_GR__SYNC__FLYWHEEL_bw 4
+#define HPDP_GR__SYNC__FLYWHEEL_reset 0x3
+
+// reg - hpdp_gr::XFER
+#define HPDP_GR__XFER__RECORDS_bm 0xffff
+#define HPDP_GR__XFER__RECORDS_bp 0
+#define HPDP_GR__XFER__RECORDS_bw 16
+#define HPDP_GR__XFER__RECORDS_reset 0x10
+
+// reg - counter_desc_cb8dda5a
+#define COUNTER_DESC_CB8DDA5A__COUNT_bm 0xffffffff
+#define COUNTER_DESC_CB8DDA5A__COUNT_bp 0
+#define COUNTER_DESC_CB8DDA5A__COUNT_bw 32
+
+// reg - counter_desc_f6f07ab0
+#define COUNTER_DESC_F6F07AB0__COUNT_bm 0xffffffff
+#define COUNTER_DESC_F6F07AB0__COUNT_bp 0
+#define COUNTER_DESC_F6F07AB0__COUNT_bw 32
+
+// reg - counter_desc_a19adcd6
+#define COUNTER_DESC_A19ADCD6__COUNT_bm 0xffffffff
+#define COUNTER_DESC_A19ADCD6__COUNT_bp 0
+#define COUNTER_DESC_A19ADCD6__COUNT_bw 32
+
+// regfile - hpdp_gr
+typedef struct __attribute__ ((__packed__)) {
+    uint32_t ID;
+    uint32_t CTRL;
+    uint32_t STATUS;
+    uint8_t RESERVED_c_3f[0x34];
+    uint32_t SYNC;
+    uint32_t XFER;
+    uint8_t RESERVED_48_7b[0x34];
+    uint32_t CNT_CLEAR;
+    uint32_t CADUS;
+    uint32_t SYNC_LOSSES;
+    uint32_t ASM_BIT_ERRORS;
+    uint32_t DROPPED_RECORDS;
+    uint32_t SKIPPED_IDLE;
+    uint32_t CAPTURED;
+} hpdp_gr_t;
+
 // addrmap - hpdp_regs
 typedef struct __attribute__ ((__packed__)) {
     hpdp_sys_t sys;
@@ -493,10 +908,20 @@ typedef struct __attribute__ ((__packed__)) {
     hpdp_ct_t ct;
     uint8_t RESERVED_3008c_3ffff[0xff74];
     hpdp_cmp_t cmp;
+    uint8_t RESERVED_40098_4ffff[0xff68];
+    hpdp_pkt_t pkt;
+    uint8_t RESERVED_5008c_5ffff[0xff74];
+    hpdp_aos_t aos;
+    uint8_t RESERVED_6008c_6ffff[0xff74];
+    hpdp_ei_t ei;
+    uint8_t RESERVED_70084_7ffff[0xff7c];
+    hpdp_lnk_t lnk;
+    uint8_t RESERVED_800ac_8ffff[0xff54];
+    hpdp_gr_t gr;
 } hpdp_regs_t;
 
 
-static_assert(sizeof(hpdp_regs_t) == 0x40098, "Packing error");
+static_assert(sizeof(hpdp_regs_t) == 0x90098, "Packing error");
 
 #ifdef __cplusplus
 }

@@ -22,6 +22,7 @@ module aos_framer import downlink_pkg::*; (
     input  logic [5:0]  vcid,
     input  logic        idle_en,
     input  logic [31:0] frame_gap,
+    input  logic        cnt_clr,                // clear the frame counters
 
     input  logic [7:0]  s_axis_tdata,
     input  logic [1:0]  s_axis_tuser,
@@ -201,6 +202,10 @@ module aos_framer import downlink_pkg::*; (
                         idle_frames <= idle_frames + 32'd1;
                     end
                 end
+            end
+            if (cnt_clr) begin
+                science_frames <= '0;
+                idle_frames    <= '0;
             end
         end
     end

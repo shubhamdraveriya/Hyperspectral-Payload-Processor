@@ -9,6 +9,7 @@ module link_tx (
     input  logic        clk,
     input  logic        rst,
     input  logic [15:0] cc_interval,            // words, >= 2
+    input  logic        cnt_clr,                // clear the word counters
 
     input  logic [15:0] s_data,                 // FWFT FIFO: data valid when !s_empty
     input  logic        s_empty,
@@ -44,6 +45,10 @@ module link_tx (
             txcharisk  <= 2'b01;
             since_cc   <= '0;
             idle_words <= idle_words + 32'd1;
+        end
+        if (!rst && cnt_clr) begin
+            data_words <= '0;
+            idle_words <= '0;
         end
     end
 endmodule

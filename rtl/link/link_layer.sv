@@ -15,6 +15,7 @@ module link_layer (
     input  logic        clk_link,
     input  logic        rst_link,
     input  logic [15:0] cc_interval,            // clk_link domain, static
+    input  logic        cnt_clr,                // clk_link domain: clear the counters
 
     input  logic [7:0]  s_axis_tdata,           // CADU bytes to send
     input  logic        s_axis_tvalid,
@@ -79,7 +80,7 @@ module link_layer (
     );
 
     link_tx u_tx (
-        .clk (clk_link), .rst (rst_link), .cc_interval,
+        .clk (clk_link), .rst (rst_link), .cc_interval, .cnt_clr,
         .s_data (tf_dout), .s_empty (tf_empty || tf_rd_busy), .s_rd (tf_rd),
         .txdata, .txcharisk,
         .data_words (tx_data_words), .idle_words (tx_idle_words)
@@ -94,13 +95,13 @@ module link_layer (
 
     link_rx u_rx (
         .clk (clk_link), .rst (rst_link),
-        .rxdata, .rxcharisk, .rxdisperr, .rxnotintable, .rxbyteisaligned,
+        .rxdata, .rxcharisk, .rxdisperr, .rxnotintable, .rxbyteisaligned, .cnt_clr,
         .m_data (rx_data), .m_wr (rx_wr),
         .locked, .code_errors, .lock_losses, .data_words (rx_words)
     );
 
     always_ff @(posedge clk_link) begin
-        if (rst_link)
+        if (rst_link || cnt_clr)
             rx_overflows <= '0;
         else if (rx_wr && (rf_full || rf_wr_busy))
             rx_overflows <= rx_overflows + 32'd1;

@@ -24,6 +24,7 @@ module error_injector (
     input  logic [15:0] burst_len,
     input  logic [31:0] period,                 // >= 1
     input  logic [5:0]  asm_bits,               // 0..32
+    input  logic        cnt_clr,                // clear injected_bits
 
     input  logic [7:0]  s_axis_tdata,
     input  logic        s_axis_tuser,
@@ -131,6 +132,7 @@ module error_injector (
                 injected_bits <= (injected_bits > 32'hFFFF_FFF7) ? 32'hFFFF_FFFF
                                                                   : injected_bits + 32'(flips);
             end
+            if (cnt_clr) injected_bits <= '0;
         end
     end
 endmodule

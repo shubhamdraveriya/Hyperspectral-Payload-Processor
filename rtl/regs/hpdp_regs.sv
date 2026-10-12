@@ -7,7 +7,7 @@ module hpdp_regs (
 
         output logic s_axil_awready,
         input wire s_axil_awvalid,
-        input wire [18:0] s_axil_awaddr,
+        input wire [19:0] s_axil_awaddr,
         input wire [2:0] s_axil_awprot,
         output logic s_axil_wready,
         input wire s_axil_wvalid,
@@ -18,7 +18,7 @@ module hpdp_regs (
         output logic [1:0] s_axil_bresp,
         output logic s_axil_arready,
         input wire s_axil_arvalid,
-        input wire [18:0] s_axil_araddr,
+        input wire [19:0] s_axil_araddr,
         input wire [2:0] s_axil_arprot,
         input wire s_axil_rready,
         output logic s_axil_rvalid,
@@ -34,7 +34,7 @@ module hpdp_regs (
     //--------------------------------------------------------------------------
     logic cpuif_req;
     logic cpuif_req_is_wr;
-    logic [18:0] cpuif_addr;
+    logic [19:0] cpuif_addr;
     logic [31:0] cpuif_wr_data;
     logic [31:0] cpuif_wr_biten;
     logic cpuif_req_stall_wr;
@@ -51,10 +51,10 @@ module hpdp_regs (
     logic [1:0] axil_n_in_flight;
     logic axil_prev_was_rd;
     logic axil_arvalid;
-    logic [18:0] axil_araddr;
+    logic [19:0] axil_araddr;
     logic axil_ar_accept;
     logic axil_awvalid;
-    logic [18:0] axil_awaddr;
+    logic [19:0] axil_awaddr;
     logic axil_wvalid;
     logic [31:0] axil_wdata;
     logic [3:0] axil_wstrb;
@@ -132,17 +132,17 @@ module hpdp_regs (
             if(axil_arvalid && !axil_prev_was_rd) begin
                 cpuif_req = '1;
                 cpuif_req_is_wr = '0;
-                cpuif_addr = {axil_araddr[18:2], 2'b0};
+                cpuif_addr = {axil_araddr[19:2], 2'b0};
                 if(!cpuif_req_stall_rd) axil_ar_accept = '1;
             end else if(axil_awvalid && axil_wvalid) begin
                 cpuif_req = '1;
                 cpuif_req_is_wr = '1;
-                cpuif_addr = {axil_awaddr[18:2], 2'b0};
+                cpuif_addr = {axil_awaddr[19:2], 2'b0};
                 if(!cpuif_req_stall_wr) axil_aw_accept = '1;
             end else if(axil_arvalid) begin
                 cpuif_req = '1;
                 cpuif_req_is_wr = '0;
-                cpuif_addr = {axil_araddr[18:2], 2'b0};
+                cpuif_addr = {axil_araddr[19:2], 2'b0};
                 if(!cpuif_req_stall_rd) axil_ar_accept = '1;
             end
         end
@@ -316,10 +316,74 @@ module hpdp_regs (
             logic LAST_CYCLES;
             logic OUT_STALLS;
         } cmp;
+        struct {
+            logic ID;
+            logic APID;
+            logic PKT_DATA;
+            logic CNT_CLEAR;
+            logic PACKETS;
+            logic SCENES;
+            logic TS_OVERFLOWS;
+        } pkt;
+        struct {
+            logic ID;
+            logic CTRL;
+            logic FRAME_HDR;
+            logic FRAME_GAP;
+            logic CNT_CLEAR;
+            logic SCIENCE_FRAMES;
+            logic IDLE_FRAMES;
+            logic CADUS;
+        } aos;
+        struct {
+            logic ID;
+            logic CTRL;
+            logic THRESHOLD;
+            logic SEED;
+            logic SEED_LOAD;
+            logic BURST_LEN;
+            logic PERIOD;
+            logic ASM_BITS;
+            logic CNT_CLEAR;
+            logic INJECTED_BITS;
+        } ei;
+        struct {
+            logic ID;
+            logic CTRL;
+            logic STATUS;
+            logic CC_INTERVAL;
+            logic PRBS_INJECT;
+            logic CNT_CLEAR;
+            logic CODE_ERRORS;
+            logic LOCK_LOSSES;
+            logic RX_WORDS;
+            logic TX_DATA_WORDS;
+            logic TX_IDLE_WORDS;
+            logic RX_OVERFLOWS;
+            logic CLK_CORRECTIONS;
+            logic BUF_ERRORS;
+            logic PRBS_ERRORS;
+            logic PRBS_WORDS_LO;
+            logic PRBS_WORDS_HI;
+        } lnk;
+        struct {
+            logic ID;
+            logic CTRL;
+            logic STATUS;
+            logic SYNC;
+            logic XFER;
+            logic CNT_CLEAR;
+            logic CADUS;
+            logic SYNC_LOSSES;
+            logic ASM_BIT_ERRORS;
+            logic DROPPED_RECORDS;
+            logic SKIPPED_IDLE;
+            logic CAPTURED;
+        } gr;
     } decoded_reg_strb_t;
     decoded_reg_strb_t decoded_reg_strb;
     logic decoded_err;
-    logic [18:0] decoded_addr;
+    logic [19:0] decoded_addr;
     logic decoded_req;
     logic decoded_req_is_wr;
     logic [31:0] decoded_wr_data;
@@ -330,62 +394,116 @@ module hpdp_regs (
         automatic logic is_valid_rw;
         is_valid_addr = '1; // No valid address check
         is_valid_rw = '1; // No valid RW check
-        decoded_reg_strb.sys.ID = cpuif_req_masked & (cpuif_addr == 19'h0) & !cpuif_req_is_wr;
-        decoded_reg_strb.sys.CTRL = cpuif_req_masked & (cpuif_addr == 19'h4);
-        decoded_reg_strb.sys.STATUS = cpuif_req_masked & (cpuif_addr == 19'h8) & !cpuif_req_is_wr;
-        decoded_reg_strb.sys.IRQ_EN = cpuif_req_masked & (cpuif_addr == 19'hc);
-        decoded_reg_strb.sys.IRQ_STATUS = cpuif_req_masked & (cpuif_addr == 19'h10);
-        decoded_reg_strb.sys.BUILD_ID = cpuif_req_masked & (cpuif_addr == 19'h40) & !cpuif_req_is_wr;
-        decoded_reg_strb.sys.MODE = cpuif_req_masked & (cpuif_addr == 19'h44);
-        decoded_reg_strb.sys.DMA_ROUTE = cpuif_req_masked & (cpuif_addr == 19'h48);
-        decoded_reg_strb.sys.NX = cpuif_req_masked & (cpuif_addr == 19'h50);
-        decoded_reg_strb.sys.NY = cpuif_req_masked & (cpuif_addr == 19'h54);
-        decoded_reg_strb.sys.NZ = cpuif_req_masked & (cpuif_addr == 19'h58);
-        decoded_reg_strb.sys.DEPTH = cpuif_req_masked & (cpuif_addr == 19'h5c);
-        decoded_reg_strb.se.ID = cpuif_req_masked & (cpuif_addr == 19'h10000) & !cpuif_req_is_wr;
-        decoded_reg_strb.se.CTRL = cpuif_req_masked & (cpuif_addr == 19'h10004);
-        decoded_reg_strb.se.STATUS = cpuif_req_masked & (cpuif_addr == 19'h10008) & !cpuif_req_is_wr;
-        decoded_reg_strb.se.LINE_PERIOD = cpuif_req_masked & (cpuif_addr == 19'h10040);
-        decoded_reg_strb.se.LINES = cpuif_req_masked & (cpuif_addr == 19'h10044);
-        decoded_reg_strb.se.SOURCE = cpuif_req_masked & (cpuif_addr == 19'h10048);
-        decoded_reg_strb.se.CNT_CLEAR = cpuif_req_masked & (cpuif_addr == 19'h1007c);
-        decoded_reg_strb.se.LINE_TIMESTAMP = cpuif_req_masked & (cpuif_addr == 19'h10080) & !cpuif_req_is_wr;
-        decoded_reg_strb.se.SCENE_TIMESTAMP = cpuif_req_masked & (cpuif_addr == 19'h10084) & !cpuif_req_is_wr;
-        decoded_reg_strb.se.LINES_EMITTED = cpuif_req_masked & (cpuif_addr == 19'h10088) & !cpuif_req_is_wr;
-        decoded_reg_strb.se.SCENES_STARTED = cpuif_req_masked & (cpuif_addr == 19'h1008c) & !cpuif_req_is_wr;
-        decoded_reg_strb.se.UNDERRUN_SAMPLES = cpuif_req_masked & (cpuif_addr == 19'h10090) & !cpuif_req_is_wr;
-        decoded_reg_strb.se.PERIOD_OVERRUNS = cpuif_req_masked & (cpuif_addr == 19'h10094) & !cpuif_req_is_wr;
-        decoded_reg_strb.se.DROPPED_SAMPLES = cpuif_req_masked & (cpuif_addr == 19'h10098) & !cpuif_req_is_wr;
-        decoded_reg_strb.rc.ID = cpuif_req_masked & (cpuif_addr == 19'h20000) & !cpuif_req_is_wr;
-        decoded_reg_strb.rc.CTRL = cpuif_req_masked & (cpuif_addr == 19'h20004);
-        decoded_reg_strb.rc.STATUS = cpuif_req_masked & (cpuif_addr == 19'h20008) & !cpuif_req_is_wr;
-        decoded_reg_strb.rc.SCENE_CLAMPED = cpuif_req_masked & (cpuif_addr == 19'h20040) & !cpuif_req_is_wr;
-        decoded_reg_strb.rc.SCENE_REPLACED = cpuif_req_masked & (cpuif_addr == 19'h20044) & !cpuif_req_is_wr;
-        decoded_reg_strb.rc.TBL_WORDS = cpuif_req_masked & (cpuif_addr == 19'h20048) & !cpuif_req_is_wr;
-        decoded_reg_strb.rc.TBL_ADDR = cpuif_req_masked & (cpuif_addr == 19'h20050);
-        decoded_reg_strb.rc.TBL_WDATA_LO = cpuif_req_masked & (cpuif_addr == 19'h20054);
-        decoded_reg_strb.rc.TBL_WDATA_HI = cpuif_req_masked & (cpuif_addr == 19'h20058);
-        decoded_reg_strb.rc.TBL_CMD = cpuif_req_masked & (cpuif_addr == 19'h2005c);
-        decoded_reg_strb.rc.TBL_RDATA_LO = cpuif_req_masked & (cpuif_addr == 19'h20060) & !cpuif_req_is_wr;
-        decoded_reg_strb.rc.TBL_RDATA_HI = cpuif_req_masked & (cpuif_addr == 19'h20064) & !cpuif_req_is_wr;
-        decoded_reg_strb.ct.ID = cpuif_req_masked & (cpuif_addr == 19'h30000) & !cpuif_req_is_wr;
-        decoded_reg_strb.ct.CNT_CLEAR = cpuif_req_masked & (cpuif_addr == 19'h3007c);
-        decoded_reg_strb.ct.LINES_OUT = cpuif_req_masked & (cpuif_addr == 19'h30080) & !cpuif_req_is_wr;
-        decoded_reg_strb.ct.DROPPED_LINES = cpuif_req_masked & (cpuif_addr == 19'h30084) & !cpuif_req_is_wr;
-        decoded_reg_strb.ct.UNFILLED_LINES = cpuif_req_masked & (cpuif_addr == 19'h30088) & !cpuif_req_is_wr;
-        decoded_reg_strb.cmp.ID = cpuif_req_masked & (cpuif_addr == 19'h40000) & !cpuif_req_is_wr;
-        decoded_reg_strb.cmp.STATUS = cpuif_req_masked & (cpuif_addr == 19'h40008) & !cpuif_req_is_wr;
-        decoded_reg_strb.cmp.PRED = cpuif_req_masked & (cpuif_addr == 19'h40040);
-        decoded_reg_strb.cmp.WUPD = cpuif_req_masked & (cpuif_addr == 19'h40044);
-        decoded_reg_strb.cmp.CODER = cpuif_req_masked & (cpuif_addr == 19'h40048);
-        decoded_reg_strb.cmp.OPTS = cpuif_req_masked & (cpuif_addr == 19'h4004c);
-        decoded_reg_strb.cmp.CNT_CLEAR = cpuif_req_masked & (cpuif_addr == 19'h4007c);
-        decoded_reg_strb.cmp.SCENES_DONE = cpuif_req_masked & (cpuif_addr == 19'h40080) & !cpuif_req_is_wr;
-        decoded_reg_strb.cmp.SAMPLES_IN = cpuif_req_masked & (cpuif_addr == 19'h40084) & !cpuif_req_is_wr;
-        decoded_reg_strb.cmp.BYTES_OUT = cpuif_req_masked & (cpuif_addr == 19'h40088) & !cpuif_req_is_wr;
-        decoded_reg_strb.cmp.LAST_BYTES = cpuif_req_masked & (cpuif_addr == 19'h4008c) & !cpuif_req_is_wr;
-        decoded_reg_strb.cmp.LAST_CYCLES = cpuif_req_masked & (cpuif_addr == 19'h40090) & !cpuif_req_is_wr;
-        decoded_reg_strb.cmp.OUT_STALLS = cpuif_req_masked & (cpuif_addr == 19'h40094) & !cpuif_req_is_wr;
+        decoded_reg_strb.sys.ID = cpuif_req_masked & (cpuif_addr == 20'h0) & !cpuif_req_is_wr;
+        decoded_reg_strb.sys.CTRL = cpuif_req_masked & (cpuif_addr == 20'h4);
+        decoded_reg_strb.sys.STATUS = cpuif_req_masked & (cpuif_addr == 20'h8) & !cpuif_req_is_wr;
+        decoded_reg_strb.sys.IRQ_EN = cpuif_req_masked & (cpuif_addr == 20'hc);
+        decoded_reg_strb.sys.IRQ_STATUS = cpuif_req_masked & (cpuif_addr == 20'h10);
+        decoded_reg_strb.sys.BUILD_ID = cpuif_req_masked & (cpuif_addr == 20'h40) & !cpuif_req_is_wr;
+        decoded_reg_strb.sys.MODE = cpuif_req_masked & (cpuif_addr == 20'h44);
+        decoded_reg_strb.sys.DMA_ROUTE = cpuif_req_masked & (cpuif_addr == 20'h48);
+        decoded_reg_strb.sys.NX = cpuif_req_masked & (cpuif_addr == 20'h50);
+        decoded_reg_strb.sys.NY = cpuif_req_masked & (cpuif_addr == 20'h54);
+        decoded_reg_strb.sys.NZ = cpuif_req_masked & (cpuif_addr == 20'h58);
+        decoded_reg_strb.sys.DEPTH = cpuif_req_masked & (cpuif_addr == 20'h5c);
+        decoded_reg_strb.se.ID = cpuif_req_masked & (cpuif_addr == 20'h10000) & !cpuif_req_is_wr;
+        decoded_reg_strb.se.CTRL = cpuif_req_masked & (cpuif_addr == 20'h10004);
+        decoded_reg_strb.se.STATUS = cpuif_req_masked & (cpuif_addr == 20'h10008) & !cpuif_req_is_wr;
+        decoded_reg_strb.se.LINE_PERIOD = cpuif_req_masked & (cpuif_addr == 20'h10040);
+        decoded_reg_strb.se.LINES = cpuif_req_masked & (cpuif_addr == 20'h10044);
+        decoded_reg_strb.se.SOURCE = cpuif_req_masked & (cpuif_addr == 20'h10048);
+        decoded_reg_strb.se.CNT_CLEAR = cpuif_req_masked & (cpuif_addr == 20'h1007c);
+        decoded_reg_strb.se.LINE_TIMESTAMP = cpuif_req_masked & (cpuif_addr == 20'h10080) & !cpuif_req_is_wr;
+        decoded_reg_strb.se.SCENE_TIMESTAMP = cpuif_req_masked & (cpuif_addr == 20'h10084) & !cpuif_req_is_wr;
+        decoded_reg_strb.se.LINES_EMITTED = cpuif_req_masked & (cpuif_addr == 20'h10088) & !cpuif_req_is_wr;
+        decoded_reg_strb.se.SCENES_STARTED = cpuif_req_masked & (cpuif_addr == 20'h1008c) & !cpuif_req_is_wr;
+        decoded_reg_strb.se.UNDERRUN_SAMPLES = cpuif_req_masked & (cpuif_addr == 20'h10090) & !cpuif_req_is_wr;
+        decoded_reg_strb.se.PERIOD_OVERRUNS = cpuif_req_masked & (cpuif_addr == 20'h10094) & !cpuif_req_is_wr;
+        decoded_reg_strb.se.DROPPED_SAMPLES = cpuif_req_masked & (cpuif_addr == 20'h10098) & !cpuif_req_is_wr;
+        decoded_reg_strb.rc.ID = cpuif_req_masked & (cpuif_addr == 20'h20000) & !cpuif_req_is_wr;
+        decoded_reg_strb.rc.CTRL = cpuif_req_masked & (cpuif_addr == 20'h20004);
+        decoded_reg_strb.rc.STATUS = cpuif_req_masked & (cpuif_addr == 20'h20008) & !cpuif_req_is_wr;
+        decoded_reg_strb.rc.SCENE_CLAMPED = cpuif_req_masked & (cpuif_addr == 20'h20040) & !cpuif_req_is_wr;
+        decoded_reg_strb.rc.SCENE_REPLACED = cpuif_req_masked & (cpuif_addr == 20'h20044) & !cpuif_req_is_wr;
+        decoded_reg_strb.rc.TBL_WORDS = cpuif_req_masked & (cpuif_addr == 20'h20048) & !cpuif_req_is_wr;
+        decoded_reg_strb.rc.TBL_ADDR = cpuif_req_masked & (cpuif_addr == 20'h20050);
+        decoded_reg_strb.rc.TBL_WDATA_LO = cpuif_req_masked & (cpuif_addr == 20'h20054);
+        decoded_reg_strb.rc.TBL_WDATA_HI = cpuif_req_masked & (cpuif_addr == 20'h20058);
+        decoded_reg_strb.rc.TBL_CMD = cpuif_req_masked & (cpuif_addr == 20'h2005c);
+        decoded_reg_strb.rc.TBL_RDATA_LO = cpuif_req_masked & (cpuif_addr == 20'h20060) & !cpuif_req_is_wr;
+        decoded_reg_strb.rc.TBL_RDATA_HI = cpuif_req_masked & (cpuif_addr == 20'h20064) & !cpuif_req_is_wr;
+        decoded_reg_strb.ct.ID = cpuif_req_masked & (cpuif_addr == 20'h30000) & !cpuif_req_is_wr;
+        decoded_reg_strb.ct.CNT_CLEAR = cpuif_req_masked & (cpuif_addr == 20'h3007c);
+        decoded_reg_strb.ct.LINES_OUT = cpuif_req_masked & (cpuif_addr == 20'h30080) & !cpuif_req_is_wr;
+        decoded_reg_strb.ct.DROPPED_LINES = cpuif_req_masked & (cpuif_addr == 20'h30084) & !cpuif_req_is_wr;
+        decoded_reg_strb.ct.UNFILLED_LINES = cpuif_req_masked & (cpuif_addr == 20'h30088) & !cpuif_req_is_wr;
+        decoded_reg_strb.cmp.ID = cpuif_req_masked & (cpuif_addr == 20'h40000) & !cpuif_req_is_wr;
+        decoded_reg_strb.cmp.STATUS = cpuif_req_masked & (cpuif_addr == 20'h40008) & !cpuif_req_is_wr;
+        decoded_reg_strb.cmp.PRED = cpuif_req_masked & (cpuif_addr == 20'h40040);
+        decoded_reg_strb.cmp.WUPD = cpuif_req_masked & (cpuif_addr == 20'h40044);
+        decoded_reg_strb.cmp.CODER = cpuif_req_masked & (cpuif_addr == 20'h40048);
+        decoded_reg_strb.cmp.OPTS = cpuif_req_masked & (cpuif_addr == 20'h4004c);
+        decoded_reg_strb.cmp.CNT_CLEAR = cpuif_req_masked & (cpuif_addr == 20'h4007c);
+        decoded_reg_strb.cmp.SCENES_DONE = cpuif_req_masked & (cpuif_addr == 20'h40080) & !cpuif_req_is_wr;
+        decoded_reg_strb.cmp.SAMPLES_IN = cpuif_req_masked & (cpuif_addr == 20'h40084) & !cpuif_req_is_wr;
+        decoded_reg_strb.cmp.BYTES_OUT = cpuif_req_masked & (cpuif_addr == 20'h40088) & !cpuif_req_is_wr;
+        decoded_reg_strb.cmp.LAST_BYTES = cpuif_req_masked & (cpuif_addr == 20'h4008c) & !cpuif_req_is_wr;
+        decoded_reg_strb.cmp.LAST_CYCLES = cpuif_req_masked & (cpuif_addr == 20'h40090) & !cpuif_req_is_wr;
+        decoded_reg_strb.cmp.OUT_STALLS = cpuif_req_masked & (cpuif_addr == 20'h40094) & !cpuif_req_is_wr;
+        decoded_reg_strb.pkt.ID = cpuif_req_masked & (cpuif_addr == 20'h50000) & !cpuif_req_is_wr;
+        decoded_reg_strb.pkt.APID = cpuif_req_masked & (cpuif_addr == 20'h50040);
+        decoded_reg_strb.pkt.PKT_DATA = cpuif_req_masked & (cpuif_addr == 20'h50044);
+        decoded_reg_strb.pkt.CNT_CLEAR = cpuif_req_masked & (cpuif_addr == 20'h5007c);
+        decoded_reg_strb.pkt.PACKETS = cpuif_req_masked & (cpuif_addr == 20'h50080) & !cpuif_req_is_wr;
+        decoded_reg_strb.pkt.SCENES = cpuif_req_masked & (cpuif_addr == 20'h50084) & !cpuif_req_is_wr;
+        decoded_reg_strb.pkt.TS_OVERFLOWS = cpuif_req_masked & (cpuif_addr == 20'h50088) & !cpuif_req_is_wr;
+        decoded_reg_strb.aos.ID = cpuif_req_masked & (cpuif_addr == 20'h60000) & !cpuif_req_is_wr;
+        decoded_reg_strb.aos.CTRL = cpuif_req_masked & (cpuif_addr == 20'h60004);
+        decoded_reg_strb.aos.FRAME_HDR = cpuif_req_masked & (cpuif_addr == 20'h60040);
+        decoded_reg_strb.aos.FRAME_GAP = cpuif_req_masked & (cpuif_addr == 20'h60044);
+        decoded_reg_strb.aos.CNT_CLEAR = cpuif_req_masked & (cpuif_addr == 20'h6007c);
+        decoded_reg_strb.aos.SCIENCE_FRAMES = cpuif_req_masked & (cpuif_addr == 20'h60080) & !cpuif_req_is_wr;
+        decoded_reg_strb.aos.IDLE_FRAMES = cpuif_req_masked & (cpuif_addr == 20'h60084) & !cpuif_req_is_wr;
+        decoded_reg_strb.aos.CADUS = cpuif_req_masked & (cpuif_addr == 20'h60088) & !cpuif_req_is_wr;
+        decoded_reg_strb.ei.ID = cpuif_req_masked & (cpuif_addr == 20'h70000) & !cpuif_req_is_wr;
+        decoded_reg_strb.ei.CTRL = cpuif_req_masked & (cpuif_addr == 20'h70004);
+        decoded_reg_strb.ei.THRESHOLD = cpuif_req_masked & (cpuif_addr == 20'h70040);
+        decoded_reg_strb.ei.SEED = cpuif_req_masked & (cpuif_addr == 20'h70044);
+        decoded_reg_strb.ei.SEED_LOAD = cpuif_req_masked & (cpuif_addr == 20'h70048);
+        decoded_reg_strb.ei.BURST_LEN = cpuif_req_masked & (cpuif_addr == 20'h7004c);
+        decoded_reg_strb.ei.PERIOD = cpuif_req_masked & (cpuif_addr == 20'h70050);
+        decoded_reg_strb.ei.ASM_BITS = cpuif_req_masked & (cpuif_addr == 20'h70054);
+        decoded_reg_strb.ei.CNT_CLEAR = cpuif_req_masked & (cpuif_addr == 20'h7007c);
+        decoded_reg_strb.ei.INJECTED_BITS = cpuif_req_masked & (cpuif_addr == 20'h70080) & !cpuif_req_is_wr;
+        decoded_reg_strb.lnk.ID = cpuif_req_masked & (cpuif_addr == 20'h80000) & !cpuif_req_is_wr;
+        decoded_reg_strb.lnk.CTRL = cpuif_req_masked & (cpuif_addr == 20'h80004);
+        decoded_reg_strb.lnk.STATUS = cpuif_req_masked & (cpuif_addr == 20'h80008) & !cpuif_req_is_wr;
+        decoded_reg_strb.lnk.CC_INTERVAL = cpuif_req_masked & (cpuif_addr == 20'h80040);
+        decoded_reg_strb.lnk.PRBS_INJECT = cpuif_req_masked & (cpuif_addr == 20'h80044);
+        decoded_reg_strb.lnk.CNT_CLEAR = cpuif_req_masked & (cpuif_addr == 20'h8007c);
+        decoded_reg_strb.lnk.CODE_ERRORS = cpuif_req_masked & (cpuif_addr == 20'h80080) & !cpuif_req_is_wr;
+        decoded_reg_strb.lnk.LOCK_LOSSES = cpuif_req_masked & (cpuif_addr == 20'h80084) & !cpuif_req_is_wr;
+        decoded_reg_strb.lnk.RX_WORDS = cpuif_req_masked & (cpuif_addr == 20'h80088) & !cpuif_req_is_wr;
+        decoded_reg_strb.lnk.TX_DATA_WORDS = cpuif_req_masked & (cpuif_addr == 20'h8008c) & !cpuif_req_is_wr;
+        decoded_reg_strb.lnk.TX_IDLE_WORDS = cpuif_req_masked & (cpuif_addr == 20'h80090) & !cpuif_req_is_wr;
+        decoded_reg_strb.lnk.RX_OVERFLOWS = cpuif_req_masked & (cpuif_addr == 20'h80094) & !cpuif_req_is_wr;
+        decoded_reg_strb.lnk.CLK_CORRECTIONS = cpuif_req_masked & (cpuif_addr == 20'h80098) & !cpuif_req_is_wr;
+        decoded_reg_strb.lnk.BUF_ERRORS = cpuif_req_masked & (cpuif_addr == 20'h8009c) & !cpuif_req_is_wr;
+        decoded_reg_strb.lnk.PRBS_ERRORS = cpuif_req_masked & (cpuif_addr == 20'h800a0) & !cpuif_req_is_wr;
+        decoded_reg_strb.lnk.PRBS_WORDS_LO = cpuif_req_masked & (cpuif_addr == 20'h800a4) & !cpuif_req_is_wr;
+        decoded_reg_strb.lnk.PRBS_WORDS_HI = cpuif_req_masked & (cpuif_addr == 20'h800a8) & !cpuif_req_is_wr;
+        decoded_reg_strb.gr.ID = cpuif_req_masked & (cpuif_addr == 20'h90000) & !cpuif_req_is_wr;
+        decoded_reg_strb.gr.CTRL = cpuif_req_masked & (cpuif_addr == 20'h90004);
+        decoded_reg_strb.gr.STATUS = cpuif_req_masked & (cpuif_addr == 20'h90008) & !cpuif_req_is_wr;
+        decoded_reg_strb.gr.SYNC = cpuif_req_masked & (cpuif_addr == 20'h90040);
+        decoded_reg_strb.gr.XFER = cpuif_req_masked & (cpuif_addr == 20'h90044);
+        decoded_reg_strb.gr.CNT_CLEAR = cpuif_req_masked & (cpuif_addr == 20'h9007c);
+        decoded_reg_strb.gr.CADUS = cpuif_req_masked & (cpuif_addr == 20'h90080) & !cpuif_req_is_wr;
+        decoded_reg_strb.gr.SYNC_LOSSES = cpuif_req_masked & (cpuif_addr == 20'h90084) & !cpuif_req_is_wr;
+        decoded_reg_strb.gr.ASM_BIT_ERRORS = cpuif_req_masked & (cpuif_addr == 20'h90088) & !cpuif_req_is_wr;
+        decoded_reg_strb.gr.DROPPED_RECORDS = cpuif_req_masked & (cpuif_addr == 20'h9008c) & !cpuif_req_is_wr;
+        decoded_reg_strb.gr.SKIPPED_IDLE = cpuif_req_masked & (cpuif_addr == 20'h90090) & !cpuif_req_is_wr;
+        decoded_reg_strb.gr.CAPTURED = cpuif_req_masked & (cpuif_addr == 20'h90094) & !cpuif_req_is_wr;
         decoded_err = '0;
     end
 
@@ -416,6 +534,14 @@ module hpdp_regs (
                     logic next;
                     logic load_next;
                 } error;
+                struct {
+                    logic next;
+                    logic load_next;
+                } link_lock_loss;
+                struct {
+                    logic next;
+                    logic load_next;
+                } sync_loss;
             } IRQ_EN;
             struct {
                 struct {
@@ -426,12 +552,24 @@ module hpdp_regs (
                     logic next;
                     logic load_next;
                 } error;
+                struct {
+                    logic next;
+                    logic load_next;
+                } link_lock_loss;
+                struct {
+                    logic next;
+                    logic load_next;
+                } sync_loss;
             } IRQ_STATUS;
             struct {
                 struct {
                     logic next;
                     logic load_next;
                 } capture;
+                struct {
+                    logic next;
+                    logic load_next;
+                } downlink;
             } MODE;
             struct {
                 struct {
@@ -620,6 +758,198 @@ module hpdp_regs (
                 } clear;
             } CNT_CLEAR;
         } cmp;
+        struct {
+            struct {
+                struct {
+                    logic [10:0] next;
+                    logic load_next;
+                } apid;
+            } APID;
+            struct {
+                struct {
+                    logic [11:0] next;
+                    logic load_next;
+                } bytes;
+            } PKT_DATA;
+            struct {
+                struct {
+                    logic next;
+                    logic load_next;
+                } clear;
+            } CNT_CLEAR;
+        } pkt;
+        struct {
+            struct {
+                struct {
+                    logic next;
+                    logic load_next;
+                } idle_en;
+            } CTRL;
+            struct {
+                struct {
+                    logic [7:0] next;
+                    logic load_next;
+                } scid;
+                struct {
+                    logic [5:0] next;
+                    logic load_next;
+                } vcid;
+            } FRAME_HDR;
+            struct {
+                struct {
+                    logic [31:0] next;
+                    logic load_next;
+                } cycles;
+            } FRAME_GAP;
+            struct {
+                struct {
+                    logic next;
+                    logic load_next;
+                } clear;
+            } CNT_CLEAR;
+        } aos;
+        struct {
+            struct {
+                struct {
+                    logic [1:0] next;
+                    logic load_next;
+                } mode;
+            } CTRL;
+            struct {
+                struct {
+                    logic [31:0] next;
+                    logic load_next;
+                } value;
+            } THRESHOLD;
+            struct {
+                struct {
+                    logic [31:0] next;
+                    logic load_next;
+                } value;
+            } SEED;
+            struct {
+                struct {
+                    logic next;
+                    logic load_next;
+                } load;
+            } SEED_LOAD;
+            struct {
+                struct {
+                    logic [15:0] next;
+                    logic load_next;
+                } bits;
+            } BURST_LEN;
+            struct {
+                struct {
+                    logic [31:0] next;
+                    logic load_next;
+                } value;
+            } PERIOD;
+            struct {
+                struct {
+                    logic [5:0] next;
+                    logic load_next;
+                } bits;
+            } ASM_BITS;
+            struct {
+                struct {
+                    logic next;
+                    logic load_next;
+                } clear;
+            } CNT_CLEAR;
+        } ei;
+        struct {
+            struct {
+                struct {
+                    logic next;
+                    logic load_next;
+                } tx_enable;
+                struct {
+                    logic next;
+                    logic load_next;
+                } gt_reset;
+                struct {
+                    logic next;
+                    logic load_next;
+                } rx_reset;
+                struct {
+                    logic next;
+                    logic load_next;
+                } fabric_loopback;
+                struct {
+                    logic next;
+                    logic load_next;
+                } rx_sel;
+                struct {
+                    logic [2:0] next;
+                    logic load_next;
+                } gt_loopback;
+                struct {
+                    logic next;
+                    logic load_next;
+                } tx_polarity;
+                struct {
+                    logic next;
+                    logic load_next;
+                } rx_polarity;
+                struct {
+                    logic [3:0] next;
+                    logic load_next;
+                } prbs_sel;
+            } CTRL;
+            struct {
+                struct {
+                    logic [15:0] next;
+                    logic load_next;
+                } words;
+            } CC_INTERVAL;
+            struct {
+                struct {
+                    logic next;
+                    logic load_next;
+                } inject;
+            } PRBS_INJECT;
+            struct {
+                struct {
+                    logic next;
+                    logic load_next;
+                } clear;
+            } CNT_CLEAR;
+        } lnk;
+        struct {
+            struct {
+                struct {
+                    logic next;
+                    logic load_next;
+                } capture;
+                struct {
+                    logic next;
+                    logic load_next;
+                } skip_idle;
+            } CTRL;
+            struct {
+                struct {
+                    logic [5:0] next;
+                    logic load_next;
+                } asm_tol;
+                struct {
+                    logic [3:0] next;
+                    logic load_next;
+                } flywheel;
+            } SYNC;
+            struct {
+                struct {
+                    logic [15:0] next;
+                    logic load_next;
+                } records;
+            } XFER;
+            struct {
+                struct {
+                    logic next;
+                    logic load_next;
+                } clear;
+            } CNT_CLEAR;
+        } gr;
     } field_combo_t;
     field_combo_t field_combo;
 
@@ -637,6 +967,12 @@ module hpdp_regs (
                 struct {
                     logic value;
                 } error;
+                struct {
+                    logic value;
+                } link_lock_loss;
+                struct {
+                    logic value;
+                } sync_loss;
             } IRQ_EN;
             struct {
                 struct {
@@ -645,11 +981,20 @@ module hpdp_regs (
                 struct {
                     logic value;
                 } error;
+                struct {
+                    logic value;
+                } link_lock_loss;
+                struct {
+                    logic value;
+                } sync_loss;
             } IRQ_STATUS;
             struct {
                 struct {
                     logic value;
                 } capture;
+                struct {
+                    logic value;
+                } downlink;
             } MODE;
             struct {
                 struct {
@@ -804,6 +1149,164 @@ module hpdp_regs (
                 } clear;
             } CNT_CLEAR;
         } cmp;
+        struct {
+            struct {
+                struct {
+                    logic [10:0] value;
+                } apid;
+            } APID;
+            struct {
+                struct {
+                    logic [11:0] value;
+                } bytes;
+            } PKT_DATA;
+            struct {
+                struct {
+                    logic value;
+                } clear;
+            } CNT_CLEAR;
+        } pkt;
+        struct {
+            struct {
+                struct {
+                    logic value;
+                } idle_en;
+            } CTRL;
+            struct {
+                struct {
+                    logic [7:0] value;
+                } scid;
+                struct {
+                    logic [5:0] value;
+                } vcid;
+            } FRAME_HDR;
+            struct {
+                struct {
+                    logic [31:0] value;
+                } cycles;
+            } FRAME_GAP;
+            struct {
+                struct {
+                    logic value;
+                } clear;
+            } CNT_CLEAR;
+        } aos;
+        struct {
+            struct {
+                struct {
+                    logic [1:0] value;
+                } mode;
+            } CTRL;
+            struct {
+                struct {
+                    logic [31:0] value;
+                } value;
+            } THRESHOLD;
+            struct {
+                struct {
+                    logic [31:0] value;
+                } value;
+            } SEED;
+            struct {
+                struct {
+                    logic value;
+                } load;
+            } SEED_LOAD;
+            struct {
+                struct {
+                    logic [15:0] value;
+                } bits;
+            } BURST_LEN;
+            struct {
+                struct {
+                    logic [31:0] value;
+                } value;
+            } PERIOD;
+            struct {
+                struct {
+                    logic [5:0] value;
+                } bits;
+            } ASM_BITS;
+            struct {
+                struct {
+                    logic value;
+                } clear;
+            } CNT_CLEAR;
+        } ei;
+        struct {
+            struct {
+                struct {
+                    logic value;
+                } tx_enable;
+                struct {
+                    logic value;
+                } gt_reset;
+                struct {
+                    logic value;
+                } rx_reset;
+                struct {
+                    logic value;
+                } fabric_loopback;
+                struct {
+                    logic value;
+                } rx_sel;
+                struct {
+                    logic [2:0] value;
+                } gt_loopback;
+                struct {
+                    logic value;
+                } tx_polarity;
+                struct {
+                    logic value;
+                } rx_polarity;
+                struct {
+                    logic [3:0] value;
+                } prbs_sel;
+            } CTRL;
+            struct {
+                struct {
+                    logic [15:0] value;
+                } words;
+            } CC_INTERVAL;
+            struct {
+                struct {
+                    logic value;
+                } inject;
+            } PRBS_INJECT;
+            struct {
+                struct {
+                    logic value;
+                } clear;
+            } CNT_CLEAR;
+        } lnk;
+        struct {
+            struct {
+                struct {
+                    logic value;
+                } capture;
+                struct {
+                    logic value;
+                } skip_idle;
+            } CTRL;
+            struct {
+                struct {
+                    logic [5:0] value;
+                } asm_tol;
+                struct {
+                    logic [3:0] value;
+                } flywheel;
+            } SYNC;
+            struct {
+                struct {
+                    logic [15:0] value;
+                } records;
+            } XFER;
+            struct {
+                struct {
+                    logic value;
+                } clear;
+            } CNT_CLEAR;
+        } gr;
     } field_storage_t;
     field_storage_t field_storage;
 
@@ -876,6 +1379,52 @@ module hpdp_regs (
         end
     end
     assign hwif_out.sys.IRQ_EN.error.value = field_storage.sys.IRQ_EN.error.value;
+    // Field: hpdp_regs.sys.IRQ_EN.link_lock_loss
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.sys.IRQ_EN.link_lock_loss.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.sys.IRQ_EN && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.sys.IRQ_EN.link_lock_loss.value & ~decoded_wr_biten[2:2]) | (decoded_wr_data[2:2] & decoded_wr_biten[2:2]);
+            load_next_c = '1;
+        end
+        field_combo.sys.IRQ_EN.link_lock_loss.next = next_c;
+        field_combo.sys.IRQ_EN.link_lock_loss.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.sys.IRQ_EN.link_lock_loss.value <= 1'h0;
+        end else begin
+            if(field_combo.sys.IRQ_EN.link_lock_loss.load_next) begin
+                field_storage.sys.IRQ_EN.link_lock_loss.value <= field_combo.sys.IRQ_EN.link_lock_loss.next;
+            end
+        end
+    end
+    assign hwif_out.sys.IRQ_EN.link_lock_loss.value = field_storage.sys.IRQ_EN.link_lock_loss.value;
+    // Field: hpdp_regs.sys.IRQ_EN.sync_loss
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.sys.IRQ_EN.sync_loss.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.sys.IRQ_EN && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.sys.IRQ_EN.sync_loss.value & ~decoded_wr_biten[3:3]) | (decoded_wr_data[3:3] & decoded_wr_biten[3:3]);
+            load_next_c = '1;
+        end
+        field_combo.sys.IRQ_EN.sync_loss.next = next_c;
+        field_combo.sys.IRQ_EN.sync_loss.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.sys.IRQ_EN.sync_loss.value <= 1'h0;
+        end else begin
+            if(field_combo.sys.IRQ_EN.sync_loss.load_next) begin
+                field_storage.sys.IRQ_EN.sync_loss.value <= field_combo.sys.IRQ_EN.sync_loss.next;
+            end
+        end
+    end
+    assign hwif_out.sys.IRQ_EN.sync_loss.value = field_storage.sys.IRQ_EN.sync_loss.value;
     // Field: hpdp_regs.sys.IRQ_STATUS.scene_done
     always_comb begin
         automatic logic [0:0] next_c;
@@ -928,6 +1477,58 @@ module hpdp_regs (
         end
     end
     assign hwif_out.sys.IRQ_STATUS.error.value = field_storage.sys.IRQ_STATUS.error.value;
+    // Field: hpdp_regs.sys.IRQ_STATUS.link_lock_loss
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.sys.IRQ_STATUS.link_lock_loss.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.sys.IRQ_STATUS && decoded_req_is_wr) begin // SW write 1 clear
+            next_c = field_storage.sys.IRQ_STATUS.link_lock_loss.value & ~(decoded_wr_data[2:2] & decoded_wr_biten[2:2]);
+            load_next_c = '1;
+        end else if(hwif_in.sys.IRQ_STATUS.link_lock_loss.hwset) begin // HW Set
+            next_c = '1;
+            load_next_c = '1;
+        end
+        field_combo.sys.IRQ_STATUS.link_lock_loss.next = next_c;
+        field_combo.sys.IRQ_STATUS.link_lock_loss.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.sys.IRQ_STATUS.link_lock_loss.value <= 1'h0;
+        end else begin
+            if(field_combo.sys.IRQ_STATUS.link_lock_loss.load_next) begin
+                field_storage.sys.IRQ_STATUS.link_lock_loss.value <= field_combo.sys.IRQ_STATUS.link_lock_loss.next;
+            end
+        end
+    end
+    assign hwif_out.sys.IRQ_STATUS.link_lock_loss.value = field_storage.sys.IRQ_STATUS.link_lock_loss.value;
+    // Field: hpdp_regs.sys.IRQ_STATUS.sync_loss
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.sys.IRQ_STATUS.sync_loss.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.sys.IRQ_STATUS && decoded_req_is_wr) begin // SW write 1 clear
+            next_c = field_storage.sys.IRQ_STATUS.sync_loss.value & ~(decoded_wr_data[3:3] & decoded_wr_biten[3:3]);
+            load_next_c = '1;
+        end else if(hwif_in.sys.IRQ_STATUS.sync_loss.hwset) begin // HW Set
+            next_c = '1;
+            load_next_c = '1;
+        end
+        field_combo.sys.IRQ_STATUS.sync_loss.next = next_c;
+        field_combo.sys.IRQ_STATUS.sync_loss.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.sys.IRQ_STATUS.sync_loss.value <= 1'h0;
+        end else begin
+            if(field_combo.sys.IRQ_STATUS.sync_loss.load_next) begin
+                field_storage.sys.IRQ_STATUS.sync_loss.value <= field_combo.sys.IRQ_STATUS.sync_loss.next;
+            end
+        end
+    end
+    assign hwif_out.sys.IRQ_STATUS.sync_loss.value = field_storage.sys.IRQ_STATUS.sync_loss.value;
     // Field: hpdp_regs.sys.MODE.capture
     always_comb begin
         automatic logic [0:0] next_c;
@@ -951,6 +1552,29 @@ module hpdp_regs (
         end
     end
     assign hwif_out.sys.MODE.capture.value = field_storage.sys.MODE.capture.value;
+    // Field: hpdp_regs.sys.MODE.downlink
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.sys.MODE.downlink.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.sys.MODE && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.sys.MODE.downlink.value & ~decoded_wr_biten[1:1]) | (decoded_wr_data[1:1] & decoded_wr_biten[1:1]);
+            load_next_c = '1;
+        end
+        field_combo.sys.MODE.downlink.next = next_c;
+        field_combo.sys.MODE.downlink.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.sys.MODE.downlink.value <= 1'h0;
+        end else begin
+            if(field_combo.sys.MODE.downlink.load_next) begin
+                field_storage.sys.MODE.downlink.value <= field_combo.sys.MODE.downlink.next;
+            end
+        end
+    end
+    assign hwif_out.sys.MODE.downlink.value = field_storage.sys.MODE.downlink.value;
     // Field: hpdp_regs.sys.DMA_ROUTE.to_table
     always_comb begin
         automatic logic [0:0] next_c;
@@ -1748,6 +2372,809 @@ module hpdp_regs (
         end
     end
     assign hwif_out.cmp.CNT_CLEAR.clear.value = field_storage.cmp.CNT_CLEAR.clear.value;
+    // Field: hpdp_regs.pkt.APID.apid
+    always_comb begin
+        automatic logic [10:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.pkt.APID.apid.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.pkt.APID && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.pkt.APID.apid.value & ~decoded_wr_biten[10:0]) | (decoded_wr_data[10:0] & decoded_wr_biten[10:0]);
+            load_next_c = '1;
+        end
+        field_combo.pkt.APID.apid.next = next_c;
+        field_combo.pkt.APID.apid.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.pkt.APID.apid.value <= 11'h100;
+        end else begin
+            if(field_combo.pkt.APID.apid.load_next) begin
+                field_storage.pkt.APID.apid.value <= field_combo.pkt.APID.apid.next;
+            end
+        end
+    end
+    assign hwif_out.pkt.APID.apid.value = field_storage.pkt.APID.apid.value;
+    // Field: hpdp_regs.pkt.PKT_DATA.bytes
+    always_comb begin
+        automatic logic [11:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.pkt.PKT_DATA.bytes.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.pkt.PKT_DATA && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.pkt.PKT_DATA.bytes.value & ~decoded_wr_biten[11:0]) | (decoded_wr_data[11:0] & decoded_wr_biten[11:0]);
+            load_next_c = '1;
+        end
+        field_combo.pkt.PKT_DATA.bytes.next = next_c;
+        field_combo.pkt.PKT_DATA.bytes.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.pkt.PKT_DATA.bytes.value <= 12'h800;
+        end else begin
+            if(field_combo.pkt.PKT_DATA.bytes.load_next) begin
+                field_storage.pkt.PKT_DATA.bytes.value <= field_combo.pkt.PKT_DATA.bytes.next;
+            end
+        end
+    end
+    assign hwif_out.pkt.PKT_DATA.bytes.value = field_storage.pkt.PKT_DATA.bytes.value;
+    // Field: hpdp_regs.pkt.CNT_CLEAR.clear
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.pkt.CNT_CLEAR.clear.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.pkt.CNT_CLEAR && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.pkt.CNT_CLEAR.clear.value & ~decoded_wr_biten[0:0]) | (decoded_wr_data[0:0] & decoded_wr_biten[0:0]);
+            load_next_c = '1;
+        end else begin // singlepulse clears back to 0
+            next_c = '0;
+            load_next_c = '1;
+        end
+        field_combo.pkt.CNT_CLEAR.clear.next = next_c;
+        field_combo.pkt.CNT_CLEAR.clear.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.pkt.CNT_CLEAR.clear.value <= 1'h0;
+        end else begin
+            if(field_combo.pkt.CNT_CLEAR.clear.load_next) begin
+                field_storage.pkt.CNT_CLEAR.clear.value <= field_combo.pkt.CNT_CLEAR.clear.next;
+            end
+        end
+    end
+    assign hwif_out.pkt.CNT_CLEAR.clear.value = field_storage.pkt.CNT_CLEAR.clear.value;
+    // Field: hpdp_regs.aos.CTRL.idle_en
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.aos.CTRL.idle_en.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.aos.CTRL && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.aos.CTRL.idle_en.value & ~decoded_wr_biten[0:0]) | (decoded_wr_data[0:0] & decoded_wr_biten[0:0]);
+            load_next_c = '1;
+        end
+        field_combo.aos.CTRL.idle_en.next = next_c;
+        field_combo.aos.CTRL.idle_en.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.aos.CTRL.idle_en.value <= 1'h1;
+        end else begin
+            if(field_combo.aos.CTRL.idle_en.load_next) begin
+                field_storage.aos.CTRL.idle_en.value <= field_combo.aos.CTRL.idle_en.next;
+            end
+        end
+    end
+    assign hwif_out.aos.CTRL.idle_en.value = field_storage.aos.CTRL.idle_en.value;
+    // Field: hpdp_regs.aos.FRAME_HDR.scid
+    always_comb begin
+        automatic logic [7:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.aos.FRAME_HDR.scid.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.aos.FRAME_HDR && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.aos.FRAME_HDR.scid.value & ~decoded_wr_biten[7:0]) | (decoded_wr_data[7:0] & decoded_wr_biten[7:0]);
+            load_next_c = '1;
+        end
+        field_combo.aos.FRAME_HDR.scid.next = next_c;
+        field_combo.aos.FRAME_HDR.scid.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.aos.FRAME_HDR.scid.value <= 8'h42;
+        end else begin
+            if(field_combo.aos.FRAME_HDR.scid.load_next) begin
+                field_storage.aos.FRAME_HDR.scid.value <= field_combo.aos.FRAME_HDR.scid.next;
+            end
+        end
+    end
+    assign hwif_out.aos.FRAME_HDR.scid.value = field_storage.aos.FRAME_HDR.scid.value;
+    // Field: hpdp_regs.aos.FRAME_HDR.vcid
+    always_comb begin
+        automatic logic [5:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.aos.FRAME_HDR.vcid.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.aos.FRAME_HDR && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.aos.FRAME_HDR.vcid.value & ~decoded_wr_biten[13:8]) | (decoded_wr_data[13:8] & decoded_wr_biten[13:8]);
+            load_next_c = '1;
+        end
+        field_combo.aos.FRAME_HDR.vcid.next = next_c;
+        field_combo.aos.FRAME_HDR.vcid.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.aos.FRAME_HDR.vcid.value <= 6'h1;
+        end else begin
+            if(field_combo.aos.FRAME_HDR.vcid.load_next) begin
+                field_storage.aos.FRAME_HDR.vcid.value <= field_combo.aos.FRAME_HDR.vcid.next;
+            end
+        end
+    end
+    assign hwif_out.aos.FRAME_HDR.vcid.value = field_storage.aos.FRAME_HDR.vcid.value;
+    // Field: hpdp_regs.aos.FRAME_GAP.cycles
+    always_comb begin
+        automatic logic [31:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.aos.FRAME_GAP.cycles.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.aos.FRAME_GAP && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.aos.FRAME_GAP.cycles.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
+            load_next_c = '1;
+        end
+        field_combo.aos.FRAME_GAP.cycles.next = next_c;
+        field_combo.aos.FRAME_GAP.cycles.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.aos.FRAME_GAP.cycles.value <= 32'h0;
+        end else begin
+            if(field_combo.aos.FRAME_GAP.cycles.load_next) begin
+                field_storage.aos.FRAME_GAP.cycles.value <= field_combo.aos.FRAME_GAP.cycles.next;
+            end
+        end
+    end
+    assign hwif_out.aos.FRAME_GAP.cycles.value = field_storage.aos.FRAME_GAP.cycles.value;
+    // Field: hpdp_regs.aos.CNT_CLEAR.clear
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.aos.CNT_CLEAR.clear.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.aos.CNT_CLEAR && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.aos.CNT_CLEAR.clear.value & ~decoded_wr_biten[0:0]) | (decoded_wr_data[0:0] & decoded_wr_biten[0:0]);
+            load_next_c = '1;
+        end else begin // singlepulse clears back to 0
+            next_c = '0;
+            load_next_c = '1;
+        end
+        field_combo.aos.CNT_CLEAR.clear.next = next_c;
+        field_combo.aos.CNT_CLEAR.clear.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.aos.CNT_CLEAR.clear.value <= 1'h0;
+        end else begin
+            if(field_combo.aos.CNT_CLEAR.clear.load_next) begin
+                field_storage.aos.CNT_CLEAR.clear.value <= field_combo.aos.CNT_CLEAR.clear.next;
+            end
+        end
+    end
+    assign hwif_out.aos.CNT_CLEAR.clear.value = field_storage.aos.CNT_CLEAR.clear.value;
+    // Field: hpdp_regs.ei.CTRL.mode
+    always_comb begin
+        automatic logic [1:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.ei.CTRL.mode.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.ei.CTRL && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.ei.CTRL.mode.value & ~decoded_wr_biten[1:0]) | (decoded_wr_data[1:0] & decoded_wr_biten[1:0]);
+            load_next_c = '1;
+        end
+        field_combo.ei.CTRL.mode.next = next_c;
+        field_combo.ei.CTRL.mode.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.ei.CTRL.mode.value <= 2'h0;
+        end else begin
+            if(field_combo.ei.CTRL.mode.load_next) begin
+                field_storage.ei.CTRL.mode.value <= field_combo.ei.CTRL.mode.next;
+            end
+        end
+    end
+    assign hwif_out.ei.CTRL.mode.value = field_storage.ei.CTRL.mode.value;
+    // Field: hpdp_regs.ei.THRESHOLD.value
+    always_comb begin
+        automatic logic [31:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.ei.THRESHOLD.value.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.ei.THRESHOLD && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.ei.THRESHOLD.value.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
+            load_next_c = '1;
+        end
+        field_combo.ei.THRESHOLD.value.next = next_c;
+        field_combo.ei.THRESHOLD.value.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.ei.THRESHOLD.value.value <= 32'h0;
+        end else begin
+            if(field_combo.ei.THRESHOLD.value.load_next) begin
+                field_storage.ei.THRESHOLD.value.value <= field_combo.ei.THRESHOLD.value.next;
+            end
+        end
+    end
+    assign hwif_out.ei.THRESHOLD.value.value = field_storage.ei.THRESHOLD.value.value;
+    // Field: hpdp_regs.ei.SEED.value
+    always_comb begin
+        automatic logic [31:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.ei.SEED.value.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.ei.SEED && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.ei.SEED.value.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
+            load_next_c = '1;
+        end
+        field_combo.ei.SEED.value.next = next_c;
+        field_combo.ei.SEED.value.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.ei.SEED.value.value <= 32'h1;
+        end else begin
+            if(field_combo.ei.SEED.value.load_next) begin
+                field_storage.ei.SEED.value.value <= field_combo.ei.SEED.value.next;
+            end
+        end
+    end
+    assign hwif_out.ei.SEED.value.value = field_storage.ei.SEED.value.value;
+    // Field: hpdp_regs.ei.SEED_LOAD.load
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.ei.SEED_LOAD.load.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.ei.SEED_LOAD && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.ei.SEED_LOAD.load.value & ~decoded_wr_biten[0:0]) | (decoded_wr_data[0:0] & decoded_wr_biten[0:0]);
+            load_next_c = '1;
+        end else begin // singlepulse clears back to 0
+            next_c = '0;
+            load_next_c = '1;
+        end
+        field_combo.ei.SEED_LOAD.load.next = next_c;
+        field_combo.ei.SEED_LOAD.load.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.ei.SEED_LOAD.load.value <= 1'h0;
+        end else begin
+            if(field_combo.ei.SEED_LOAD.load.load_next) begin
+                field_storage.ei.SEED_LOAD.load.value <= field_combo.ei.SEED_LOAD.load.next;
+            end
+        end
+    end
+    assign hwif_out.ei.SEED_LOAD.load.value = field_storage.ei.SEED_LOAD.load.value;
+    // Field: hpdp_regs.ei.BURST_LEN.bits
+    always_comb begin
+        automatic logic [15:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.ei.BURST_LEN.bits.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.ei.BURST_LEN && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.ei.BURST_LEN.bits.value & ~decoded_wr_biten[15:0]) | (decoded_wr_data[15:0] & decoded_wr_biten[15:0]);
+            load_next_c = '1;
+        end
+        field_combo.ei.BURST_LEN.bits.next = next_c;
+        field_combo.ei.BURST_LEN.bits.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.ei.BURST_LEN.bits.value <= 16'h0;
+        end else begin
+            if(field_combo.ei.BURST_LEN.bits.load_next) begin
+                field_storage.ei.BURST_LEN.bits.value <= field_combo.ei.BURST_LEN.bits.next;
+            end
+        end
+    end
+    assign hwif_out.ei.BURST_LEN.bits.value = field_storage.ei.BURST_LEN.bits.value;
+    // Field: hpdp_regs.ei.PERIOD.value
+    always_comb begin
+        automatic logic [31:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.ei.PERIOD.value.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.ei.PERIOD && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.ei.PERIOD.value.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
+            load_next_c = '1;
+        end
+        field_combo.ei.PERIOD.value.next = next_c;
+        field_combo.ei.PERIOD.value.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.ei.PERIOD.value.value <= 32'h1;
+        end else begin
+            if(field_combo.ei.PERIOD.value.load_next) begin
+                field_storage.ei.PERIOD.value.value <= field_combo.ei.PERIOD.value.next;
+            end
+        end
+    end
+    assign hwif_out.ei.PERIOD.value.value = field_storage.ei.PERIOD.value.value;
+    // Field: hpdp_regs.ei.ASM_BITS.bits
+    always_comb begin
+        automatic logic [5:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.ei.ASM_BITS.bits.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.ei.ASM_BITS && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.ei.ASM_BITS.bits.value & ~decoded_wr_biten[5:0]) | (decoded_wr_data[5:0] & decoded_wr_biten[5:0]);
+            load_next_c = '1;
+        end
+        field_combo.ei.ASM_BITS.bits.next = next_c;
+        field_combo.ei.ASM_BITS.bits.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.ei.ASM_BITS.bits.value <= 6'h0;
+        end else begin
+            if(field_combo.ei.ASM_BITS.bits.load_next) begin
+                field_storage.ei.ASM_BITS.bits.value <= field_combo.ei.ASM_BITS.bits.next;
+            end
+        end
+    end
+    assign hwif_out.ei.ASM_BITS.bits.value = field_storage.ei.ASM_BITS.bits.value;
+    // Field: hpdp_regs.ei.CNT_CLEAR.clear
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.ei.CNT_CLEAR.clear.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.ei.CNT_CLEAR && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.ei.CNT_CLEAR.clear.value & ~decoded_wr_biten[0:0]) | (decoded_wr_data[0:0] & decoded_wr_biten[0:0]);
+            load_next_c = '1;
+        end else begin // singlepulse clears back to 0
+            next_c = '0;
+            load_next_c = '1;
+        end
+        field_combo.ei.CNT_CLEAR.clear.next = next_c;
+        field_combo.ei.CNT_CLEAR.clear.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.ei.CNT_CLEAR.clear.value <= 1'h0;
+        end else begin
+            if(field_combo.ei.CNT_CLEAR.clear.load_next) begin
+                field_storage.ei.CNT_CLEAR.clear.value <= field_combo.ei.CNT_CLEAR.clear.next;
+            end
+        end
+    end
+    assign hwif_out.ei.CNT_CLEAR.clear.value = field_storage.ei.CNT_CLEAR.clear.value;
+    // Field: hpdp_regs.lnk.CTRL.tx_enable
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.lnk.CTRL.tx_enable.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.lnk.CTRL && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.lnk.CTRL.tx_enable.value & ~decoded_wr_biten[0:0]) | (decoded_wr_data[0:0] & decoded_wr_biten[0:0]);
+            load_next_c = '1;
+        end
+        field_combo.lnk.CTRL.tx_enable.next = next_c;
+        field_combo.lnk.CTRL.tx_enable.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.lnk.CTRL.tx_enable.value <= 1'h1;
+        end else begin
+            if(field_combo.lnk.CTRL.tx_enable.load_next) begin
+                field_storage.lnk.CTRL.tx_enable.value <= field_combo.lnk.CTRL.tx_enable.next;
+            end
+        end
+    end
+    assign hwif_out.lnk.CTRL.tx_enable.value = field_storage.lnk.CTRL.tx_enable.value;
+    // Field: hpdp_regs.lnk.CTRL.gt_reset
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.lnk.CTRL.gt_reset.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.lnk.CTRL && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.lnk.CTRL.gt_reset.value & ~decoded_wr_biten[1:1]) | (decoded_wr_data[1:1] & decoded_wr_biten[1:1]);
+            load_next_c = '1;
+        end
+        field_combo.lnk.CTRL.gt_reset.next = next_c;
+        field_combo.lnk.CTRL.gt_reset.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.lnk.CTRL.gt_reset.value <= 1'h0;
+        end else begin
+            if(field_combo.lnk.CTRL.gt_reset.load_next) begin
+                field_storage.lnk.CTRL.gt_reset.value <= field_combo.lnk.CTRL.gt_reset.next;
+            end
+        end
+    end
+    assign hwif_out.lnk.CTRL.gt_reset.value = field_storage.lnk.CTRL.gt_reset.value;
+    // Field: hpdp_regs.lnk.CTRL.rx_reset
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.lnk.CTRL.rx_reset.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.lnk.CTRL && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.lnk.CTRL.rx_reset.value & ~decoded_wr_biten[2:2]) | (decoded_wr_data[2:2] & decoded_wr_biten[2:2]);
+            load_next_c = '1;
+        end
+        field_combo.lnk.CTRL.rx_reset.next = next_c;
+        field_combo.lnk.CTRL.rx_reset.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.lnk.CTRL.rx_reset.value <= 1'h0;
+        end else begin
+            if(field_combo.lnk.CTRL.rx_reset.load_next) begin
+                field_storage.lnk.CTRL.rx_reset.value <= field_combo.lnk.CTRL.rx_reset.next;
+            end
+        end
+    end
+    assign hwif_out.lnk.CTRL.rx_reset.value = field_storage.lnk.CTRL.rx_reset.value;
+    // Field: hpdp_regs.lnk.CTRL.fabric_loopback
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.lnk.CTRL.fabric_loopback.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.lnk.CTRL && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.lnk.CTRL.fabric_loopback.value & ~decoded_wr_biten[3:3]) | (decoded_wr_data[3:3] & decoded_wr_biten[3:3]);
+            load_next_c = '1;
+        end
+        field_combo.lnk.CTRL.fabric_loopback.next = next_c;
+        field_combo.lnk.CTRL.fabric_loopback.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.lnk.CTRL.fabric_loopback.value <= 1'h0;
+        end else begin
+            if(field_combo.lnk.CTRL.fabric_loopback.load_next) begin
+                field_storage.lnk.CTRL.fabric_loopback.value <= field_combo.lnk.CTRL.fabric_loopback.next;
+            end
+        end
+    end
+    assign hwif_out.lnk.CTRL.fabric_loopback.value = field_storage.lnk.CTRL.fabric_loopback.value;
+    // Field: hpdp_regs.lnk.CTRL.rx_sel
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.lnk.CTRL.rx_sel.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.lnk.CTRL && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.lnk.CTRL.rx_sel.value & ~decoded_wr_biten[4:4]) | (decoded_wr_data[4:4] & decoded_wr_biten[4:4]);
+            load_next_c = '1;
+        end
+        field_combo.lnk.CTRL.rx_sel.next = next_c;
+        field_combo.lnk.CTRL.rx_sel.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.lnk.CTRL.rx_sel.value <= 1'h0;
+        end else begin
+            if(field_combo.lnk.CTRL.rx_sel.load_next) begin
+                field_storage.lnk.CTRL.rx_sel.value <= field_combo.lnk.CTRL.rx_sel.next;
+            end
+        end
+    end
+    assign hwif_out.lnk.CTRL.rx_sel.value = field_storage.lnk.CTRL.rx_sel.value;
+    // Field: hpdp_regs.lnk.CTRL.gt_loopback
+    always_comb begin
+        automatic logic [2:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.lnk.CTRL.gt_loopback.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.lnk.CTRL && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.lnk.CTRL.gt_loopback.value & ~decoded_wr_biten[10:8]) | (decoded_wr_data[10:8] & decoded_wr_biten[10:8]);
+            load_next_c = '1;
+        end
+        field_combo.lnk.CTRL.gt_loopback.next = next_c;
+        field_combo.lnk.CTRL.gt_loopback.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.lnk.CTRL.gt_loopback.value <= 3'h0;
+        end else begin
+            if(field_combo.lnk.CTRL.gt_loopback.load_next) begin
+                field_storage.lnk.CTRL.gt_loopback.value <= field_combo.lnk.CTRL.gt_loopback.next;
+            end
+        end
+    end
+    assign hwif_out.lnk.CTRL.gt_loopback.value = field_storage.lnk.CTRL.gt_loopback.value;
+    // Field: hpdp_regs.lnk.CTRL.tx_polarity
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.lnk.CTRL.tx_polarity.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.lnk.CTRL && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.lnk.CTRL.tx_polarity.value & ~decoded_wr_biten[12:12]) | (decoded_wr_data[12:12] & decoded_wr_biten[12:12]);
+            load_next_c = '1;
+        end
+        field_combo.lnk.CTRL.tx_polarity.next = next_c;
+        field_combo.lnk.CTRL.tx_polarity.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.lnk.CTRL.tx_polarity.value <= 1'h0;
+        end else begin
+            if(field_combo.lnk.CTRL.tx_polarity.load_next) begin
+                field_storage.lnk.CTRL.tx_polarity.value <= field_combo.lnk.CTRL.tx_polarity.next;
+            end
+        end
+    end
+    assign hwif_out.lnk.CTRL.tx_polarity.value = field_storage.lnk.CTRL.tx_polarity.value;
+    // Field: hpdp_regs.lnk.CTRL.rx_polarity
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.lnk.CTRL.rx_polarity.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.lnk.CTRL && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.lnk.CTRL.rx_polarity.value & ~decoded_wr_biten[13:13]) | (decoded_wr_data[13:13] & decoded_wr_biten[13:13]);
+            load_next_c = '1;
+        end
+        field_combo.lnk.CTRL.rx_polarity.next = next_c;
+        field_combo.lnk.CTRL.rx_polarity.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.lnk.CTRL.rx_polarity.value <= 1'h0;
+        end else begin
+            if(field_combo.lnk.CTRL.rx_polarity.load_next) begin
+                field_storage.lnk.CTRL.rx_polarity.value <= field_combo.lnk.CTRL.rx_polarity.next;
+            end
+        end
+    end
+    assign hwif_out.lnk.CTRL.rx_polarity.value = field_storage.lnk.CTRL.rx_polarity.value;
+    // Field: hpdp_regs.lnk.CTRL.prbs_sel
+    always_comb begin
+        automatic logic [3:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.lnk.CTRL.prbs_sel.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.lnk.CTRL && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.lnk.CTRL.prbs_sel.value & ~decoded_wr_biten[19:16]) | (decoded_wr_data[19:16] & decoded_wr_biten[19:16]);
+            load_next_c = '1;
+        end
+        field_combo.lnk.CTRL.prbs_sel.next = next_c;
+        field_combo.lnk.CTRL.prbs_sel.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.lnk.CTRL.prbs_sel.value <= 4'h0;
+        end else begin
+            if(field_combo.lnk.CTRL.prbs_sel.load_next) begin
+                field_storage.lnk.CTRL.prbs_sel.value <= field_combo.lnk.CTRL.prbs_sel.next;
+            end
+        end
+    end
+    assign hwif_out.lnk.CTRL.prbs_sel.value = field_storage.lnk.CTRL.prbs_sel.value;
+    // Field: hpdp_regs.lnk.CC_INTERVAL.words
+    always_comb begin
+        automatic logic [15:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.lnk.CC_INTERVAL.words.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.lnk.CC_INTERVAL && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.lnk.CC_INTERVAL.words.value & ~decoded_wr_biten[15:0]) | (decoded_wr_data[15:0] & decoded_wr_biten[15:0]);
+            load_next_c = '1;
+        end
+        field_combo.lnk.CC_INTERVAL.words.next = next_c;
+        field_combo.lnk.CC_INTERVAL.words.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.lnk.CC_INTERVAL.words.value <= 16'h800;
+        end else begin
+            if(field_combo.lnk.CC_INTERVAL.words.load_next) begin
+                field_storage.lnk.CC_INTERVAL.words.value <= field_combo.lnk.CC_INTERVAL.words.next;
+            end
+        end
+    end
+    assign hwif_out.lnk.CC_INTERVAL.words.value = field_storage.lnk.CC_INTERVAL.words.value;
+    // Field: hpdp_regs.lnk.PRBS_INJECT.inject
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.lnk.PRBS_INJECT.inject.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.lnk.PRBS_INJECT && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.lnk.PRBS_INJECT.inject.value & ~decoded_wr_biten[0:0]) | (decoded_wr_data[0:0] & decoded_wr_biten[0:0]);
+            load_next_c = '1;
+        end else begin // singlepulse clears back to 0
+            next_c = '0;
+            load_next_c = '1;
+        end
+        field_combo.lnk.PRBS_INJECT.inject.next = next_c;
+        field_combo.lnk.PRBS_INJECT.inject.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.lnk.PRBS_INJECT.inject.value <= 1'h0;
+        end else begin
+            if(field_combo.lnk.PRBS_INJECT.inject.load_next) begin
+                field_storage.lnk.PRBS_INJECT.inject.value <= field_combo.lnk.PRBS_INJECT.inject.next;
+            end
+        end
+    end
+    assign hwif_out.lnk.PRBS_INJECT.inject.value = field_storage.lnk.PRBS_INJECT.inject.value;
+    // Field: hpdp_regs.lnk.CNT_CLEAR.clear
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.lnk.CNT_CLEAR.clear.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.lnk.CNT_CLEAR && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.lnk.CNT_CLEAR.clear.value & ~decoded_wr_biten[0:0]) | (decoded_wr_data[0:0] & decoded_wr_biten[0:0]);
+            load_next_c = '1;
+        end else begin // singlepulse clears back to 0
+            next_c = '0;
+            load_next_c = '1;
+        end
+        field_combo.lnk.CNT_CLEAR.clear.next = next_c;
+        field_combo.lnk.CNT_CLEAR.clear.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.lnk.CNT_CLEAR.clear.value <= 1'h0;
+        end else begin
+            if(field_combo.lnk.CNT_CLEAR.clear.load_next) begin
+                field_storage.lnk.CNT_CLEAR.clear.value <= field_combo.lnk.CNT_CLEAR.clear.next;
+            end
+        end
+    end
+    assign hwif_out.lnk.CNT_CLEAR.clear.value = field_storage.lnk.CNT_CLEAR.clear.value;
+    // Field: hpdp_regs.gr.CTRL.capture
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.gr.CTRL.capture.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.gr.CTRL && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.gr.CTRL.capture.value & ~decoded_wr_biten[0:0]) | (decoded_wr_data[0:0] & decoded_wr_biten[0:0]);
+            load_next_c = '1;
+        end
+        field_combo.gr.CTRL.capture.next = next_c;
+        field_combo.gr.CTRL.capture.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.gr.CTRL.capture.value <= 1'h0;
+        end else begin
+            if(field_combo.gr.CTRL.capture.load_next) begin
+                field_storage.gr.CTRL.capture.value <= field_combo.gr.CTRL.capture.next;
+            end
+        end
+    end
+    assign hwif_out.gr.CTRL.capture.value = field_storage.gr.CTRL.capture.value;
+    // Field: hpdp_regs.gr.CTRL.skip_idle
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.gr.CTRL.skip_idle.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.gr.CTRL && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.gr.CTRL.skip_idle.value & ~decoded_wr_biten[1:1]) | (decoded_wr_data[1:1] & decoded_wr_biten[1:1]);
+            load_next_c = '1;
+        end
+        field_combo.gr.CTRL.skip_idle.next = next_c;
+        field_combo.gr.CTRL.skip_idle.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.gr.CTRL.skip_idle.value <= 1'h1;
+        end else begin
+            if(field_combo.gr.CTRL.skip_idle.load_next) begin
+                field_storage.gr.CTRL.skip_idle.value <= field_combo.gr.CTRL.skip_idle.next;
+            end
+        end
+    end
+    assign hwif_out.gr.CTRL.skip_idle.value = field_storage.gr.CTRL.skip_idle.value;
+    // Field: hpdp_regs.gr.SYNC.asm_tol
+    always_comb begin
+        automatic logic [5:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.gr.SYNC.asm_tol.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.gr.SYNC && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.gr.SYNC.asm_tol.value & ~decoded_wr_biten[5:0]) | (decoded_wr_data[5:0] & decoded_wr_biten[5:0]);
+            load_next_c = '1;
+        end
+        field_combo.gr.SYNC.asm_tol.next = next_c;
+        field_combo.gr.SYNC.asm_tol.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.gr.SYNC.asm_tol.value <= 6'h2;
+        end else begin
+            if(field_combo.gr.SYNC.asm_tol.load_next) begin
+                field_storage.gr.SYNC.asm_tol.value <= field_combo.gr.SYNC.asm_tol.next;
+            end
+        end
+    end
+    assign hwif_out.gr.SYNC.asm_tol.value = field_storage.gr.SYNC.asm_tol.value;
+    // Field: hpdp_regs.gr.SYNC.flywheel
+    always_comb begin
+        automatic logic [3:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.gr.SYNC.flywheel.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.gr.SYNC && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.gr.SYNC.flywheel.value & ~decoded_wr_biten[11:8]) | (decoded_wr_data[11:8] & decoded_wr_biten[11:8]);
+            load_next_c = '1;
+        end
+        field_combo.gr.SYNC.flywheel.next = next_c;
+        field_combo.gr.SYNC.flywheel.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.gr.SYNC.flywheel.value <= 4'h3;
+        end else begin
+            if(field_combo.gr.SYNC.flywheel.load_next) begin
+                field_storage.gr.SYNC.flywheel.value <= field_combo.gr.SYNC.flywheel.next;
+            end
+        end
+    end
+    assign hwif_out.gr.SYNC.flywheel.value = field_storage.gr.SYNC.flywheel.value;
+    // Field: hpdp_regs.gr.XFER.records
+    always_comb begin
+        automatic logic [15:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.gr.XFER.records.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.gr.XFER && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.gr.XFER.records.value & ~decoded_wr_biten[15:0]) | (decoded_wr_data[15:0] & decoded_wr_biten[15:0]);
+            load_next_c = '1;
+        end
+        field_combo.gr.XFER.records.next = next_c;
+        field_combo.gr.XFER.records.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.gr.XFER.records.value <= 16'h10;
+        end else begin
+            if(field_combo.gr.XFER.records.load_next) begin
+                field_storage.gr.XFER.records.value <= field_combo.gr.XFER.records.next;
+            end
+        end
+    end
+    assign hwif_out.gr.XFER.records.value = field_storage.gr.XFER.records.value;
+    // Field: hpdp_regs.gr.CNT_CLEAR.clear
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.gr.CNT_CLEAR.clear.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.gr.CNT_CLEAR && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.gr.CNT_CLEAR.clear.value & ~decoded_wr_biten[0:0]) | (decoded_wr_data[0:0] & decoded_wr_biten[0:0]);
+            load_next_c = '1;
+        end else begin // singlepulse clears back to 0
+            next_c = '0;
+            load_next_c = '1;
+        end
+        field_combo.gr.CNT_CLEAR.clear.next = next_c;
+        field_combo.gr.CNT_CLEAR.clear.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.gr.CNT_CLEAR.clear.value <= 1'h0;
+        end else begin
+            if(field_combo.gr.CNT_CLEAR.clear.load_next) begin
+                field_storage.gr.CNT_CLEAR.clear.value <= field_combo.gr.CNT_CLEAR.clear.next;
+            end
+        end
+    end
+    assign hwif_out.gr.CNT_CLEAR.clear.value = field_storage.gr.CNT_CLEAR.clear.value;
 
     //--------------------------------------------------------------------------
     // Write response
@@ -1760,7 +3187,7 @@ module hpdp_regs (
     // Readback
     //--------------------------------------------------------------------------
 
-    logic [18:0] rd_mux_addr;
+    logic [19:0] rd_mux_addr;
     assign rd_mux_addr = decoded_addr;
 
     logic readback_err;
@@ -1769,199 +3196,388 @@ module hpdp_regs (
     always_comb begin
         automatic logic [31:0] readback_data_var;
         readback_data_var = '0;
-        if(rd_mux_addr == 19'h0) begin
+        if(rd_mux_addr == 20'h0) begin
             readback_data_var[15:0] = 16'h100;
             readback_data_var[31:16] = 16'h4850;
         end
-        if(rd_mux_addr == 19'h4) begin
+        if(rd_mux_addr == 20'h4) begin
             readback_data_var[1] = field_storage.sys.CTRL.soft_reset.value;
         end
-        if(rd_mux_addr == 19'h8) begin
+        if(rd_mux_addr == 20'h8) begin
             readback_data_var[0] = hwif_in.sys.STATUS.busy.next;
             readback_data_var[1] = hwif_in.sys.STATUS.error.next;
             readback_data_var[2] = hwif_in.sys.STATUS.sensor_locked.next;
             readback_data_var[3] = hwif_in.sys.STATUS.cfg_pending.next;
         end
-        if(rd_mux_addr == 19'hc) begin
+        if(rd_mux_addr == 20'hc) begin
             readback_data_var[0] = field_storage.sys.IRQ_EN.scene_done.value;
             readback_data_var[1] = field_storage.sys.IRQ_EN.error.value;
+            readback_data_var[2] = field_storage.sys.IRQ_EN.link_lock_loss.value;
+            readback_data_var[3] = field_storage.sys.IRQ_EN.sync_loss.value;
         end
-        if(rd_mux_addr == 19'h10) begin
+        if(rd_mux_addr == 20'h10) begin
             readback_data_var[0] = field_storage.sys.IRQ_STATUS.scene_done.value;
             readback_data_var[1] = field_storage.sys.IRQ_STATUS.error.value;
+            readback_data_var[2] = field_storage.sys.IRQ_STATUS.link_lock_loss.value;
+            readback_data_var[3] = field_storage.sys.IRQ_STATUS.sync_loss.value;
         end
-        if(rd_mux_addr == 19'h40) begin
+        if(rd_mux_addr == 20'h40) begin
             readback_data_var[31:0] = hwif_in.sys.BUILD_ID.build_id.next;
         end
-        if(rd_mux_addr == 19'h44) begin
+        if(rd_mux_addr == 20'h44) begin
             readback_data_var[0] = field_storage.sys.MODE.capture.value;
+            readback_data_var[1] = field_storage.sys.MODE.downlink.value;
         end
-        if(rd_mux_addr == 19'h48) begin
+        if(rd_mux_addr == 20'h48) begin
             readback_data_var[0] = field_storage.sys.DMA_ROUTE.to_table.value;
         end
-        if(rd_mux_addr == 19'h50) begin
+        if(rd_mux_addr == 20'h50) begin
             readback_data_var[15:0] = field_storage.sys.NX.value.value;
         end
-        if(rd_mux_addr == 19'h54) begin
+        if(rd_mux_addr == 20'h54) begin
             readback_data_var[15:0] = field_storage.sys.NY.value.value;
         end
-        if(rd_mux_addr == 19'h58) begin
+        if(rd_mux_addr == 20'h58) begin
             readback_data_var[15:0] = field_storage.sys.NZ.value.value;
         end
-        if(rd_mux_addr == 19'h5c) begin
+        if(rd_mux_addr == 20'h5c) begin
             readback_data_var[4:0] = field_storage.sys.DEPTH.depth.value;
         end
-        if(rd_mux_addr == 19'h10000) begin
+        if(rd_mux_addr == 20'h10000) begin
             readback_data_var[15:0] = 16'h100;
             readback_data_var[31:16] = 16'h1;
         end
-        if(rd_mux_addr == 19'h10004) begin
+        if(rd_mux_addr == 20'h10004) begin
             readback_data_var[0] = field_storage.se.CTRL.run.value;
         end
-        if(rd_mux_addr == 19'h10008) begin
+        if(rd_mux_addr == 20'h10008) begin
             readback_data_var[0] = hwif_in.se.STATUS.busy.next;
             readback_data_var[1] = hwif_in.se.STATUS.done.next;
         end
-        if(rd_mux_addr == 19'h10040) begin
+        if(rd_mux_addr == 20'h10040) begin
             readback_data_var[31:0] = field_storage.se.LINE_PERIOD.cycles.value;
         end
-        if(rd_mux_addr == 19'h10044) begin
+        if(rd_mux_addr == 20'h10044) begin
             readback_data_var[31:0] = field_storage.se.LINES.lines.value;
         end
-        if(rd_mux_addr == 19'h10048) begin
+        if(rd_mux_addr == 20'h10048) begin
             readback_data_var[1:0] = field_storage.se.SOURCE.source.value;
         end
-        if(rd_mux_addr == 19'h1007c) begin
+        if(rd_mux_addr == 20'h1007c) begin
             readback_data_var[0] = field_storage.se.CNT_CLEAR.clear.value;
         end
-        if(rd_mux_addr == 19'h10080) begin
+        if(rd_mux_addr == 20'h10080) begin
             readback_data_var[23:0] = hwif_in.se.LINE_TIMESTAMP.value.next;
         end
-        if(rd_mux_addr == 19'h10084) begin
+        if(rd_mux_addr == 20'h10084) begin
             readback_data_var[23:0] = hwif_in.se.SCENE_TIMESTAMP.value.next;
         end
-        if(rd_mux_addr == 19'h10088) begin
+        if(rd_mux_addr == 20'h10088) begin
             readback_data_var[31:0] = hwif_in.se.LINES_EMITTED.count.next;
         end
-        if(rd_mux_addr == 19'h1008c) begin
+        if(rd_mux_addr == 20'h1008c) begin
             readback_data_var[31:0] = hwif_in.se.SCENES_STARTED.count.next;
         end
-        if(rd_mux_addr == 19'h10090) begin
+        if(rd_mux_addr == 20'h10090) begin
             readback_data_var[31:0] = hwif_in.se.UNDERRUN_SAMPLES.count.next;
         end
-        if(rd_mux_addr == 19'h10094) begin
+        if(rd_mux_addr == 20'h10094) begin
             readback_data_var[31:0] = hwif_in.se.PERIOD_OVERRUNS.count.next;
         end
-        if(rd_mux_addr == 19'h10098) begin
+        if(rd_mux_addr == 20'h10098) begin
             readback_data_var[31:0] = hwif_in.se.DROPPED_SAMPLES.count.next;
         end
-        if(rd_mux_addr == 19'h20000) begin
+        if(rd_mux_addr == 20'h20000) begin
             readback_data_var[15:0] = 16'h100;
             readback_data_var[31:16] = 16'h2;
         end
-        if(rd_mux_addr == 19'h20004) begin
+        if(rd_mux_addr == 20'h20004) begin
             readback_data_var[0] = field_storage.rc.CTRL.enable.value;
         end
-        if(rd_mux_addr == 19'h20008) begin
+        if(rd_mux_addr == 20'h20008) begin
             readback_data_var[0] = hwif_in.rc.STATUS.tbl_busy.next;
         end
-        if(rd_mux_addr == 19'h20040) begin
+        if(rd_mux_addr == 20'h20040) begin
             readback_data_var[31:0] = hwif_in.rc.SCENE_CLAMPED.count.next;
         end
-        if(rd_mux_addr == 19'h20044) begin
+        if(rd_mux_addr == 20'h20044) begin
             readback_data_var[31:0] = hwif_in.rc.SCENE_REPLACED.count.next;
         end
-        if(rd_mux_addr == 19'h20048) begin
+        if(rd_mux_addr == 20'h20048) begin
             readback_data_var[31:0] = hwif_in.rc.TBL_WORDS.words.next;
         end
-        if(rd_mux_addr == 19'h20050) begin
+        if(rd_mux_addr == 20'h20050) begin
             readback_data_var[17:0] = field_storage.rc.TBL_ADDR.addr.value;
         end
-        if(rd_mux_addr == 19'h20054) begin
+        if(rd_mux_addr == 20'h20054) begin
             readback_data_var[15:0] = field_storage.rc.TBL_WDATA_LO.dark.value;
             readback_data_var[31:16] = field_storage.rc.TBL_WDATA_LO.gain.value;
         end
-        if(rd_mux_addr == 19'h20058) begin
+        if(rd_mux_addr == 20'h20058) begin
             readback_data_var[0] = field_storage.rc.TBL_WDATA_HI.bad.value;
         end
-        if(rd_mux_addr == 19'h2005c) begin
+        if(rd_mux_addr == 20'h2005c) begin
             readback_data_var[0] = field_storage.rc.TBL_CMD.write.value;
             readback_data_var[1] = field_storage.rc.TBL_CMD.read.value;
         end
-        if(rd_mux_addr == 19'h20060) begin
+        if(rd_mux_addr == 20'h20060) begin
             readback_data_var[15:0] = hwif_in.rc.TBL_RDATA_LO.dark.next;
             readback_data_var[31:16] = hwif_in.rc.TBL_RDATA_LO.gain.next;
         end
-        if(rd_mux_addr == 19'h20064) begin
+        if(rd_mux_addr == 20'h20064) begin
             readback_data_var[0] = hwif_in.rc.TBL_RDATA_HI.bad.next;
         end
-        if(rd_mux_addr == 19'h30000) begin
+        if(rd_mux_addr == 20'h30000) begin
             readback_data_var[15:0] = 16'h100;
             readback_data_var[31:16] = 16'h3;
         end
-        if(rd_mux_addr == 19'h3007c) begin
+        if(rd_mux_addr == 20'h3007c) begin
             readback_data_var[0] = field_storage.ct.CNT_CLEAR.clear.value;
         end
-        if(rd_mux_addr == 19'h30080) begin
+        if(rd_mux_addr == 20'h30080) begin
             readback_data_var[31:0] = hwif_in.ct.LINES_OUT.count.next;
         end
-        if(rd_mux_addr == 19'h30084) begin
+        if(rd_mux_addr == 20'h30084) begin
             readback_data_var[31:0] = hwif_in.ct.DROPPED_LINES.count.next;
         end
-        if(rd_mux_addr == 19'h30088) begin
+        if(rd_mux_addr == 20'h30088) begin
             readback_data_var[31:0] = hwif_in.ct.UNFILLED_LINES.count.next;
         end
-        if(rd_mux_addr == 19'h40000) begin
+        if(rd_mux_addr == 20'h40000) begin
             readback_data_var[15:0] = 16'h100;
             readback_data_var[31:16] = 16'h4;
         end
-        if(rd_mux_addr == 19'h40008) begin
+        if(rd_mux_addr == 20'h40008) begin
             readback_data_var[0] = hwif_in.cmp.STATUS.busy.next;
             readback_data_var[1] = hwif_in.cmp.STATUS.cfg_error.next;
         end
-        if(rd_mux_addr == 19'h40040) begin
+        if(rd_mux_addr == 20'h40040) begin
             readback_data_var[3:0] = field_storage.cmp.PRED.bands.value;
             readback_data_var[4] = field_storage.cmp.PRED.full.value;
             readback_data_var[6:5] = field_storage.cmp.PRED.local_sum.value;
             readback_data_var[12:8] = field_storage.cmp.PRED.omega.value;
             readback_data_var[22:16] = field_storage.cmp.PRED.reg_size.value;
         end
-        if(rd_mux_addr == 19'h40044) begin
+        if(rd_mux_addr == 20'h40044) begin
             readback_data_var[4:0] = field_storage.cmp.WUPD.v_min.value;
             readback_data_var[12:8] = field_storage.cmp.WUPD.v_max.value;
             readback_data_var[19:16] = field_storage.cmp.WUPD.t_inc_log2.value;
         end
-        if(rd_mux_addr == 19'h40048) begin
+        if(rd_mux_addr == 20'h40048) begin
             readback_data_var[5:0] = field_storage.cmp.CODER.u_max.value;
             readback_data_var[11:8] = field_storage.cmp.CODER.gamma0.value;
             readback_data_var[15:12] = field_storage.cmp.CODER.gamma_star.value;
             readback_data_var[19:16] = field_storage.cmp.CODER.k_init.value;
             readback_data_var[27:24] = field_storage.cmp.CODER.word_bytes.value;
         end
-        if(rd_mux_addr == 19'h4004c) begin
+        if(rd_mux_addr == 20'h4004c) begin
             readback_data_var[0] = field_storage.cmp.OPTS.raw.value;
             readback_data_var[15:8] = field_storage.cmp.OPTS.user_data.value;
         end
-        if(rd_mux_addr == 19'h4007c) begin
+        if(rd_mux_addr == 20'h4007c) begin
             readback_data_var[0] = field_storage.cmp.CNT_CLEAR.clear.value;
         end
-        if(rd_mux_addr == 19'h40080) begin
+        if(rd_mux_addr == 20'h40080) begin
             readback_data_var[31:0] = hwif_in.cmp.SCENES_DONE.count.next;
         end
-        if(rd_mux_addr == 19'h40084) begin
+        if(rd_mux_addr == 20'h40084) begin
             readback_data_var[31:0] = hwif_in.cmp.SAMPLES_IN.count.next;
         end
-        if(rd_mux_addr == 19'h40088) begin
+        if(rd_mux_addr == 20'h40088) begin
             readback_data_var[31:0] = hwif_in.cmp.BYTES_OUT.count.next;
         end
-        if(rd_mux_addr == 19'h4008c) begin
+        if(rd_mux_addr == 20'h4008c) begin
             readback_data_var[31:0] = hwif_in.cmp.LAST_BYTES.count.next;
         end
-        if(rd_mux_addr == 19'h40090) begin
+        if(rd_mux_addr == 20'h40090) begin
             readback_data_var[31:0] = hwif_in.cmp.LAST_CYCLES.count.next;
         end
-        if(rd_mux_addr == 19'h40094) begin
+        if(rd_mux_addr == 20'h40094) begin
             readback_data_var[31:0] = hwif_in.cmp.OUT_STALLS.count.next;
+        end
+        if(rd_mux_addr == 20'h50000) begin
+            readback_data_var[15:0] = 16'h100;
+            readback_data_var[31:16] = 16'h5;
+        end
+        if(rd_mux_addr == 20'h50040) begin
+            readback_data_var[10:0] = field_storage.pkt.APID.apid.value;
+        end
+        if(rd_mux_addr == 20'h50044) begin
+            readback_data_var[11:0] = field_storage.pkt.PKT_DATA.bytes.value;
+        end
+        if(rd_mux_addr == 20'h5007c) begin
+            readback_data_var[0] = field_storage.pkt.CNT_CLEAR.clear.value;
+        end
+        if(rd_mux_addr == 20'h50080) begin
+            readback_data_var[31:0] = hwif_in.pkt.PACKETS.count.next;
+        end
+        if(rd_mux_addr == 20'h50084) begin
+            readback_data_var[31:0] = hwif_in.pkt.SCENES.count.next;
+        end
+        if(rd_mux_addr == 20'h50088) begin
+            readback_data_var[31:0] = hwif_in.pkt.TS_OVERFLOWS.count.next;
+        end
+        if(rd_mux_addr == 20'h60000) begin
+            readback_data_var[15:0] = 16'h100;
+            readback_data_var[31:16] = 16'h6;
+        end
+        if(rd_mux_addr == 20'h60004) begin
+            readback_data_var[0] = field_storage.aos.CTRL.idle_en.value;
+        end
+        if(rd_mux_addr == 20'h60040) begin
+            readback_data_var[7:0] = field_storage.aos.FRAME_HDR.scid.value;
+            readback_data_var[13:8] = field_storage.aos.FRAME_HDR.vcid.value;
+        end
+        if(rd_mux_addr == 20'h60044) begin
+            readback_data_var[31:0] = field_storage.aos.FRAME_GAP.cycles.value;
+        end
+        if(rd_mux_addr == 20'h6007c) begin
+            readback_data_var[0] = field_storage.aos.CNT_CLEAR.clear.value;
+        end
+        if(rd_mux_addr == 20'h60080) begin
+            readback_data_var[31:0] = hwif_in.aos.SCIENCE_FRAMES.count.next;
+        end
+        if(rd_mux_addr == 20'h60084) begin
+            readback_data_var[31:0] = hwif_in.aos.IDLE_FRAMES.count.next;
+        end
+        if(rd_mux_addr == 20'h60088) begin
+            readback_data_var[31:0] = hwif_in.aos.CADUS.count.next;
+        end
+        if(rd_mux_addr == 20'h70000) begin
+            readback_data_var[15:0] = 16'h100;
+            readback_data_var[31:16] = 16'h7;
+        end
+        if(rd_mux_addr == 20'h70004) begin
+            readback_data_var[1:0] = field_storage.ei.CTRL.mode.value;
+        end
+        if(rd_mux_addr == 20'h70040) begin
+            readback_data_var[31:0] = field_storage.ei.THRESHOLD.value.value;
+        end
+        if(rd_mux_addr == 20'h70044) begin
+            readback_data_var[31:0] = field_storage.ei.SEED.value.value;
+        end
+        if(rd_mux_addr == 20'h70048) begin
+            readback_data_var[0] = field_storage.ei.SEED_LOAD.load.value;
+        end
+        if(rd_mux_addr == 20'h7004c) begin
+            readback_data_var[15:0] = field_storage.ei.BURST_LEN.bits.value;
+        end
+        if(rd_mux_addr == 20'h70050) begin
+            readback_data_var[31:0] = field_storage.ei.PERIOD.value.value;
+        end
+        if(rd_mux_addr == 20'h70054) begin
+            readback_data_var[5:0] = field_storage.ei.ASM_BITS.bits.value;
+        end
+        if(rd_mux_addr == 20'h7007c) begin
+            readback_data_var[0] = field_storage.ei.CNT_CLEAR.clear.value;
+        end
+        if(rd_mux_addr == 20'h70080) begin
+            readback_data_var[31:0] = hwif_in.ei.INJECTED_BITS.count.next;
+        end
+        if(rd_mux_addr == 20'h80000) begin
+            readback_data_var[15:0] = 16'h100;
+            readback_data_var[31:16] = 16'h8;
+        end
+        if(rd_mux_addr == 20'h80004) begin
+            readback_data_var[0] = field_storage.lnk.CTRL.tx_enable.value;
+            readback_data_var[1] = field_storage.lnk.CTRL.gt_reset.value;
+            readback_data_var[2] = field_storage.lnk.CTRL.rx_reset.value;
+            readback_data_var[3] = field_storage.lnk.CTRL.fabric_loopback.value;
+            readback_data_var[4] = field_storage.lnk.CTRL.rx_sel.value;
+            readback_data_var[10:8] = field_storage.lnk.CTRL.gt_loopback.value;
+            readback_data_var[12] = field_storage.lnk.CTRL.tx_polarity.value;
+            readback_data_var[13] = field_storage.lnk.CTRL.rx_polarity.value;
+            readback_data_var[19:16] = field_storage.lnk.CTRL.prbs_sel.value;
+        end
+        if(rd_mux_addr == 20'h80008) begin
+            readback_data_var[0] = hwif_in.lnk.STATUS.tx_ready.next;
+            readback_data_var[1] = hwif_in.lnk.STATUS.rx_ready.next;
+            readback_data_var[2] = hwif_in.lnk.STATUS.aligned.next;
+            readback_data_var[3] = hwif_in.lnk.STATUS.locked.next;
+            readback_data_var[4] = hwif_in.lnk.STATUS.prbs_locked.next;
+            readback_data_var[9:8] = hwif_in.lnk.STATUS.cpll_locked.next;
+            readback_data_var[11:10] = hwif_in.lnk.STATUS.powergood.next;
+        end
+        if(rd_mux_addr == 20'h80040) begin
+            readback_data_var[15:0] = field_storage.lnk.CC_INTERVAL.words.value;
+        end
+        if(rd_mux_addr == 20'h80044) begin
+            readback_data_var[0] = field_storage.lnk.PRBS_INJECT.inject.value;
+        end
+        if(rd_mux_addr == 20'h8007c) begin
+            readback_data_var[0] = field_storage.lnk.CNT_CLEAR.clear.value;
+        end
+        if(rd_mux_addr == 20'h80080) begin
+            readback_data_var[31:0] = hwif_in.lnk.CODE_ERRORS.count.next;
+        end
+        if(rd_mux_addr == 20'h80084) begin
+            readback_data_var[31:0] = hwif_in.lnk.LOCK_LOSSES.count.next;
+        end
+        if(rd_mux_addr == 20'h80088) begin
+            readback_data_var[31:0] = hwif_in.lnk.RX_WORDS.count.next;
+        end
+        if(rd_mux_addr == 20'h8008c) begin
+            readback_data_var[31:0] = hwif_in.lnk.TX_DATA_WORDS.count.next;
+        end
+        if(rd_mux_addr == 20'h80090) begin
+            readback_data_var[31:0] = hwif_in.lnk.TX_IDLE_WORDS.count.next;
+        end
+        if(rd_mux_addr == 20'h80094) begin
+            readback_data_var[31:0] = hwif_in.lnk.RX_OVERFLOWS.count.next;
+        end
+        if(rd_mux_addr == 20'h80098) begin
+            readback_data_var[31:0] = hwif_in.lnk.CLK_CORRECTIONS.count.next;
+        end
+        if(rd_mux_addr == 20'h8009c) begin
+            readback_data_var[31:0] = hwif_in.lnk.BUF_ERRORS.count.next;
+        end
+        if(rd_mux_addr == 20'h800a0) begin
+            readback_data_var[31:0] = hwif_in.lnk.PRBS_ERRORS.count.next;
+        end
+        if(rd_mux_addr == 20'h800a4) begin
+            readback_data_var[31:0] = hwif_in.lnk.PRBS_WORDS_LO.count.next;
+        end
+        if(rd_mux_addr == 20'h800a8) begin
+            readback_data_var[15:0] = hwif_in.lnk.PRBS_WORDS_HI.count.next;
+        end
+        if(rd_mux_addr == 20'h90000) begin
+            readback_data_var[15:0] = 16'h100;
+            readback_data_var[31:16] = 16'h9;
+        end
+        if(rd_mux_addr == 20'h90004) begin
+            readback_data_var[0] = field_storage.gr.CTRL.capture.value;
+            readback_data_var[1] = field_storage.gr.CTRL.skip_idle.value;
+        end
+        if(rd_mux_addr == 20'h90008) begin
+            readback_data_var[1:0] = hwif_in.gr.STATUS.sync_state.next;
+        end
+        if(rd_mux_addr == 20'h90040) begin
+            readback_data_var[5:0] = field_storage.gr.SYNC.asm_tol.value;
+            readback_data_var[11:8] = field_storage.gr.SYNC.flywheel.value;
+        end
+        if(rd_mux_addr == 20'h90044) begin
+            readback_data_var[15:0] = field_storage.gr.XFER.records.value;
+        end
+        if(rd_mux_addr == 20'h9007c) begin
+            readback_data_var[0] = field_storage.gr.CNT_CLEAR.clear.value;
+        end
+        if(rd_mux_addr == 20'h90080) begin
+            readback_data_var[31:0] = hwif_in.gr.CADUS.count.next;
+        end
+        if(rd_mux_addr == 20'h90084) begin
+            readback_data_var[31:0] = hwif_in.gr.SYNC_LOSSES.count.next;
+        end
+        if(rd_mux_addr == 20'h90088) begin
+            readback_data_var[31:0] = hwif_in.gr.ASM_BIT_ERRORS.count.next;
+        end
+        if(rd_mux_addr == 20'h9008c) begin
+            readback_data_var[31:0] = hwif_in.gr.DROPPED_RECORDS.count.next;
+        end
+        if(rd_mux_addr == 20'h90090) begin
+            readback_data_var[31:0] = hwif_in.gr.SKIPPED_IDLE.count.next;
+        end
+        if(rd_mux_addr == 20'h90094) begin
+            readback_data_var[31:0] = hwif_in.gr.CAPTURED.count.next;
         end
         readback_data = readback_data_var;
         readback_done = decoded_req & ~decoded_req_is_wr;

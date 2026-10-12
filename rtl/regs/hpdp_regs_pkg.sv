@@ -4,8 +4,8 @@
 package hpdp_regs_pkg;
 
     localparam HPDP_REGS_DATA_WIDTH = 32;
-    localparam HPDP_REGS_MIN_ADDR_WIDTH = 19;
-    localparam HPDP_REGS_SIZE = 'h40098;
+    localparam HPDP_REGS_MIN_ADDR_WIDTH = 20;
+    localparam HPDP_REGS_SIZE = 'h90098;
 
     typedef struct {
         logic next;
@@ -39,8 +39,18 @@ package hpdp_regs_pkg;
     } hpdp_sys__IRQ_STATUS__error__in_t;
 
     typedef struct {
+        logic hwset;
+    } hpdp_sys__IRQ_STATUS__link_lock_loss__in_t;
+
+    typedef struct {
+        logic hwset;
+    } hpdp_sys__IRQ_STATUS__sync_loss__in_t;
+
+    typedef struct {
         hpdp_sys__IRQ_STATUS__scene_done__in_t scene_done;
         hpdp_sys__IRQ_STATUS__error__in_t error;
+        hpdp_sys__IRQ_STATUS__link_lock_loss__in_t link_lock_loss;
+        hpdp_sys__IRQ_STATUS__sync_loss__in_t sync_loss;
     } hpdp_sys__IRQ_STATUS__in_t;
 
     typedef struct {
@@ -285,11 +295,223 @@ package hpdp_regs_pkg;
     } hpdp_cmp__in_t;
 
     typedef struct {
+        logic [31:0] next;
+    } counter_desc_aa60e7cd__count__in_t;
+
+    typedef struct {
+        counter_desc_aa60e7cd__count__in_t count;
+    } counter_desc_aa60e7cd__in_t;
+
+    typedef struct {
+        counter__in_t PACKETS;
+        counter__in_t SCENES;
+        counter_desc_aa60e7cd__in_t TS_OVERFLOWS;
+    } hpdp_pkt__in_t;
+
+    typedef struct {
+        logic [31:0] next;
+    } counter_desc_54b7c695__count__in_t;
+
+    typedef struct {
+        counter_desc_54b7c695__count__in_t count;
+    } counter_desc_54b7c695__in_t;
+
+    typedef struct {
+        counter__in_t SCIENCE_FRAMES;
+        counter__in_t IDLE_FRAMES;
+        counter_desc_54b7c695__in_t CADUS;
+    } hpdp_aos__in_t;
+
+    typedef struct {
+        logic [31:0] next;
+    } counter_desc_05d52893__count__in_t;
+
+    typedef struct {
+        counter_desc_05d52893__count__in_t count;
+    } counter_desc_05d52893__in_t;
+
+    typedef struct {
+        counter_desc_05d52893__in_t INJECTED_BITS;
+    } hpdp_ei__in_t;
+
+    typedef struct {
+        logic next;
+    } hpdp_lnk__STATUS__tx_ready__in_t;
+
+    typedef struct {
+        logic next;
+    } hpdp_lnk__STATUS__rx_ready__in_t;
+
+    typedef struct {
+        logic next;
+    } hpdp_lnk__STATUS__aligned__in_t;
+
+    typedef struct {
+        logic next;
+    } hpdp_lnk__STATUS__locked__in_t;
+
+    typedef struct {
+        logic next;
+    } hpdp_lnk__STATUS__prbs_locked__in_t;
+
+    typedef struct {
+        logic [1:0] next;
+    } hpdp_lnk__STATUS__cpll_locked__in_t;
+
+    typedef struct {
+        logic [1:0] next;
+    } hpdp_lnk__STATUS__powergood__in_t;
+
+    typedef struct {
+        hpdp_lnk__STATUS__tx_ready__in_t tx_ready;
+        hpdp_lnk__STATUS__rx_ready__in_t rx_ready;
+        hpdp_lnk__STATUS__aligned__in_t aligned;
+        hpdp_lnk__STATUS__locked__in_t locked;
+        hpdp_lnk__STATUS__prbs_locked__in_t prbs_locked;
+        hpdp_lnk__STATUS__cpll_locked__in_t cpll_locked;
+        hpdp_lnk__STATUS__powergood__in_t powergood;
+    } hpdp_lnk__STATUS__in_t;
+
+    typedef struct {
+        logic [31:0] next;
+    } counter_desc_99cd497d__count__in_t;
+
+    typedef struct {
+        counter_desc_99cd497d__count__in_t count;
+    } counter_desc_99cd497d__in_t;
+
+    typedef struct {
+        logic [31:0] next;
+    } counter_desc_56957d2a__count__in_t;
+
+    typedef struct {
+        counter_desc_56957d2a__count__in_t count;
+    } counter_desc_56957d2a__in_t;
+
+    typedef struct {
+        logic [31:0] next;
+    } counter_desc_69ea36a9__count__in_t;
+
+    typedef struct {
+        counter_desc_69ea36a9__count__in_t count;
+    } counter_desc_69ea36a9__in_t;
+
+    typedef struct {
+        logic [31:0] next;
+    } counter_desc_36ac81ed__count__in_t;
+
+    typedef struct {
+        counter_desc_36ac81ed__count__in_t count;
+    } counter_desc_36ac81ed__in_t;
+
+    typedef struct {
+        logic [31:0] next;
+    } counter_desc_b7b93901__count__in_t;
+
+    typedef struct {
+        counter_desc_b7b93901__count__in_t count;
+    } counter_desc_b7b93901__in_t;
+
+    typedef struct {
+        logic [31:0] next;
+    } counter_desc_6f55382d__count__in_t;
+
+    typedef struct {
+        counter_desc_6f55382d__count__in_t count;
+    } counter_desc_6f55382d__in_t;
+
+    typedef struct {
+        logic [31:0] next;
+    } counter_desc_e2ee100a__count__in_t;
+
+    typedef struct {
+        counter_desc_e2ee100a__count__in_t count;
+    } counter_desc_e2ee100a__in_t;
+
+    typedef struct {
+        logic [31:0] next;
+    } counter_desc_19cf7aaf__count__in_t;
+
+    typedef struct {
+        counter_desc_19cf7aaf__count__in_t count;
+    } counter_desc_19cf7aaf__in_t;
+
+    typedef struct {
+        logic [15:0] next;
+    } hpdp_lnk__PRBS_WORDS_HI__count__in_t;
+
+    typedef struct {
+        hpdp_lnk__PRBS_WORDS_HI__count__in_t count;
+    } hpdp_lnk__PRBS_WORDS_HI__in_t;
+
+    typedef struct {
+        hpdp_lnk__STATUS__in_t STATUS;
+        counter_desc_99cd497d__in_t CODE_ERRORS;
+        counter__in_t LOCK_LOSSES;
+        counter_desc_56957d2a__in_t RX_WORDS;
+        counter__in_t TX_DATA_WORDS;
+        counter_desc_69ea36a9__in_t TX_IDLE_WORDS;
+        counter_desc_36ac81ed__in_t RX_OVERFLOWS;
+        counter_desc_b7b93901__in_t CLK_CORRECTIONS;
+        counter_desc_6f55382d__in_t BUF_ERRORS;
+        counter_desc_e2ee100a__in_t PRBS_ERRORS;
+        counter_desc_19cf7aaf__in_t PRBS_WORDS_LO;
+        hpdp_lnk__PRBS_WORDS_HI__in_t PRBS_WORDS_HI;
+    } hpdp_lnk__in_t;
+
+    typedef struct {
+        logic [1:0] next;
+    } hpdp_gr__STATUS__sync_state__in_t;
+
+    typedef struct {
+        hpdp_gr__STATUS__sync_state__in_t sync_state;
+    } hpdp_gr__STATUS__in_t;
+
+    typedef struct {
+        logic [31:0] next;
+    } counter_desc_cb8dda5a__count__in_t;
+
+    typedef struct {
+        counter_desc_cb8dda5a__count__in_t count;
+    } counter_desc_cb8dda5a__in_t;
+
+    typedef struct {
+        logic [31:0] next;
+    } counter_desc_f6f07ab0__count__in_t;
+
+    typedef struct {
+        counter_desc_f6f07ab0__count__in_t count;
+    } counter_desc_f6f07ab0__in_t;
+
+    typedef struct {
+        logic [31:0] next;
+    } counter_desc_a19adcd6__count__in_t;
+
+    typedef struct {
+        counter_desc_a19adcd6__count__in_t count;
+    } counter_desc_a19adcd6__in_t;
+
+    typedef struct {
+        hpdp_gr__STATUS__in_t STATUS;
+        counter_desc_cb8dda5a__in_t CADUS;
+        counter__in_t SYNC_LOSSES;
+        counter__in_t ASM_BIT_ERRORS;
+        counter_desc_f6f07ab0__in_t DROPPED_RECORDS;
+        counter__in_t SKIPPED_IDLE;
+        counter_desc_a19adcd6__in_t CAPTURED;
+    } hpdp_gr__in_t;
+
+    typedef struct {
         hpdp_sys__in_t sys;
         hpdp_se__in_t se;
         hpdp_rc__in_t rc;
         hpdp_ct__in_t ct;
         hpdp_cmp__in_t cmp;
+        hpdp_pkt__in_t pkt;
+        hpdp_aos__in_t aos;
+        hpdp_ei__in_t ei;
+        hpdp_lnk__in_t lnk;
+        hpdp_gr__in_t gr;
     } hpdp_regs__in_t;
 
     typedef struct {
@@ -309,8 +531,18 @@ package hpdp_regs_pkg;
     } hpdp_sys__IRQ_EN__error__out_t;
 
     typedef struct {
+        logic value;
+    } hpdp_sys__IRQ_EN__link_lock_loss__out_t;
+
+    typedef struct {
+        logic value;
+    } hpdp_sys__IRQ_EN__sync_loss__out_t;
+
+    typedef struct {
         hpdp_sys__IRQ_EN__scene_done__out_t scene_done;
         hpdp_sys__IRQ_EN__error__out_t error;
+        hpdp_sys__IRQ_EN__link_lock_loss__out_t link_lock_loss;
+        hpdp_sys__IRQ_EN__sync_loss__out_t sync_loss;
     } hpdp_sys__IRQ_EN__out_t;
 
     typedef struct {
@@ -322,8 +554,18 @@ package hpdp_regs_pkg;
     } hpdp_sys__IRQ_STATUS__error__out_t;
 
     typedef struct {
+        logic value;
+    } hpdp_sys__IRQ_STATUS__link_lock_loss__out_t;
+
+    typedef struct {
+        logic value;
+    } hpdp_sys__IRQ_STATUS__sync_loss__out_t;
+
+    typedef struct {
         hpdp_sys__IRQ_STATUS__scene_done__out_t scene_done;
         hpdp_sys__IRQ_STATUS__error__out_t error;
+        hpdp_sys__IRQ_STATUS__link_lock_loss__out_t link_lock_loss;
+        hpdp_sys__IRQ_STATUS__sync_loss__out_t sync_loss;
     } hpdp_sys__IRQ_STATUS__out_t;
 
     typedef struct {
@@ -331,7 +573,12 @@ package hpdp_regs_pkg;
     } hpdp_sys__MODE__capture__out_t;
 
     typedef struct {
+        logic value;
+    } hpdp_sys__MODE__downlink__out_t;
+
+    typedef struct {
         hpdp_sys__MODE__capture__out_t capture;
+        hpdp_sys__MODE__downlink__out_t downlink;
     } hpdp_sys__MODE__out_t;
 
     typedef struct {
@@ -592,10 +839,260 @@ package hpdp_regs_pkg;
     } hpdp_cmp__out_t;
 
     typedef struct {
+        logic [10:0] value;
+    } hpdp_pkt__APID__apid__out_t;
+
+    typedef struct {
+        hpdp_pkt__APID__apid__out_t apid;
+    } hpdp_pkt__APID__out_t;
+
+    typedef struct {
+        logic [11:0] value;
+    } hpdp_pkt__PKT_DATA__bytes__out_t;
+
+    typedef struct {
+        hpdp_pkt__PKT_DATA__bytes__out_t bytes;
+    } hpdp_pkt__PKT_DATA__out_t;
+
+    typedef struct {
+        hpdp_pkt__APID__out_t APID;
+        hpdp_pkt__PKT_DATA__out_t PKT_DATA;
+        cnt_clear__out_t CNT_CLEAR;
+    } hpdp_pkt__out_t;
+
+    typedef struct {
+        logic value;
+    } hpdp_aos__CTRL__idle_en__out_t;
+
+    typedef struct {
+        hpdp_aos__CTRL__idle_en__out_t idle_en;
+    } hpdp_aos__CTRL__out_t;
+
+    typedef struct {
+        logic [7:0] value;
+    } hpdp_aos__FRAME_HDR__scid__out_t;
+
+    typedef struct {
+        logic [5:0] value;
+    } hpdp_aos__FRAME_HDR__vcid__out_t;
+
+    typedef struct {
+        hpdp_aos__FRAME_HDR__scid__out_t scid;
+        hpdp_aos__FRAME_HDR__vcid__out_t vcid;
+    } hpdp_aos__FRAME_HDR__out_t;
+
+    typedef struct {
+        logic [31:0] value;
+    } hpdp_aos__FRAME_GAP__cycles__out_t;
+
+    typedef struct {
+        hpdp_aos__FRAME_GAP__cycles__out_t cycles;
+    } hpdp_aos__FRAME_GAP__out_t;
+
+    typedef struct {
+        hpdp_aos__CTRL__out_t CTRL;
+        hpdp_aos__FRAME_HDR__out_t FRAME_HDR;
+        hpdp_aos__FRAME_GAP__out_t FRAME_GAP;
+        cnt_clear__out_t CNT_CLEAR;
+    } hpdp_aos__out_t;
+
+    typedef struct {
+        logic [1:0] value;
+    } hpdp_ei__CTRL__mode__out_t;
+
+    typedef struct {
+        hpdp_ei__CTRL__mode__out_t mode;
+    } hpdp_ei__CTRL__out_t;
+
+    typedef struct {
+        logic [31:0] value;
+    } hpdp_ei__THRESHOLD__value__out_t;
+
+    typedef struct {
+        hpdp_ei__THRESHOLD__value__out_t value;
+    } hpdp_ei__THRESHOLD__out_t;
+
+    typedef struct {
+        logic [31:0] value;
+    } hpdp_ei__SEED__value__out_t;
+
+    typedef struct {
+        hpdp_ei__SEED__value__out_t value;
+    } hpdp_ei__SEED__out_t;
+
+    typedef struct {
+        logic value;
+    } hpdp_ei__SEED_LOAD__load__out_t;
+
+    typedef struct {
+        hpdp_ei__SEED_LOAD__load__out_t load;
+    } hpdp_ei__SEED_LOAD__out_t;
+
+    typedef struct {
+        logic [15:0] value;
+    } hpdp_ei__BURST_LEN__bits__out_t;
+
+    typedef struct {
+        hpdp_ei__BURST_LEN__bits__out_t bits;
+    } hpdp_ei__BURST_LEN__out_t;
+
+    typedef struct {
+        logic [31:0] value;
+    } hpdp_ei__PERIOD__value__out_t;
+
+    typedef struct {
+        hpdp_ei__PERIOD__value__out_t value;
+    } hpdp_ei__PERIOD__out_t;
+
+    typedef struct {
+        logic [5:0] value;
+    } hpdp_ei__ASM_BITS__bits__out_t;
+
+    typedef struct {
+        hpdp_ei__ASM_BITS__bits__out_t bits;
+    } hpdp_ei__ASM_BITS__out_t;
+
+    typedef struct {
+        hpdp_ei__CTRL__out_t CTRL;
+        hpdp_ei__THRESHOLD__out_t THRESHOLD;
+        hpdp_ei__SEED__out_t SEED;
+        hpdp_ei__SEED_LOAD__out_t SEED_LOAD;
+        hpdp_ei__BURST_LEN__out_t BURST_LEN;
+        hpdp_ei__PERIOD__out_t PERIOD;
+        hpdp_ei__ASM_BITS__out_t ASM_BITS;
+        cnt_clear__out_t CNT_CLEAR;
+    } hpdp_ei__out_t;
+
+    typedef struct {
+        logic value;
+    } hpdp_lnk__CTRL__tx_enable__out_t;
+
+    typedef struct {
+        logic value;
+    } hpdp_lnk__CTRL__gt_reset__out_t;
+
+    typedef struct {
+        logic value;
+    } hpdp_lnk__CTRL__rx_reset__out_t;
+
+    typedef struct {
+        logic value;
+    } hpdp_lnk__CTRL__fabric_loopback__out_t;
+
+    typedef struct {
+        logic value;
+    } hpdp_lnk__CTRL__rx_sel__out_t;
+
+    typedef struct {
+        logic [2:0] value;
+    } hpdp_lnk__CTRL__gt_loopback__out_t;
+
+    typedef struct {
+        logic value;
+    } hpdp_lnk__CTRL__tx_polarity__out_t;
+
+    typedef struct {
+        logic value;
+    } hpdp_lnk__CTRL__rx_polarity__out_t;
+
+    typedef struct {
+        logic [3:0] value;
+    } hpdp_lnk__CTRL__prbs_sel__out_t;
+
+    typedef struct {
+        hpdp_lnk__CTRL__tx_enable__out_t tx_enable;
+        hpdp_lnk__CTRL__gt_reset__out_t gt_reset;
+        hpdp_lnk__CTRL__rx_reset__out_t rx_reset;
+        hpdp_lnk__CTRL__fabric_loopback__out_t fabric_loopback;
+        hpdp_lnk__CTRL__rx_sel__out_t rx_sel;
+        hpdp_lnk__CTRL__gt_loopback__out_t gt_loopback;
+        hpdp_lnk__CTRL__tx_polarity__out_t tx_polarity;
+        hpdp_lnk__CTRL__rx_polarity__out_t rx_polarity;
+        hpdp_lnk__CTRL__prbs_sel__out_t prbs_sel;
+    } hpdp_lnk__CTRL__out_t;
+
+    typedef struct {
+        logic [15:0] value;
+    } hpdp_lnk__CC_INTERVAL__words__out_t;
+
+    typedef struct {
+        hpdp_lnk__CC_INTERVAL__words__out_t words;
+    } hpdp_lnk__CC_INTERVAL__out_t;
+
+    typedef struct {
+        logic value;
+    } hpdp_lnk__PRBS_INJECT__inject__out_t;
+
+    typedef struct {
+        hpdp_lnk__PRBS_INJECT__inject__out_t inject;
+    } hpdp_lnk__PRBS_INJECT__out_t;
+
+    typedef struct {
+        logic value;
+    } cnt_clear_desc_7287de1c__clear__out_t;
+
+    typedef struct {
+        cnt_clear_desc_7287de1c__clear__out_t clear;
+    } cnt_clear_desc_7287de1c__out_t;
+
+    typedef struct {
+        hpdp_lnk__CTRL__out_t CTRL;
+        hpdp_lnk__CC_INTERVAL__out_t CC_INTERVAL;
+        hpdp_lnk__PRBS_INJECT__out_t PRBS_INJECT;
+        cnt_clear_desc_7287de1c__out_t CNT_CLEAR;
+    } hpdp_lnk__out_t;
+
+    typedef struct {
+        logic value;
+    } hpdp_gr__CTRL__capture__out_t;
+
+    typedef struct {
+        logic value;
+    } hpdp_gr__CTRL__skip_idle__out_t;
+
+    typedef struct {
+        hpdp_gr__CTRL__capture__out_t capture;
+        hpdp_gr__CTRL__skip_idle__out_t skip_idle;
+    } hpdp_gr__CTRL__out_t;
+
+    typedef struct {
+        logic [5:0] value;
+    } hpdp_gr__SYNC__asm_tol__out_t;
+
+    typedef struct {
+        logic [3:0] value;
+    } hpdp_gr__SYNC__flywheel__out_t;
+
+    typedef struct {
+        hpdp_gr__SYNC__asm_tol__out_t asm_tol;
+        hpdp_gr__SYNC__flywheel__out_t flywheel;
+    } hpdp_gr__SYNC__out_t;
+
+    typedef struct {
+        logic [15:0] value;
+    } hpdp_gr__XFER__records__out_t;
+
+    typedef struct {
+        hpdp_gr__XFER__records__out_t records;
+    } hpdp_gr__XFER__out_t;
+
+    typedef struct {
+        hpdp_gr__CTRL__out_t CTRL;
+        hpdp_gr__SYNC__out_t SYNC;
+        hpdp_gr__XFER__out_t XFER;
+        cnt_clear__out_t CNT_CLEAR;
+    } hpdp_gr__out_t;
+
+    typedef struct {
         hpdp_sys__out_t sys;
         hpdp_se__out_t se;
         hpdp_rc__out_t rc;
         hpdp_ct__out_t ct;
         hpdp_cmp__out_t cmp;
+        hpdp_pkt__out_t pkt;
+        hpdp_aos__out_t aos;
+        hpdp_ei__out_t ei;
+        hpdp_lnk__out_t lnk;
+        hpdp_gr__out_t gr;
     } hpdp_regs__out_t;
 endpackage

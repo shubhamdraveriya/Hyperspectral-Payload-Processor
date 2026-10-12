@@ -9,6 +9,7 @@
 module cadu_framer import downlink_pkg::*; (
     input  logic       clk,
     input  logic       rst,
+    input  logic       cnt_clr,                 // clear cadus
 
     input  logic [7:0] s_axis_tdata,
     input  logic       s_axis_tlast,            // last byte of the codeblock
@@ -59,6 +60,7 @@ module cadu_framer import downlink_pkg::*; (
                     cadus <= cadus + 32'd1;
                 end
             end
+            if (cnt_clr) cadus <= '0;
         end
     end
 endmodule

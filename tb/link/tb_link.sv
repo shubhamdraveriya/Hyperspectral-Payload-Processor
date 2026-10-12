@@ -29,7 +29,7 @@ module tb_link;
 
     link_layer dut (
         .clk_sys, .rst_sys (rst), .clk_link, .rst_link (rst),
-        .cc_interval (16'(CC_INTERVAL)),
+        .cc_interval (16'(CC_INTERVAL)), .cnt_clr (1'b0),
         .s_axis_tdata (s_tdata), .s_axis_tvalid (s_tvalid), .s_axis_tready (s_tready),
         .m_tdata, .m_tvalid,
         .txdata, .txcharisk, .rxdata, .rxcharisk, .rxdisperr, .rxnotintable, .rxbyteisaligned,

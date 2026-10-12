@@ -49,12 +49,12 @@ regfile hpdp_sys {
         field { sw = r; hw = w; desc = "Sensor run in progress"; } busy[0:0];
         field {
             sw = r; hw = w;
-            desc = "An overflow counter is non-zero (emulator underrun, overrun or drop; corner turn drop)";
+            desc = "An overflow counter is non-zero (emulator underrun, overrun or drop; corner turn drop; scene timestamp, link RX or ground record overflow)";
         } error[1:1];
         field { sw = r; hw = w; desc = "clk_sensor clock (MMCM) locked"; } sensor_locked[2:2];
         field {
             sw = r; hw = w;
-            desc = "Register writes not yet applied in every clock domain. Wait for 0 after configuring, before starting DMA or a run";
+            desc = "Register writes not yet applied in every clock domain (the link domain only while LNK.STATUS.tx_ready). Wait for 0 after configuring, before starting DMA or a run";
         } cfg_pending[3:3];
     } STATUS @ 0x08;
 
@@ -62,6 +62,8 @@ regfile hpdp_sys {
         name = "Interrupt enables";
         field { sw = rw; hw = r; desc = "Compressed scene complete"; } scene_done[0:0] = 0;
         field { sw = rw; hw = r; desc = "Overflow"; } error[1:1] = 0;
+        field { sw = rw; hw = r; desc = "Link lock lost"; } link_lock_loss[2:2] = 0;
+        field { sw = rw; hw = r; desc = "Ground frame sync lost"; } sync_loss[3:3] = 0;
     } IRQ_EN @ 0x0C;
 
     reg {
@@ -69,6 +71,8 @@ regfile hpdp_sys {
         desc = "Write 1 to clear";
         field { sw = rw; hw = r; onwrite = woclr; hwset; desc = "A compressed scene completed"; } scene_done[0:0] = 0;
         field { sw = rw; hw = r; onwrite = woclr; hwset; desc = "An overflow counter incremented"; } error[1:1] = 0;
+        field { sw = rw; hw = r; onwrite = woclr; hwset; desc = "LNK.LOCK_LOSSES incremented"; } link_lock_loss[2:2] = 0;
+        field { sw = rw; hw = r; onwrite = woclr; hwset; desc = "GR.SYNC_LOSSES incremented"; } sync_loss[3:3] = 0;
     } IRQ_STATUS @ 0x10;
 
     reg {
@@ -78,10 +82,15 @@ regfile hpdp_sys {
 
     reg {
         name = "Mode";
+        desc = "Both outputs may be on at once; with neither, the compressor output is discarded. Change only between runs (or under soft reset): scene timestamps are queued for the packetizer only while downlink is set.";
         field {
             sw = rw; hw = r;
-            desc = "1: compressor output to DMA S2MM (CAPTURE_CMP); 0: discarded";
+            desc = "1: compressor output to DMA S2MM (CAPTURE_CMP)";
         } capture[0:0] = 1;
+        field {
+            sw = rw; hw = r;
+            desc = "1: compressor output to the downlink chain: packets, AOS frames, RS, CADUs, error injector, link (COMPRESS; RAW with CMP.OPTS.raw)";
+        } downlink[1:1] = 0;
     } MODE @ 0x44;
 
     reg {
@@ -303,9 +312,230 @@ regfile hpdp_cmp {
 };
 
 // ---------------------------------------------------------------------------
+regfile hpdp_pkt {
+    name = "Space packetizer";
+    desc = "SPEC.md 6.5. clk_sys. Static while scenes are in flight.";
+
+    block_id #(.BLOCK(16'h0005)) ID @ 0x00;
+
+    reg {
+        name = "Application process ID";
+        field { sw = rw; hw = r; desc = "APID of the science packets"; } apid[10:0] = 11'h100;
+    } APID @ 0x40;
+    reg {
+        name = "Packet data length";
+        field { sw = rw; hw = r; desc = "User data bytes per packet, 1..2048; the last packet of a scene may be shorter"; } bytes[11:0] = 2048;
+    } PKT_DATA @ 0x44;
+
+    cnt_clear CNT_CLEAR @ 0x7C;
+    counter PACKETS @ 0x80;
+    counter SCENES @ 0x84;
+    counter TS_OVERFLOWS @ 0x88;
+    TS_OVERFLOWS -> desc = "Scene timestamps lost: more than 16 scenes between the front end and the packetizer";
+};
+
+// ---------------------------------------------------------------------------
+regfile hpdp_aos {
+    name = "AOS framer and channel coding";
+    desc = "SPEC.md 6.6, 6.7: 892-byte frames, RS(255,223) I = 4, randomizer, ASM. clk_sys.";
+
+    block_id #(.BLOCK(16'h0006)) ID @ 0x00;
+
+    reg {
+        name = "Control";
+        field {
+            sw = rw; hw = r;
+            desc = "1: an idle frame (VCID 63) whenever no science frame is ready, so the downlink never pauses (AOS-01)";
+        } idle_en[0:0] = 1;
+    } CTRL @ 0x04;
+
+    reg {
+        name = "Frame header";
+        field { sw = rw; hw = r; desc = "Spacecraft ID"; } scid[7:0] = 8'h42;
+        field { sw = rw; hw = r; desc = "Virtual channel ID of the science frames, 0..62"; } vcid[13:8] = 1;
+    } FRAME_HDR @ 0x40;
+    reg {
+        name = "Science frame spacing";
+        field {
+            sw = rw; hw = r;
+            desc = "Minimum clk_sys cycles between science frame starts, 0: unlimited (AOS-02: f_clk_sys / frames per second)";
+        } cycles[31:0] = 0;
+    } FRAME_GAP @ 0x44;
+
+    cnt_clear CNT_CLEAR @ 0x7C;
+    counter SCIENCE_FRAMES @ 0x80;
+    counter IDLE_FRAMES @ 0x84;
+    counter CADUS @ 0x88;
+    CADUS -> desc = "CADUs leaving the channel coder (science and idle)";
+};
+
+// ---------------------------------------------------------------------------
+regfile hpdp_ei {
+    name = "Error injector";
+    desc = "SPEC.md 6.8, on the CADU byte stream. clk_sys. Change the settings while no CADUs flow if the change point matters.";
+
+    block_id #(.BLOCK(16'h0007)) ID @ 0x00;
+
+    reg {
+        name = "Control";
+        field { sw = rw; hw = r; desc = "0 off, 1 random bit errors, 2 burst, 3 ASM"; } mode[1:0] = 0;
+    } CTRL @ 0x04;
+
+    reg {
+        name = "Random error threshold";
+        field { sw = rw; hw = r; desc = "BER = THRESHOLD / 2^32 per bit"; } value[31:0] = 0;
+    } THRESHOLD @ 0x40;
+    reg {
+        name = "Seed";
+        field { sw = rw; hw = r; desc = "Generator seed, loaded by SEED_LOAD and at reset"; } value[31:0] = 1;
+    } SEED @ 0x44;
+    reg {
+        name = "Seed load";
+        field {
+            sw = rw; hw = r; singlepulse;
+            desc = "Write 1: restart the generators from SEED and the burst and ASM counters; clears INJECTED_BITS";
+        } load[0:0] = 0;
+    } SEED_LOAD @ 0x48;
+    reg {
+        name = "Burst length";
+        field { sw = rw; hw = r; desc = "Bits per burst"; } bits[15:0] = 0;
+    } BURST_LEN @ 0x4C;
+    reg {
+        name = "Period";
+        field { sw = rw; hw = r; desc = "Burst: one burst every PERIOD bytes. ASM: every PERIOD-th CADU. At least 1"; } value[31:0] = 1;
+    } PERIOD @ 0x50;
+    reg {
+        name = "ASM bits";
+        field { sw = rw; hw = r; desc = "ASM mode: bits flipped at the start of the sync marker, 0..32"; } bits[5:0] = 0;
+    } ASM_BITS @ 0x54;
+
+    cnt_clear CNT_CLEAR @ 0x7C;
+    counter INJECTED_BITS @ 0x80;
+    INJECTED_BITS -> desc = "Bits flipped (ground truth for BER measurements)";
+};
+
+// ---------------------------------------------------------------------------
+regfile hpdp_lnk {
+    name = "Optical link";
+    desc = "SPEC.md 6.9. GTH SFP0 and SFP1 at 1.25 Gbaud, both transmitting the same stream; the receiver takes one channel (CTRL.rx_sel). The link layer runs on clk_link (62.5 MHz), which runs only while the transceivers' TX is up (STATUS.tx_ready); its counters hold their last values otherwise.";
+
+    block_id #(.BLOCK(16'h0008)) ID @ 0x00;
+
+    reg {
+        name = "Control";
+        field { sw = rw; hw = r; desc = "SFP0 and SFP1 transmitters on (TX_DISABLE released, LNK-09)"; } tx_enable[0:0] = 1;
+        field { sw = rw; hw = r; desc = "1: hold both GTH channels in reset; the full reset sequence runs on release"; } gt_reset[1:1] = 0;
+        field { sw = rw; hw = r; desc = "1: hold the GTH receive data paths in reset"; } rx_reset[2:2] = 0;
+        field { sw = rw; hw = r; desc = "1: the receiver gets the transmitted words inside the FPGA (no transceiver)"; } fabric_loopback[3:3] = 0;
+        field { sw = rw; hw = r; desc = "Receiving channel: 0 SFP1 (fiber from SFP0), 1 SFP0"; } rx_sel[4:4] = 0;
+        field { sw = rw; hw = r; desc = "GTH LOOPBACK: 0 normal, 1 near-end PCS, 2 near-end PMA, 4 far-end PMA, 6 far-end PCS"; } gt_loopback[10:8] = 0;
+        field { sw = rw; hw = r; desc = "Invert the transmitted bits"; } tx_polarity[12:12] = 0;
+        field { sw = rw; hw = r; desc = "Invert the received bits"; } rx_polarity[13:13] = 0;
+        field {
+            sw = rw; hw = r;
+            desc = "GTH PRBS generator and checker: 0 off (link layer), 5 PRBS-31 (PRBS mode, LNK-06); 1 PRBS-7, 2 PRBS-9, 3 PRBS-15, 4 PRBS-23";
+        } prbs_sel[19:16] = 0;
+    } CTRL @ 0x04;
+
+    reg {
+        name = "Status";
+        field { sw = r; hw = w; desc = "Transceiver TX reset done: clk_link runs"; } tx_ready[0:0];
+        field { sw = r; hw = w; desc = "Transceiver RX reset done"; } rx_ready[1:1];
+        field { sw = r; hw = w; desc = "Receiving channel byte-aligned on K28.5"; } aligned[2:2];
+        field { sw = r; hw = w; desc = "Link layer LOCKED (LNK-05)"; } locked[3:3];
+        field { sw = r; hw = w; desc = "PRBS checker of the receiving channel locked"; } prbs_locked[4:4];
+        field { sw = r; hw = w; desc = "CPLL locked: [0] SFP0, [1] SFP1"; } cpll_locked[9:8];
+        field { sw = r; hw = w; desc = "GTH power good: [0] SFP0, [1] SFP1"; } powergood[11:10];
+    } STATUS @ 0x08;
+
+    reg {
+        name = "Clock-correction interval";
+        field { sw = rw; hw = r; desc = "An idle word at least every this many words, 2..65535 (LNK-03)"; } words[15:0] = 2048;
+    } CC_INTERVAL @ 0x40;
+    reg {
+        name = "PRBS error injection";
+        field { sw = rw; hw = r; singlepulse; desc = "Write 1: one error in the transmitted PRBS (TXPRBSFORCEERR)"; } inject[0:0] = 0;
+    } PRBS_INJECT @ 0x44;
+
+    cnt_clear CNT_CLEAR @ 0x7C;
+    CNT_CLEAR -> desc = "Write 1 to clear this block's counters (also resets the GTH PRBS checkers)";
+    counter CODE_ERRORS @ 0x80;
+    CODE_ERRORS -> desc = "Received words with a disparity or not-in-table error";
+    counter LOCK_LOSSES @ 0x84;
+    counter RX_WORDS @ 0x88;
+    RX_WORDS -> desc = "Data words received while LOCKED";
+    counter TX_DATA_WORDS @ 0x8C;
+    counter TX_IDLE_WORDS @ 0x90;
+    TX_IDLE_WORDS -> desc = "Idle / clock-correction words sent";
+    counter RX_OVERFLOWS @ 0x94;
+    RX_OVERFLOWS -> desc = "Received words lost in the clk_link -> clk_sys FIFO";
+    counter CLK_CORRECTIONS @ 0x98;
+    CLK_CORRECTIONS -> desc = "Elastic-buffer clock corrections (idle words removed or inserted)";
+    counter BUF_ERRORS @ 0x9C;
+    BUF_ERRORS -> desc = "Elastic-buffer underflows or overflows (each followed by a buffer reset)";
+    counter PRBS_ERRORS @ 0xA0;
+    PRBS_ERRORS -> desc = "Words with PRBS errors while CTRL.prbs_sel is set";
+    counter PRBS_WORDS_LO @ 0xA4;
+    PRBS_WORDS_LO -> desc = "PRBS words checked while the checker was locked, bits 31:0 (16 bits per word). Read HI, LO, HI and repeat if HI changed";
+    reg {
+        name = "PRBS words checked, bits 47:32";
+        field { sw = r; hw = w; } count[15:0];
+    } PRBS_WORDS_HI @ 0xA8;
+};
+
+// ---------------------------------------------------------------------------
+regfile hpdp_gr {
+    name = "Ground receiver";
+    desc = "SPEC.md 6.10: frame sync, derandomizer, capture to DDR (DMA S2MM, 1024-byte records). clk_sys.";
+
+    block_id #(.BLOCK(16'h0009)) ID @ 0x00;
+
+    reg {
+        name = "Control";
+        field {
+            sw = rw; hw = r;
+            desc = "1: records to the ground DMA S2MM; 0: discarded (still counted)";
+        } capture[0:0] = 0;
+        field {
+            sw = rw; hw = r;
+            desc = "1: records of idle frames are not captured: VCID field nearer (in bits) to 63 than to AOS.FRAME_HDR.vcid";
+        } skip_idle[1:1] = 1;
+    } CTRL @ 0x04;
+
+    reg {
+        name = "Status";
+        field { sw = r; hw = w; desc = "0 SEARCH, 1 VERIFY, 2 LOCK, 3 FLYWHEEL"; } sync_state[1:0];
+    } STATUS @ 0x08;
+
+    reg {
+        name = "Frame sync";
+        field { sw = rw; hw = r; desc = "ASM bits that may be wrong, 0..32 (GR-01)"; } asm_tol[5:0] = 2;
+        field { sw = rw; hw = r; desc = "Missed ASMs coasted through in LOCK, 0..15"; } flywheel[11:8] = 3;
+    } SYNC @ 0x40;
+    reg {
+        name = "Records per DMA transfer";
+        field {
+            sw = rw; hw = r;
+            desc = "tlast after this many captured records, 1..65535; a partial group ends after 2^16 clk_sys cycles without a record";
+        } records[15:0] = 16;
+    } XFER @ 0x44;
+
+    cnt_clear CNT_CLEAR @ 0x7C;
+    counter CADUS @ 0x80;
+    CADUS -> desc = "Records delivered by the frame sync";
+    counter SYNC_LOSSES @ 0x84;
+    counter ASM_BIT_ERRORS @ 0x88;
+    counter DROPPED_RECORDS @ 0x8C;
+    DROPPED_RECORDS -> desc = "Records lost because the capture path was full";
+    counter SKIPPED_IDLE @ 0x90;
+    counter CAPTURED @ 0x94;
+    CAPTURED -> desc = "Records sent to the ground DMA";
+};
+
+// ---------------------------------------------------------------------------
 addrmap hpdp_regs {
     name = "HPDP";
-    desc = "Hyperspectral Payload Data Processor, base 0xA000_0000";
+    desc = "Hyperspectral Payload Data Processor, base 0xA000_0000 (1 MB window)";
     default regwidth = 32;
 
     hpdp_sys sys @ 0x00000;
@@ -313,4 +543,9 @@ addrmap hpdp_regs {
     hpdp_rc  rc  @ 0x20000;
     hpdp_ct  ct  @ 0x30000;
     hpdp_cmp cmp @ 0x40000;
+    hpdp_pkt pkt @ 0x50000;
+    hpdp_aos aos @ 0x60000;
+    hpdp_ei  ei  @ 0x70000;
+    hpdp_lnk lnk @ 0x80000;
+    hpdp_gr  gr  @ 0x90000;
 };

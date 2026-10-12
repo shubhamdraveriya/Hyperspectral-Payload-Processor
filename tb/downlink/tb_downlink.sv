@@ -34,7 +34,7 @@ module tb_downlink;
 
     space_packetizer #(.PKT_MAX(2048)) u_pkt (
         .clk, .rst,
-        .apid (11'(apid)), .pkt_data (12'(pkt_data)), .raw_mode (1'b0), .lines_dropped (1'b0),
+        .apid (11'(apid)), .pkt_data (12'(pkt_data)), .raw_mode (1'b0), .lines_dropped (1'b0), .cnt_clr (1'b0),
         .s_axis_tdata (c_tdata), .s_axis_tkeep (c_tkeep), .s_axis_tlast (c_tlast),
         .s_axis_tvalid (c_tvalid), .s_axis_tready (c_tready),
         .s_meta_tdata (meta_tdata), .s_meta_tvalid (meta_tvalid), .s_meta_tready (meta_tready),
@@ -45,7 +45,7 @@ module tb_downlink;
 
     aos_framer u_aos (
         .clk, .rst,
-        .scid (8'(scid)), .vcid (6'(vcid)), .idle_en (idle_en != 0), .frame_gap (32'(frame_gap)),
+        .scid (8'(scid)), .vcid (6'(vcid)), .idle_en (idle_en != 0), .frame_gap (32'(frame_gap)), .cnt_clr (1'b0),
         .s_axis_tdata (p_tdata), .s_axis_tuser (p_tuser), .s_axis_tlast (p_tlast),
         .s_axis_tvalid (p_tvalid), .s_axis_tready (p_tready),
         .m_axis_tdata (f_tdata), .m_axis_tlast (f_tlast), .m_axis_tvalid (f_tvalid),
@@ -62,7 +62,7 @@ module tb_downlink;
     );
 
     cadu_framer u_cadu (
-        .clk, .rst,
+        .clk, .rst, .cnt_clr (1'b0),
         .s_axis_tdata (r_tdata), .s_axis_tlast (r_tlast), .s_axis_tvalid (r_tvalid),
         .s_axis_tready (r_tready),
         .m_axis_tdata (a_tdata), .m_axis_tuser (a_tuser), .m_axis_tlast (a_tlast),

@@ -1,17 +1,30 @@
 `timescale 1ns / 1ps
 
-// HPDP programmable-logic core (M4, CAPTURE_CMP mode):
+// HPDP programmable-logic core:
 //
-//   s_axis_dma (MM2S) --+--> sensor_frontend --> c123_core --> m_axis_cmp (S2MM)
-//                       '--> calibration table          '--> discarded (MODE.capture = 0)
+//   s_axis_dma (MM2S) --+--> sensor_frontend --> c123_core --+--> m_axis_cmp (S2MM, CAPTURE_CMP)
+//                       '--> calibration table                |
+//                                                             '--> space_packetizer --> aos_framer
+//       --> rs_encoder --> cadu_framer --> error_injector --> link_layer TX --> GTH (gt_tx*)
+//   GTH (gt_rx*) --> link_layer RX --> frame_sync --> gr_capture --> m_axis_gr (ground S2MM)
+//
+// SYS.MODE selects the compressor outputs (capture, downlink, both or none).
 //
 // Registers (regs/hpdp.rdl, PeakRDL) sit on clk_ctrl behind s_axil. The
-// configuration reaches clk_sys and clk_sensor, and status comes back, through
-// cdc_bus snapshots; events (counter clears, table commands) travel as
-// sequence counts inside those snapshots. Each domain echoes the count of
-// register writes it has received, so SYS.STATUS.cfg_pending tells software
-// when a configuration has arrived everywhere. SYS.CTRL.soft_reset holds the
-// data path of both clocks in reset (not the registers or the crossings).
+// configuration reaches clk_sys, clk_sensor and clk_link, and status comes
+// back, through cdc_bus snapshots; events (counter clears, table commands,
+// seed loads) travel as sequence counts inside those snapshots. Each domain
+// echoes the count of register writes it has received, so SYS.STATUS.cfg_pending
+// tells software when a configuration has arrived everywhere. SYS.CTRL.soft_reset
+// holds the clk_sys and clk_sensor data paths in reset (not the registers, the
+// crossings or the link domain).
+//
+// clk_link is the GTH TX user clock (62.5 MHz; the RX data of both channels is
+// on it too, through their elastic buffers). It runs only while the
+// transceivers' TX is up: the link domain and the link side of link_layer are
+// held in reset until gt_tx_done, and the link domain counts in cfg_pending only
+// then. Both channels transmit the same words; LNK.CTRL.rx_sel picks the
+// receiving channel. Index 0 = SFP0 (GTH X0Y10), 1 = SFP1 (X0Y11).
 module hpdp_core
     import frontend_pkg::*;
     import c123_pkg::*;
@@ -28,10 +41,10 @@ module hpdp_core
     input  logic         rst_sensor_n,
     input  logic         sensor_locked,     // clk_sensor MMCM locked (asynchronous)
 
-    // AXI4-Lite control (clk_ctrl), 512 KB window
+    // AXI4-Lite control (clk_ctrl), 1 MB window
     input  logic         s_axil_awvalid,
     output logic         s_axil_awready,
-    input  logic [18:0]  s_axil_awaddr,
+    input  logic [19:0]  s_axil_awaddr,
     input  logic [2:0]   s_axil_awprot,
     input  logic         s_axil_wvalid,
     output logic         s_axil_wready,
@@ -42,7 +55,7 @@ module hpdp_core
     output logic [1:0]   s_axil_bresp,
     input  logic         s_axil_arvalid,
     output logic         s_axil_arready,
-    input  logic [18:0]  s_axil_araddr,
+    input  logic [19:0]  s_axil_araddr,
     input  logic [2:0]   s_axil_arprot,
     output logic         s_axil_rvalid,
     input  logic         s_axil_rready,
@@ -62,19 +75,76 @@ module hpdp_core
     output logic         m_axis_cmp_tvalid,
     input  logic         m_axis_cmp_tready,
 
+    // Ground capture to the ground DMA S2MM (clk_sys), 1024-byte records
+    output logic [63:0]  m_axis_gr_tdata,
+    output logic [7:0]   m_axis_gr_tkeep,
+    output logic         m_axis_gr_tlast,
+    output logic         m_axis_gr_tvalid,
+    input  logic         m_axis_gr_tready,
+
+    // Transceivers: control and status outside the user clock
+    input  logic         gt_tx_done,        // reset sequences done (asynchronous)
+    input  logic         gt_rx_done,
+    input  logic [1:0]   gt_cplllock,       // asynchronous
+    input  logic [1:0]   gt_powergood,
+    output logic         gt_reset_all,      // clk_ctrl, levels (the wizard synchronizes)
+    output logic         gt_reset_rx,
+    output logic [1:0]   sfp_tx_enable,     // clk_ctrl, static: TX_DISABLE_B
+
+    // Transceivers: user interface (clk_link)
+    input  logic         clk_link,
+    output logic [15:0]  gt_txdata,         // both channels
+    output logic [1:0]   gt_txcharisk,
+    output logic [3:0]   gt_prbs_sel,       // both channels, TX and RX
+    output logic         gt_prbs_force_err,
+    output logic         gt_prbs_cnt_reset,
+    output logic [2:0]   gt_loopback,
+    output logic         gt_txpolarity,
+    output logic         gt_rxpolarity,
+    output logic [1:0]   gt_rxbufreset,
+    input  logic [31:0]  gt_rxdata,         // per channel
+    input  logic [3:0]   gt_rxcharisk,
+    input  logic [3:0]   gt_rxdisperr,
+    input  logic [3:0]   gt_rxnotintable,
+    input  logic [1:0]   gt_rxbyteisaligned,
+    input  logic [1:0]   gt_rxprbserr,
+    input  logic [1:0]   gt_rxprbslocked,
+    input  logic [3:0]   gt_rxclkcorcnt,
+    input  logic [5:0]   gt_rxbufstatus,
+
     output logic         irq                // level, clk_ctrl
 );
     // ---------------------------------------------------------------------
     // Snapshot buses between the clock domains
     // ---------------------------------------------------------------------
     typedef struct packed {
+        logic        downlink;
+        logic [10:0] apid;
+        logic [11:0] pkt_data;
+        logic        idle_en;
+        logic [7:0]  scid;
+        logic [5:0]  vcid;
+        logic [31:0] frame_gap;
+        logic [1:0]  ei_mode;
+        logic [31:0] ei_threshold, ei_seed, ei_period;
+        logic [15:0] ei_burst_len;
+        logic [5:0]  ei_asm_bits;
+        logic [5:0]  asm_tol;
+        logic [3:0]  flywheel;
+        logic        gr_capture, gr_skip_idle;
+        logic [15:0] gr_records;
+    } dl_cfg_t;
+
+    typedef struct packed {
         logic        soft_reset;
         logic        capture;
         logic        to_table;
         fe_cfg_t     fe;
         cfg_t        cmp;
+        dl_cfg_t     dl;
         logic [7:0]  wr_seq;                    // register write count
         logic [7:0]  ct_clr_seq, cmp_clr_seq;
+        logic [7:0]  pkt_clr_seq, aos_clr_seq, ei_clr_seq, gr_clr_seq, ei_seed_seq;
         logic [7:0]  tbl_seq;                   // table command count
         logic        tbl_write;
         logic [17:0] tbl_addr;
@@ -89,9 +159,26 @@ module hpdp_core
     } sen_cfg_t;
 
     typedef struct packed {
+        logic        fabric_lb, rx_sel;
+        logic [2:0]  loopback;
+        logic        txpol, rxpol;
+        logic [3:0]  prbs_sel;
+        logic [15:0] cc_interval;
+        logic [7:0]  wr_seq, clr_seq, inj_seq;
+    } lnk_cfg_t;
+
+    typedef struct packed {
         se_status_t  se;
         logic [7:0]  wr_seq_echo;
     } sen_stat_t;
+
+    typedef struct packed {
+        logic [31:0] packets, scenes, ts_overflows;
+        logic [31:0] science_frames, idle_frames, cadus;
+        logic [31:0] injected_bits;
+        logic [1:0]  sync_state;
+        logic [31:0] gr_cadus, sync_losses, asm_bit_errors, dropped_records, skipped, captured;
+    } dl_stat_t;
 
     typedef struct packed {
         fe_status_t  fe;
@@ -100,7 +187,16 @@ module hpdp_core
         logic [7:0]  tbl_done_seq;              // count of the last completed table command
         logic        cmp_busy, cmp_cfg_error;
         logic [31:0] scenes_done, samples_in, bytes_out, last_bytes, last_cycles, out_stalls;
+        dl_stat_t    dl;
     } sys_stat_t;
+
+    typedef struct packed {
+        logic [7:0]  wr_seq_echo;
+        logic        locked, aligned, prbs_locked;
+        logic [31:0] code_errors, lock_losses, rx_words, tx_data_words, tx_idle_words, rx_overflows;
+        logic [31:0] clk_corrections, buf_errors, prbs_errors;
+        logic [47:0] prbs_words;
+    } lnk_stat_t;
 
     // ---------------------------------------------------------------------
     // Registers (clk_ctrl)
@@ -123,17 +219,26 @@ module hpdp_core
 
     // Event counts (clk_ctrl)
     logic [7:0] wr_seq, se_clr_seq, ct_clr_seq, cmp_clr_seq, tbl_seq;
+    logic [7:0] pkt_clr_seq, aos_clr_seq, ei_clr_seq, gr_clr_seq, ei_seed_seq, lnk_clr_seq, lnk_inj_seq;
     logic       tbl_write;
 
     always_ff @(posedge clk_ctrl) begin
         if (rst_ctrl) begin
             {wr_seq, se_clr_seq, ct_clr_seq, cmp_clr_seq, tbl_seq} <= '0;
+            {pkt_clr_seq, aos_clr_seq, ei_clr_seq, gr_clr_seq, ei_seed_seq, lnk_clr_seq, lnk_inj_seq} <= '0;
             tbl_write <= 1'b0;
         end else begin
             if (s_axil_bvalid && s_axil_bready) wr_seq <= wr_seq + 8'd1;
             if (hwif_out.se.CNT_CLEAR.clear.value)  se_clr_seq  <= se_clr_seq + 8'd1;
             if (hwif_out.ct.CNT_CLEAR.clear.value)  ct_clr_seq  <= ct_clr_seq + 8'd1;
             if (hwif_out.cmp.CNT_CLEAR.clear.value) cmp_clr_seq <= cmp_clr_seq + 8'd1;
+            if (hwif_out.pkt.CNT_CLEAR.clear.value) pkt_clr_seq <= pkt_clr_seq + 8'd1;
+            if (hwif_out.aos.CNT_CLEAR.clear.value) aos_clr_seq <= aos_clr_seq + 8'd1;
+            if (hwif_out.ei.CNT_CLEAR.clear.value)  ei_clr_seq  <= ei_clr_seq + 8'd1;
+            if (hwif_out.gr.CNT_CLEAR.clear.value)  gr_clr_seq  <= gr_clr_seq + 8'd1;
+            if (hwif_out.lnk.CNT_CLEAR.clear.value) lnk_clr_seq <= lnk_clr_seq + 8'd1;
+            if (hwif_out.ei.SEED_LOAD.load.value)   ei_seed_seq <= ei_seed_seq + 8'd1;
+            if (hwif_out.lnk.PRBS_INJECT.inject.value) lnk_inj_seq <= lnk_inj_seq + 8'd1;
             if (hwif_out.rc.TBL_CMD.write.value || hwif_out.rc.TBL_CMD.read.value) begin
                 tbl_seq   <= tbl_seq + 8'd1;
                 tbl_write <= hwif_out.rc.TBL_CMD.write.value;
@@ -143,6 +248,7 @@ module hpdp_core
 
     fe_cfg_t fe_ctrl;
     cfg_t    cmp_ctrl;
+    dl_cfg_t dl_ctrl;
     always_comb begin
         fe_ctrl.nx          = hwif_out.sys.NX.value.value;
         fe_ctrl.ny          = hwif_out.sys.NY.value.value;
@@ -173,14 +279,37 @@ module hpdp_core
         cmp_ctrl.word_bytes = hwif_out.cmp.CODER.word_bytes.value;
         cmp_ctrl.raw        = hwif_out.cmp.OPTS.raw.value;
         cmp_ctrl.user_data  = hwif_out.cmp.OPTS.user_data.value;
+
+        dl_ctrl.downlink     = hwif_out.sys.MODE.downlink.value;
+        dl_ctrl.apid         = hwif_out.pkt.APID.apid.value;
+        dl_ctrl.pkt_data     = hwif_out.pkt.PKT_DATA.bytes.value;
+        dl_ctrl.idle_en      = hwif_out.aos.CTRL.idle_en.value;
+        dl_ctrl.scid         = hwif_out.aos.FRAME_HDR.scid.value;
+        dl_ctrl.vcid         = hwif_out.aos.FRAME_HDR.vcid.value;
+        dl_ctrl.frame_gap    = hwif_out.aos.FRAME_GAP.cycles.value;
+        dl_ctrl.ei_mode      = hwif_out.ei.CTRL.mode.value;
+        dl_ctrl.ei_threshold = hwif_out.ei.THRESHOLD.value.value;
+        dl_ctrl.ei_seed      = hwif_out.ei.SEED.value.value;
+        dl_ctrl.ei_period    = hwif_out.ei.PERIOD.value.value;
+        dl_ctrl.ei_burst_len = hwif_out.ei.BURST_LEN.bits.value;
+        dl_ctrl.ei_asm_bits  = hwif_out.ei.ASM_BITS.bits.value;
+        dl_ctrl.asm_tol      = hwif_out.gr.SYNC.asm_tol.value;
+        dl_ctrl.flywheel     = hwif_out.gr.SYNC.flywheel.value;
+        dl_ctrl.gr_capture   = hwif_out.gr.CTRL.capture.value;
+        dl_ctrl.gr_skip_idle = hwif_out.gr.CTRL.skip_idle.value;
+        dl_ctrl.gr_records   = hwif_out.gr.XFER.records.value;
     end
 
     sys_cfg_t  sys_cfg_src, sys_cfg;        // clk_ctrl -> clk_sys
     sen_cfg_t  sen_cfg_src, sen_cfg;        // clk_ctrl -> clk_sensor
+    lnk_cfg_t  lnk_cfg_src, lnk_cfg;        // clk_ctrl -> clk_link
     sys_stat_t sys_stat_src, sys_stat;      // clk_sys -> clk_ctrl
     sen_stat_t sen_stat_src, sen_stat;      // clk_sensor -> clk_ctrl
+    lnk_stat_t lnk_stat_src, lnk_stat;      // clk_link -> clk_ctrl
     se_status_t se_stat;
+    dl_stat_t   dl_stat;
     assign se_stat = sen_stat.se;
+    assign dl_stat = sys_stat.dl;
 
     always_comb begin
         sys_cfg_src.soft_reset  = hwif_out.sys.CTRL.soft_reset.value;
@@ -188,9 +317,15 @@ module hpdp_core
         sys_cfg_src.to_table    = hwif_out.sys.DMA_ROUTE.to_table.value;
         sys_cfg_src.fe          = fe_ctrl;
         sys_cfg_src.cmp         = cmp_ctrl;
+        sys_cfg_src.dl          = dl_ctrl;
         sys_cfg_src.wr_seq      = wr_seq;
         sys_cfg_src.ct_clr_seq  = ct_clr_seq;
         sys_cfg_src.cmp_clr_seq = cmp_clr_seq;
+        sys_cfg_src.pkt_clr_seq = pkt_clr_seq;
+        sys_cfg_src.aos_clr_seq = aos_clr_seq;
+        sys_cfg_src.ei_clr_seq  = ei_clr_seq;
+        sys_cfg_src.gr_clr_seq  = gr_clr_seq;
+        sys_cfg_src.ei_seed_seq = ei_seed_seq;
         sys_cfg_src.tbl_seq     = tbl_seq;
         sys_cfg_src.tbl_write   = tbl_write;
         sys_cfg_src.tbl_addr    = hwif_out.rc.TBL_ADDR.addr.value;
@@ -202,10 +337,39 @@ module hpdp_core
         sen_cfg_src.fe          = fe_ctrl;
         sen_cfg_src.wr_seq      = wr_seq;
         sen_cfg_src.se_clr_seq  = se_clr_seq;
+
+        lnk_cfg_src.fabric_lb   = hwif_out.lnk.CTRL.fabric_loopback.value;
+        lnk_cfg_src.rx_sel      = hwif_out.lnk.CTRL.rx_sel.value;
+        lnk_cfg_src.loopback    = hwif_out.lnk.CTRL.gt_loopback.value;
+        lnk_cfg_src.txpol       = hwif_out.lnk.CTRL.tx_polarity.value;
+        lnk_cfg_src.rxpol       = hwif_out.lnk.CTRL.rx_polarity.value;
+        lnk_cfg_src.prbs_sel    = hwif_out.lnk.CTRL.prbs_sel.value;
+        lnk_cfg_src.cc_interval = hwif_out.lnk.CC_INTERVAL.words.value;
+        lnk_cfg_src.wr_seq      = wr_seq;
+        lnk_cfg_src.clr_seq     = lnk_clr_seq;
+        lnk_cfg_src.inj_seq     = lnk_inj_seq;
     end
 
     wire rst_sys_hard    = !rst_sys_n;
     wire rst_sensor_hard = !rst_sensor_n;
+
+    // Transceiver state in clk_ctrl; the link domain is in reset while TX is not up
+    logic       tx_done_ctrl, rx_done_ctrl;
+    logic [1:0] cpll_ctrl, pgood_ctrl;
+    logic       lnk_down;                   // clk_ctrl register: source of the link resets
+    logic       rst_link, lnk_down_sys;
+
+    xpm_cdc_array_single #(.DEST_SYNC_FF(2), .SRC_INPUT_REG(0), .WIDTH(6)) u_cdc_gt_status (
+        .src_clk (1'b0), .src_in ({gt_tx_done, gt_rx_done, gt_cplllock, gt_powergood}),
+        .dest_clk (clk_ctrl), .dest_out ({tx_done_ctrl, rx_done_ctrl, cpll_ctrl, pgood_ctrl}));
+
+    always_ff @(posedge clk_ctrl) lnk_down <= rst_ctrl || !tx_done_ctrl;
+
+    xpm_cdc_async_rst #(.DEST_SYNC_FF(4), .RST_ACTIVE_HIGH(1)) u_cdc_rst_link (
+        .src_arst (lnk_down), .dest_clk (clk_link), .dest_arst (rst_link));
+
+    xpm_cdc_single #(.DEST_SYNC_FF(2), .SRC_INPUT_REG(0)) u_cdc_lnk_down (
+        .src_clk (1'b0), .src_in (lnk_down), .dest_clk (clk_sys), .dest_out (lnk_down_sys));
 
     cdc_bus #(.WIDTH($bits(sys_cfg_t))) u_cdc_sys_cfg (
         .src_clk (clk_ctrl), .src_rst (rst_ctrl), .src_data (sys_cfg_src),
@@ -215,6 +379,10 @@ module hpdp_core
         .src_clk (clk_ctrl), .src_rst (rst_ctrl), .src_data (sen_cfg_src),
         .dest_clk (clk_sensor), .dest_rst (rst_sensor_hard), .dest_data (sen_cfg));
 
+    cdc_bus #(.WIDTH($bits(lnk_cfg_t))) u_cdc_lnk_cfg (
+        .src_clk (clk_ctrl), .src_rst (rst_ctrl), .src_data (lnk_cfg_src),
+        .dest_clk (clk_link), .dest_rst (rst_link), .dest_data (lnk_cfg));
+
     cdc_bus #(.WIDTH($bits(sys_stat_t))) u_cdc_sys_stat (
         .src_clk (clk_sys), .src_rst (rst_sys_hard), .src_data (sys_stat_src),
         .dest_clk (clk_ctrl), .dest_rst (rst_ctrl), .dest_data (sys_stat));
@@ -223,6 +391,10 @@ module hpdp_core
         .src_clk (clk_sensor), .src_rst (rst_sensor_hard), .src_data (sen_stat_src),
         .dest_clk (clk_ctrl), .dest_rst (rst_ctrl), .dest_data (sen_stat));
 
+    cdc_bus #(.WIDTH($bits(lnk_stat_t))) u_cdc_lnk_stat (
+        .src_clk (clk_link), .src_rst (rst_link), .src_data (lnk_stat_src),
+        .dest_clk (clk_ctrl), .dest_rst (rst_ctrl), .dest_data (lnk_stat));
+
     logic locked_ctrl;
     xpm_cdc_single #(.DEST_SYNC_FF(2), .SRC_INPUT_REG(0)) u_cdc_locked (
         .src_clk (1'b0), .src_in (sensor_locked), .dest_clk (clk_ctrl), .dest_out (locked_ctrl));
@@ -230,13 +402,15 @@ module hpdp_core
     // ---------------------------------------------------------------------
     // Data path resets: hard reset or SYS.CTRL.soft_reset
     // ---------------------------------------------------------------------
-    logic rst_sys, rst_sensor;
-    always_ff @(posedge clk_sys)    rst_sys    <= rst_sys_hard || sys_cfg.soft_reset;
-    always_ff @(posedge clk_sensor) rst_sensor <= rst_sensor_hard || sen_cfg.soft_reset;
+    logic rst_sys, rst_sensor, rst_link_sys;
+    always_ff @(posedge clk_sys)    rst_sys      <= rst_sys_hard || sys_cfg.soft_reset;
+    always_ff @(posedge clk_sys)    rst_link_sys <= rst_sys_hard || sys_cfg.soft_reset || lnk_down_sys;
+    always_ff @(posedge clk_sensor) rst_sensor   <= rst_sensor_hard || sen_cfg.soft_reset;
 
     // Event counts arriving in the data path clocks -> one-cycle pulses
     logic [7:0] se_clr_seen, ct_clr_seen, cmp_clr_seen, tbl_seen;
-    logic       se_clr, ct_clr, cmp_clr;
+    logic [7:0] pkt_clr_seen, aos_clr_seen, ei_clr_seen, gr_clr_seen, ei_seed_seen;
+    logic       se_clr, ct_clr, cmp_clr, pkt_clr, aos_clr, ei_clr, gr_clr, ei_seed;
 
     assign sen_stat_src.wr_seq_echo = sen_cfg.wr_seq;
 
@@ -251,7 +425,7 @@ module hpdp_core
     end
 
     // ---------------------------------------------------------------------
-    // Calibration table commands (clk_sys)
+    // Calibration table commands and clk_sys events
     // ---------------------------------------------------------------------
     tbl_cmd_t    tbl_cmd;
     logic [32:0] tbl_rdata;
@@ -261,13 +435,24 @@ module hpdp_core
     always_ff @(posedge clk_sys) begin
         if (rst_sys_hard) begin
             {ct_clr_seen, cmp_clr_seen, tbl_seen, tbl_done_seq} <= '0;
-            {ct_clr, cmp_clr} <= '0;
+            {pkt_clr_seen, aos_clr_seen, ei_clr_seen, gr_clr_seen, ei_seed_seen} <= '0;
+            {ct_clr, cmp_clr, pkt_clr, aos_clr, ei_clr, gr_clr, ei_seed} <= '0;
             tbl_cmd.valid <= 1'b0;
         end else begin
             ct_clr       <= (sys_cfg.ct_clr_seq != ct_clr_seen);
             ct_clr_seen  <= sys_cfg.ct_clr_seq;
             cmp_clr      <= (sys_cfg.cmp_clr_seq != cmp_clr_seen);
             cmp_clr_seen <= sys_cfg.cmp_clr_seq;
+            pkt_clr      <= (sys_cfg.pkt_clr_seq != pkt_clr_seen);
+            pkt_clr_seen <= sys_cfg.pkt_clr_seq;
+            aos_clr      <= (sys_cfg.aos_clr_seq != aos_clr_seen);
+            aos_clr_seen <= sys_cfg.aos_clr_seq;
+            ei_clr       <= (sys_cfg.ei_clr_seq != ei_clr_seen);
+            ei_clr_seen  <= sys_cfg.ei_clr_seq;
+            gr_clr       <= (sys_cfg.gr_clr_seq != gr_clr_seen);
+            gr_clr_seen  <= sys_cfg.gr_clr_seq;
+            ei_seed      <= (sys_cfg.ei_seed_seq != ei_seed_seen);
+            ei_seed_seen <= sys_cfg.ei_seed_seq;
 
             tbl_cmd.valid <= (sys_cfg.tbl_seq != tbl_seen);
             tbl_cmd.write <= sys_cfg.tbl_write;
@@ -288,6 +473,8 @@ module hpdp_core
     logic [1:0]  fe_tuser;
     logic        fe_tlast, fe_tvalid, fe_tready;
     fe_status_t  fe_stat;
+    logic        fe_scene_start;
+    logic [23:0] fe_scene_ts;
 
     assign s_axis_dma_tready = to_table ? 1'b1 : se_dma_tready;
 
@@ -314,7 +501,9 @@ module hpdp_core
         .m_axis_tvalid  (fe_tvalid),
         .m_axis_tready  (fe_tready),
         .se_status      (sen_stat_src.se),
-        .fe_status      (fe_stat)
+        .fe_status      (fe_stat),
+        .scene_start    (fe_scene_start),
+        .scene_ts       (fe_scene_ts)
     );
 
     // ---------------------------------------------------------------------
@@ -323,7 +512,6 @@ module hpdp_core
     logic [63:0] c_tdata;
     logic [7:0]  c_tkeep;
     logic        c_tlast, c_tvalid, c_tready, cfg_error;
-    wire         capture = sys_cfg.capture;
 
     c123_core #(.NX_MAX(NX_MAX), .NZ_MAX(NZ_MAX)) u_cmp (
         .clk           (clk_sys),
@@ -341,11 +529,30 @@ module hpdp_core
         .cfg_error     (cfg_error)
     );
 
+    // Fork to the capture DMA and the downlink chain: each enabled output takes
+    // every word; the compressor moves on when both have it
+    wire  en_cap = sys_cfg.capture;
+    wire  en_dl  = sys_cfg.dl.downlink;
+    logic got_cap, got_dl, pk_tready;
+    wire  v_cap  = c_tvalid && en_cap && !got_cap;
+    wire  v_dl   = c_tvalid && en_dl && !got_dl;
+
+    assign c_tready = (!en_cap || got_cap || m_axis_cmp_tready) && (!en_dl || got_dl || pk_tready);
+
+    always_ff @(posedge clk_sys) begin
+        if (rst_sys || (c_tvalid && c_tready)) begin
+            got_cap <= 1'b0;
+            got_dl  <= 1'b0;
+        end else begin
+            if (v_cap && m_axis_cmp_tready) got_cap <= 1'b1;
+            if (v_dl && pk_tready)          got_dl  <= 1'b1;
+        end
+    end
+
     assign m_axis_cmp_tdata  = c_tdata;
     assign m_axis_cmp_tkeep  = c_tkeep;
     assign m_axis_cmp_tlast  = c_tlast;
-    assign m_axis_cmp_tvalid = c_tvalid && capture;
-    assign c_tready          = capture ? m_axis_cmp_tready : 1'b1;
+    assign m_axis_cmp_tvalid = v_cap;
 
     wire in_fire  = fe_tvalid && fe_tready;
     wire out_fire = c_tvalid && c_tready;
@@ -399,38 +606,315 @@ module hpdp_core
         end
     end
 
+    // ---------------------------------------------------------------------
+    // Downlink chain (clk_sys): packets, AOS frames, RS, randomizer + ASM,
+    // error injector, link
+    // ---------------------------------------------------------------------
+    dl_cfg_t  dl;
+    dl_stat_t dl_src;                       // downlink and ground counters (clk_sys)
+    assign dl = sys_cfg.dl;
+
+    // scene start timestamps, queued at the front end for the packetizer
+    logic [23:0] meta_ts;
+    logic        meta_empty, meta_full, meta_rd;
+    logic [31:0] ts_overflows;
+    wire         meta_push = fe_scene_start && dl.downlink;
+
+    sync_fifo #(.WIDTH(24), .DEPTH(16)) u_meta (
+        .clk (clk_sys), .rst (rst_sys),
+        .din (fe_scene_ts), .wr_en (meta_push && !meta_full),
+        .rd_en (meta_rd), .dout (meta_ts), .empty (meta_empty), .full (meta_full), .count ()
+    );
+
+    // a line dropped by the corner turn (packet flag, SPEC 6.5)
+    logic [31:0] dropped_prev;
+    logic        line_dropped;
+    always_ff @(posedge clk_sys) begin
+        if (rst_sys) begin
+            dropped_prev <= '0;
+            line_dropped <= 1'b0;
+            ts_overflows <= '0;
+        end else begin
+            dropped_prev <= fe_stat.dropped_lines;
+            line_dropped <= fe_stat.dropped_lines > dropped_prev;
+            if (meta_push && meta_full) ts_overflows <= sat_inc(ts_overflows);
+            if (pkt_clr) ts_overflows <= '0;
+        end
+    end
+    assign dl_src.ts_overflows = ts_overflows;
+
+    logic [7:0]  p_tdata, a_tdata, r_tdata, k_tdata, e_tdata;
+    logic [1:0]  p_tuser;
+    logic        k_tuser, e_tuser;
+    logic        p_tlast, p_tvalid, p_tready;
+    logic        a_tlast, a_tvalid, a_tready;
+    logic        r_tlast, r_tvalid, r_tready;
+    logic        k_tlast, k_tvalid, k_tready;
+    logic        e_tlast, e_tvalid, e_tready;
+
+    space_packetizer #(.PKT_MAX(2048)) u_pkt (
+        .clk (clk_sys), .rst (rst_sys),
+        .apid (dl.apid), .pkt_data (dl.pkt_data), .raw_mode (sys_cfg.cmp.raw),
+        .lines_dropped (line_dropped), .cnt_clr (pkt_clr),
+        .s_axis_tdata (c_tdata), .s_axis_tkeep (c_tkeep), .s_axis_tlast (c_tlast),
+        .s_axis_tvalid (v_dl), .s_axis_tready (pk_tready),
+        .s_meta_tdata (meta_ts), .s_meta_tvalid (!meta_empty), .s_meta_tready (meta_rd),
+        .m_axis_tdata (p_tdata), .m_axis_tuser (p_tuser), .m_axis_tlast (p_tlast),
+        .m_axis_tvalid (p_tvalid), .m_axis_tready (p_tready),
+        .packets (dl_src.packets), .scenes (dl_src.scenes)
+    );
+
+    aos_framer u_aos (
+        .clk (clk_sys), .rst (rst_sys),
+        .scid (dl.scid), .vcid (dl.vcid), .idle_en (dl.idle_en), .frame_gap (dl.frame_gap),
+        .cnt_clr (aos_clr),
+        .s_axis_tdata (p_tdata), .s_axis_tuser (p_tuser), .s_axis_tlast (p_tlast),
+        .s_axis_tvalid (p_tvalid), .s_axis_tready (p_tready),
+        .m_axis_tdata (a_tdata), .m_axis_tlast (a_tlast), .m_axis_tvalid (a_tvalid),
+        .m_axis_tready (a_tready),
+        .science_frames (dl_src.science_frames), .idle_frames (dl_src.idle_frames)
+    );
+
+    rs_encoder u_rs (
+        .clk (clk_sys), .rst (rst_sys),
+        .s_axis_tdata (a_tdata), .s_axis_tlast (a_tlast), .s_axis_tvalid (a_tvalid),
+        .s_axis_tready (a_tready),
+        .m_axis_tdata (r_tdata), .m_axis_tlast (r_tlast), .m_axis_tvalid (r_tvalid),
+        .m_axis_tready (r_tready)
+    );
+
+    cadu_framer u_cadu (
+        .clk (clk_sys), .rst (rst_sys), .cnt_clr (aos_clr),
+        .s_axis_tdata (r_tdata), .s_axis_tlast (r_tlast), .s_axis_tvalid (r_tvalid),
+        .s_axis_tready (r_tready),
+        .m_axis_tdata (k_tdata), .m_axis_tuser (k_tuser), .m_axis_tlast (k_tlast),
+        .m_axis_tvalid (k_tvalid), .m_axis_tready (k_tready),
+        .cadus (dl_src.cadus)
+    );
+
+    error_injector u_ei (
+        .clk (clk_sys), .rst (rst_sys),
+        .mode (dl.ei_mode), .threshold (dl.ei_threshold), .seed (dl.ei_seed), .seed_load (ei_seed),
+        .burst_len (dl.ei_burst_len), .period (dl.ei_period), .asm_bits (dl.ei_asm_bits),
+        .cnt_clr (ei_clr),
+        .s_axis_tdata (k_tdata), .s_axis_tuser (k_tuser), .s_axis_tlast (k_tlast),
+        .s_axis_tvalid (k_tvalid), .s_axis_tready (k_tready),
+        .m_axis_tdata (e_tdata), .m_axis_tuser (e_tuser), .m_axis_tlast (e_tlast),
+        .m_axis_tvalid (e_tvalid), .m_axis_tready (e_tready),
+        .injected_bits (dl_src.injected_bits)
+    );
+
+    // ---------------------------------------------------------------------
+    // Link layer (clk_sys <-> clk_link) and the transceiver interface
+    // ---------------------------------------------------------------------
+    logic [7:0]  l_tdata;
+    logic        l_tvalid;
+    logic [15:0] lk_rxdata, tx_d1;
+    logic [1:0]  lk_rxcharisk, lk_rxdisperr, lk_rxnotintable, tx_k1;
+    logic        lk_aligned;
+    logic        lnk_clr, lnk_inj;
+    logic        lk_locked;
+    logic [31:0] lk_code_errors, lk_lock_losses, lk_rx_words, lk_tx_data, lk_tx_idle, lk_rx_overflows;
+    logic [31:0] clk_corrections, buf_errors, prbs_errors;
+    logic [47:0] prbs_words;
+
+    link_layer u_link (
+        .clk_sys (clk_sys), .rst_sys (rst_link_sys),
+        .clk_link (clk_link), .rst_link (rst_link),
+        .cc_interval (lnk_cfg.cc_interval), .cnt_clr (lnk_clr),
+        .s_axis_tdata (e_tdata), .s_axis_tvalid (e_tvalid), .s_axis_tready (e_tready),
+        .m_tdata (l_tdata), .m_tvalid (l_tvalid),
+        .txdata (gt_txdata), .txcharisk (gt_txcharisk),
+        .rxdata (lk_rxdata), .rxcharisk (lk_rxcharisk), .rxdisperr (lk_rxdisperr),
+        .rxnotintable (lk_rxnotintable), .rxbyteisaligned (lk_aligned),
+        .locked (lk_locked), .code_errors (lk_code_errors), .lock_losses (lk_lock_losses),
+        .rx_words (lk_rx_words), .tx_data_words (lk_tx_data),
+        .tx_idle_words (lk_tx_idle), .rx_overflows (lk_rx_overflows)
+    );
+
+    // clk_link: transceiver outputs registered once, the receiving channel
+    // selected, or the transmitted words looped back inside the FPGA
+    logic        rx_ready_lnk;
+    logic [7:0]  lnk_clr_seen, lnk_inj_seen;
+    logic [15:0] g_rxdata  [2];
+    logic [1:0]  g_rxk     [2], g_rxde [2], g_rxnt [2], g_corcnt [2];
+    logic [2:0]  g_bufst   [2];
+    logic [1:0]  g_aligned, g_prbserr, g_prbslocked;
+    logic [1:0]  corcnt_prev;
+    logic [2:0]  bufreset_cnt [2];
+
+    xpm_cdc_single #(.DEST_SYNC_FF(2), .SRC_INPUT_REG(0)) u_cdc_rx_done (
+        .src_clk (1'b0), .src_in (gt_rx_done), .dest_clk (clk_link), .dest_out (rx_ready_lnk));
+
+    wire ch = !lnk_cfg.rx_sel;              // rx_sel 0: SFP1 (channel 1)
+
+    always_ff @(posedge clk_link) begin
+        for (int c = 0; c < 2; c++) begin
+            g_rxdata[c] <= gt_rxdata[16 * c +: 16];
+            g_rxk[c]    <= gt_rxcharisk[2 * c +: 2];
+            g_rxde[c]   <= gt_rxdisperr[2 * c +: 2];
+            g_rxnt[c]   <= gt_rxnotintable[2 * c +: 2];
+            g_corcnt[c] <= gt_rxclkcorcnt[2 * c +: 2];
+            g_bufst[c]  <= gt_rxbufstatus[3 * c +: 3];
+        end
+        g_aligned     <= gt_rxbyteisaligned;
+        g_prbserr     <= gt_rxprbserr;
+        g_prbslocked  <= gt_rxprbslocked;
+        tx_d1         <= gt_txdata;
+        tx_k1         <= gt_txcharisk;
+
+        if (lnk_cfg.fabric_lb) begin
+            lk_rxdata       <= tx_d1;
+            lk_rxcharisk    <= tx_k1;
+            lk_rxdisperr    <= 2'b00;
+            lk_rxnotintable <= 2'b00;
+            lk_aligned      <= 1'b1;
+        end else begin
+            lk_rxdata       <= g_rxdata[ch];
+            lk_rxcharisk    <= g_rxk[ch];
+            lk_rxdisperr    <= g_rxde[ch];
+            lk_rxnotintable <= g_rxnt[ch];
+            lk_aligned      <= g_aligned[ch] && rx_ready_lnk;
+        end
+    end
+
+    assign gt_prbs_sel   = lnk_cfg.prbs_sel;
+    assign gt_loopback   = lnk_cfg.loopback;
+    assign gt_txpolarity = lnk_cfg.txpol;
+    assign gt_rxpolarity = lnk_cfg.rxpol;
+
+    always_ff @(posedge clk_link) begin
+        if (rst_link) begin
+            {lnk_clr_seen, lnk_inj_seen} <= '0;
+            {lnk_clr, lnk_inj, gt_prbs_cnt_reset, gt_prbs_force_err} <= '0;
+            corcnt_prev <= '0;
+            {clk_corrections, buf_errors, prbs_errors, prbs_words} <= '0;
+            for (int c = 0; c < 2; c++) bufreset_cnt[c] <= '0;
+            gt_rxbufreset <= '0;
+        end else begin
+            lnk_clr           <= (lnk_cfg.clr_seq != lnk_clr_seen);
+            lnk_clr_seen      <= lnk_cfg.clr_seq;
+            lnk_inj           <= (lnk_cfg.inj_seq != lnk_inj_seen);
+            lnk_inj_seen      <= lnk_cfg.inj_seq;
+            gt_prbs_cnt_reset <= lnk_clr;
+            gt_prbs_force_err <= lnk_inj;
+
+            // clock corrections (RXCLKCORCNT holds its value: count changes)
+            corcnt_prev <= g_corcnt[ch];
+            if (g_corcnt[ch] != 2'b00 && g_corcnt[ch] != corcnt_prev)
+                clk_corrections <= sat_inc(clk_corrections);
+
+            // elastic buffer under/overflow: count, and reset that buffer
+            for (int c = 0; c < 2; c++) begin
+                if (!rx_ready_lnk)
+                    bufreset_cnt[c] <= '0;
+                else if (g_bufst[c][2] && bufreset_cnt[c] == 3'd0)
+                    bufreset_cnt[c] <= 3'd7;
+                else if (bufreset_cnt[c] != 3'd0)
+                    bufreset_cnt[c] <= bufreset_cnt[c] - 3'd1;
+                gt_rxbufreset[c] <= (bufreset_cnt[c] > 3'd3);
+            end
+            if (rx_ready_lnk && !lnk_cfg.fabric_lb && g_bufst[ch][2] && bufreset_cnt[ch] == 3'd0)
+                buf_errors <= sat_inc(buf_errors);
+
+            // PRBS mode (LNK-06)
+            if (lnk_cfg.prbs_sel != 4'd0) begin
+                if (g_prbserr[ch])    prbs_errors <= sat_inc(prbs_errors);
+                if (g_prbslocked[ch]) prbs_words  <= prbs_words + 48'd1;
+            end
+
+            if (lnk_clr) {clk_corrections, buf_errors, prbs_errors, prbs_words} <= '0;
+        end
+    end
+
     always_comb begin
-        sys_stat_src.fe            = fe_stat;
-        sys_stat_src.wr_seq_echo   = sys_cfg.wr_seq;
-        sys_stat_src.tbl_rdata     = tbl_rdata;
-        sys_stat_src.tbl_done_seq  = tbl_done_seq;
-        sys_stat_src.cmp_busy      = cmp_busy;
-        sys_stat_src.cmp_cfg_error = cfg_error;
-        sys_stat_src.scenes_done   = scenes_done;
-        sys_stat_src.samples_in    = samples_in;
-        sys_stat_src.bytes_out     = bytes_out;
-        sys_stat_src.last_bytes    = last_bytes;
-        sys_stat_src.last_cycles   = last_cycles;
-        sys_stat_src.out_stalls    = out_stalls;
+        lnk_stat_src.wr_seq_echo     = lnk_cfg.wr_seq;
+        lnk_stat_src.locked          = lk_locked;
+        lnk_stat_src.aligned         = lnk_cfg.fabric_lb || (g_aligned[ch] && rx_ready_lnk);
+        lnk_stat_src.prbs_locked     = g_prbslocked[ch];
+        lnk_stat_src.code_errors     = lk_code_errors;
+        lnk_stat_src.lock_losses     = lk_lock_losses;
+        lnk_stat_src.rx_words        = lk_rx_words;
+        lnk_stat_src.tx_data_words   = lk_tx_data;
+        lnk_stat_src.tx_idle_words   = lk_tx_idle;
+        lnk_stat_src.rx_overflows    = lk_rx_overflows;
+        lnk_stat_src.clk_corrections = clk_corrections;
+        lnk_stat_src.buf_errors      = buf_errors;
+        lnk_stat_src.prbs_errors     = prbs_errors;
+        lnk_stat_src.prbs_words      = prbs_words;
+    end
+
+    // ---------------------------------------------------------------------
+    // Ground receiver (clk_sys): frame sync, derandomizer, capture
+    // ---------------------------------------------------------------------
+    logic [7:0] g_tdata;
+    logic       g_tlast, g_tvalid, g_tready;
+
+    frame_sync u_fs (
+        .clk (clk_sys), .rst (rst_sys),
+        .asm_tol (dl.asm_tol), .flywheel (dl.flywheel), .cnt_clr (gr_clr),
+        .s_tdata (l_tdata), .s_tvalid (l_tvalid),
+        .m_axis_tdata (g_tdata), .m_axis_tlast (g_tlast), .m_axis_tvalid (g_tvalid),
+        .m_axis_tready (g_tready),
+        .sync_state (dl_src.sync_state), .cadus (dl_src.gr_cadus),
+        .sync_losses (dl_src.sync_losses), .asm_bit_errors (dl_src.asm_bit_errors),
+        .dropped_records (dl_src.dropped_records)
+    );
+
+    gr_capture u_grc (
+        .clk (clk_sys), .rst (rst_sys),
+        .capture (dl.gr_capture), .skip_idle (dl.gr_skip_idle), .sci_vcid (dl.vcid),
+        .records_per_xfer (dl.gr_records),
+        .cnt_clr (gr_clr),
+        .s_axis_tdata (g_tdata), .s_axis_tlast (g_tlast), .s_axis_tvalid (g_tvalid),
+        .s_axis_tready (g_tready),
+        .m_axis_tdata (m_axis_gr_tdata), .m_axis_tkeep (m_axis_gr_tkeep),
+        .m_axis_tlast (m_axis_gr_tlast), .m_axis_tvalid (m_axis_gr_tvalid),
+        .m_axis_tready (m_axis_gr_tready),
+        .captured (dl_src.captured), .skipped (dl_src.skipped)
+    );
+
+    always_comb begin
+        sys_stat_src.fe              = fe_stat;
+        sys_stat_src.wr_seq_echo     = sys_cfg.wr_seq;
+        sys_stat_src.tbl_rdata       = tbl_rdata;
+        sys_stat_src.tbl_done_seq    = tbl_done_seq;
+        sys_stat_src.cmp_busy        = cmp_busy;
+        sys_stat_src.cmp_cfg_error   = cfg_error;
+        sys_stat_src.scenes_done     = scenes_done;
+        sys_stat_src.samples_in      = samples_in;
+        sys_stat_src.bytes_out       = bytes_out;
+        sys_stat_src.last_bytes      = last_bytes;
+        sys_stat_src.last_cycles     = last_cycles;
+        sys_stat_src.out_stalls      = out_stalls;
+        sys_stat_src.dl              = dl_src;
     end
 
     // ---------------------------------------------------------------------
     // Status registers and interrupts (clk_ctrl)
     // ---------------------------------------------------------------------
-    logic [31:0] scenes_prev, errors_prev;
+    logic [31:0] scenes_prev, lock_losses_prev, sync_losses_prev;
     wire  [31:0] errors_now = se_stat.underrun_samples | se_stat.period_overruns |
-                              se_stat.dropped_samples | sys_stat.fe.dropped_lines;
-    wire  [33:0] error_sum  = 34'(se_stat.underrun_samples) + 34'(se_stat.period_overruns) +
-                              34'(se_stat.dropped_samples) + 34'(sys_stat.fe.dropped_lines);
-    logic [33:0] error_sum_prev;
+                              se_stat.dropped_samples | sys_stat.fe.dropped_lines |
+                              dl_stat.ts_overflows | dl_stat.dropped_records | lnk_stat.rx_overflows;
+    wire  [34:0] error_sum  = 35'(se_stat.underrun_samples) + 35'(se_stat.period_overruns) +
+                              35'(se_stat.dropped_samples) + 35'(sys_stat.fe.dropped_lines) +
+                              35'(dl_stat.ts_overflows) + 35'(dl_stat.dropped_records) +
+                              35'(lnk_stat.rx_overflows);
+    logic [34:0] error_sum_prev;
+    wire         lnk_up = tx_done_ctrl && !lnk_down;
 
     always_ff @(posedge clk_ctrl) begin
         if (rst_ctrl) begin
-            scenes_prev    <= '0;
-            error_sum_prev <= '0;
+            scenes_prev      <= '0;
+            error_sum_prev   <= '0;
+            lock_losses_prev <= '0;
+            sync_losses_prev <= '0;
         end else begin
-            scenes_prev    <= sys_stat.scenes_done;
-            error_sum_prev <= error_sum;
+            scenes_prev      <= sys_stat.scenes_done;
+            error_sum_prev   <= error_sum;
+            lock_losses_prev <= lnk_stat.lock_losses;
+            sync_losses_prev <= dl_stat.sync_losses;
         end
     end
 
@@ -439,9 +923,12 @@ module hpdp_core
         hwif_in.sys.STATUS.error.next         = errors_now != 32'd0;
         hwif_in.sys.STATUS.sensor_locked.next = locked_ctrl;
         hwif_in.sys.STATUS.cfg_pending.next   = wr_seq != sys_stat.wr_seq_echo ||
-                                                wr_seq != sen_stat.wr_seq_echo;
-        hwif_in.sys.IRQ_STATUS.scene_done.hwset = sys_stat.scenes_done > scenes_prev;
-        hwif_in.sys.IRQ_STATUS.error.hwset      = error_sum > error_sum_prev;
+                                                wr_seq != sen_stat.wr_seq_echo ||
+                                                (lnk_up && wr_seq != lnk_stat.wr_seq_echo);
+        hwif_in.sys.IRQ_STATUS.scene_done.hwset     = sys_stat.scenes_done > scenes_prev;
+        hwif_in.sys.IRQ_STATUS.error.hwset          = error_sum > error_sum_prev;
+        hwif_in.sys.IRQ_STATUS.link_lock_loss.hwset = lnk_up && lnk_stat.lock_losses > lock_losses_prev;
+        hwif_in.sys.IRQ_STATUS.sync_loss.hwset      = dl_stat.sync_losses > sync_losses_prev;
         hwif_in.sys.BUILD_ID.build_id.next    = BUILD_ID;
 
         hwif_in.se.STATUS.busy.next             = se_stat.busy;
@@ -474,11 +961,53 @@ module hpdp_core
         hwif_in.cmp.LAST_BYTES.count.next       = sys_stat.last_bytes;
         hwif_in.cmp.LAST_CYCLES.count.next      = sys_stat.last_cycles;
         hwif_in.cmp.OUT_STALLS.count.next       = sys_stat.out_stalls;
+
+        hwif_in.pkt.PACKETS.count.next          = dl_stat.packets;
+        hwif_in.pkt.SCENES.count.next           = dl_stat.scenes;
+        hwif_in.pkt.TS_OVERFLOWS.count.next     = dl_stat.ts_overflows;
+
+        hwif_in.aos.SCIENCE_FRAMES.count.next   = dl_stat.science_frames;
+        hwif_in.aos.IDLE_FRAMES.count.next      = dl_stat.idle_frames;
+        hwif_in.aos.CADUS.count.next            = dl_stat.cadus;
+
+        hwif_in.ei.INJECTED_BITS.count.next     = dl_stat.injected_bits;
+
+        hwif_in.lnk.STATUS.tx_ready.next        = tx_done_ctrl;
+        hwif_in.lnk.STATUS.rx_ready.next        = rx_done_ctrl;
+        hwif_in.lnk.STATUS.aligned.next         = lnk_up && lnk_stat.aligned;
+        hwif_in.lnk.STATUS.locked.next          = lnk_up && lnk_stat.locked;
+        hwif_in.lnk.STATUS.prbs_locked.next     = lnk_up && lnk_stat.prbs_locked;
+        hwif_in.lnk.STATUS.cpll_locked.next     = cpll_ctrl;
+        hwif_in.lnk.STATUS.powergood.next       = pgood_ctrl;
+        hwif_in.lnk.CODE_ERRORS.count.next      = lnk_stat.code_errors;
+        hwif_in.lnk.LOCK_LOSSES.count.next      = lnk_stat.lock_losses;
+        hwif_in.lnk.RX_WORDS.count.next         = lnk_stat.rx_words;
+        hwif_in.lnk.TX_DATA_WORDS.count.next    = lnk_stat.tx_data_words;
+        hwif_in.lnk.TX_IDLE_WORDS.count.next    = lnk_stat.tx_idle_words;
+        hwif_in.lnk.RX_OVERFLOWS.count.next     = lnk_stat.rx_overflows;
+        hwif_in.lnk.CLK_CORRECTIONS.count.next  = lnk_stat.clk_corrections;
+        hwif_in.lnk.BUF_ERRORS.count.next       = lnk_stat.buf_errors;
+        hwif_in.lnk.PRBS_ERRORS.count.next      = lnk_stat.prbs_errors;
+        hwif_in.lnk.PRBS_WORDS_LO.count.next    = lnk_stat.prbs_words[31:0];
+        hwif_in.lnk.PRBS_WORDS_HI.count.next    = lnk_stat.prbs_words[47:32];
+
+        hwif_in.gr.STATUS.sync_state.next       = dl_stat.sync_state;
+        hwif_in.gr.CADUS.count.next             = dl_stat.gr_cadus;
+        hwif_in.gr.SYNC_LOSSES.count.next       = dl_stat.sync_losses;
+        hwif_in.gr.ASM_BIT_ERRORS.count.next    = dl_stat.asm_bit_errors;
+        hwif_in.gr.DROPPED_RECORDS.count.next   = dl_stat.dropped_records;
+        hwif_in.gr.SKIPPED_IDLE.count.next      = dl_stat.skipped;
+        hwif_in.gr.CAPTURED.count.next          = dl_stat.captured;
     end
 
     always_ff @(posedge clk_ctrl) begin
         irq <= !rst_ctrl &&
-               ((hwif_out.sys.IRQ_STATUS.scene_done.value && hwif_out.sys.IRQ_EN.scene_done.value) ||
-                (hwif_out.sys.IRQ_STATUS.error.value && hwif_out.sys.IRQ_EN.error.value));
+               ((hwif_out.sys.IRQ_STATUS.scene_done.value     && hwif_out.sys.IRQ_EN.scene_done.value) ||
+                (hwif_out.sys.IRQ_STATUS.error.value          && hwif_out.sys.IRQ_EN.error.value) ||
+                (hwif_out.sys.IRQ_STATUS.link_lock_loss.value && hwif_out.sys.IRQ_EN.link_lock_loss.value) ||
+                (hwif_out.sys.IRQ_STATUS.sync_loss.value      && hwif_out.sys.IRQ_EN.sync_loss.value));
+        gt_reset_all  <= rst_ctrl || hwif_out.lnk.CTRL.gt_reset.value;
+        gt_reset_rx   <= hwif_out.lnk.CTRL.rx_reset.value;
+        sfp_tx_enable <= {2{hwif_out.lnk.CTRL.tx_enable.value && !rst_ctrl}};
     end
 endmodule

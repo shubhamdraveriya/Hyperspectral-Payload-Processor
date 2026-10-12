@@ -24,6 +24,7 @@ module space_packetizer import downlink_pkg::*; #(
     input  logic [$clog2(PKT_MAX):0] pkt_data,  // user bytes per packet, 1..PKT_MAX
     input  logic        raw_mode,
     input  logic        lines_dropped,
+    input  logic        cnt_clr,                // clear packets / scenes
 
     input  logic [63:0] s_axis_tdata,           // first byte in [7:0]
     input  logic [7:0]  s_axis_tkeep,           // contiguous from byte 0
@@ -232,6 +233,10 @@ module space_packetizer import downlink_pkg::*; #(
                         pkt_index <= pkt_index + 16'd1;
                     end
                 end
+            end
+            if (cnt_clr) begin
+                packets <= '0;
+                scenes  <= '0;
             end
         end
     end

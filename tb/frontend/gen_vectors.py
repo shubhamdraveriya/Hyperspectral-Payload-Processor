@@ -12,9 +12,16 @@ For each test, in <outdir>/<test>/:
     bip.hex       corner turn output, BIP
     expected.hex  compressed bytes; sizes.txt bytes per scene
     stats.txt     clamp and replacement counts of the last scene
+  for the system test (tb_hpdp_core, which runs the acquisition SYS_PASSES times
+  and sends the compressed scenes down the downlink chain, through the link and
+  the ground receiver):
+    dl_cfg.txt    pkt_data ei_mode seed threshold burst_len period asm_bits xfer rx_sel fabric
+                  cadus packets flips records
+    ground.hex    the ground records the capture DMA must deliver (1024 bytes each)
 <outdir>/tests.txt lists the tests.
 """
 
+import struct
 import sys
 from array import array
 from pathlib import Path
@@ -22,12 +29,24 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "model"))
 
 from hpdp_model import ccsds123 as c  # noqa: E402
+from hpdp_model import channel as ch  # noqa: E402
 from hpdp_model import formats as f  # noqa: E402
+from hpdp_model import framing  # noqa: E402
 from hpdp_model import radiometric as rc  # noqa: E402
+from hpdp_model import rs  # noqa: E402
 from hpdp_model import sensor  # noqa: E402
 from hpdp_model import synth  # noqa: E402
 
 NX_MAX = NZ_MAX = 64          # tb_frontend parameters
+SYS_PASSES = 2                # tb_hpdp_core PASSES
+
+# Downlink settings of the system test (register reset values for the rest:
+# APID 0x100, SCID 0x42, VCID 1). rx_sel: receiving GTH channel (the testbench's
+# transceiver model loops the transmitted words back on that channel only);
+# fabric: LNK.CTRL.fabric_loopback instead (both channels carry garbage).
+DL_DEFAULT = dict(pkt_data=2048, ei_mode=ch.INJ_OFF, seed=1, threshold=0, burst_len=0, period=1,
+                  asm_bits=0, xfer=1, rx_sel=0, fabric=0)
+APID, SCID, VCID = 0x100, 0x42, 1
 
 DEFAULT = dict(source=sensor.SOURCE_DMA, pattern="hyperspectral", raw="calibrated", dims=(24, 6, 20),
                depth=12, scenes=2, slack=40, bypass=False, bad_fraction=0.04, dma_pct=100,
@@ -36,8 +55,11 @@ DEFAULT = dict(source=sensor.SOURCE_DMA, pattern="hyperspectral", raw="calibrate
 TESTS = {
     # DMA source, calibration with dark/gain/bad pixels (incl. edge and clustered bad pixels)
     "dma_basic":  {},
-    # gaps in the DMA stream, back-pressure from the compressor output
-    "dma_stalls": dict(dma_pct=30, out_pct=50),
+    # gaps in the DMA stream, back-pressure from the compressor output; downlink with
+    # short packets and random bit errors (BER 1e-3), received on SFP0
+    "dma_stalls": dict(dma_pct=30, out_pct=50,
+                       dl=dict(pkt_data=300, ei_mode=ch.INJ_RANDOM, seed=777,
+                               threshold=int(1e-3 * 2**32), xfer=3, rx_sel=1)),
     # raw noise through a strong calibration: clamps at 0 and at 2^D - 1
     "clamp":      dict(raw="noise", pattern="noise"),
     "bypass":     dict(bypass=True),
@@ -50,7 +72,10 @@ TESTS = {
     # line period shorter than a line: lines start late, overruns counted, data intact
     "overrun":    dict(source=sensor.SOURCE_RAMP, slack=-200, overrun=True),
     "one_column": dict(dims=(1, 10, 16), cfg=dict(local_sum="column_wide")),
-    "max_dims":   dict(dims=(NX_MAX, 2, NZ_MAX), scenes=1, slack=0),
+    # (downlink: burst errors, link looped back inside the FPGA)
+    "max_dims":   dict(dims=(NX_MAX, 2, NZ_MAX), scenes=1, slack=0,
+                       dl=dict(pkt_data=1000, ei_mode=ch.INJ_BURST, burst_len=40, period=3000,
+                               xfer=2, fabric=1)),
     # compressor output starved: the corner turn drops lines and sends fill lines,
     # the compressor stays aligned with the scenes
     "drop":       dict(source=sensor.SOURCE_LFSR, dims=(16, 8, 16), bypass=True, slack=0,
@@ -105,15 +130,61 @@ def dma_beats(samples):
     return [sum(v << (16 * k) for k, v in enumerate(s[i:i + 8])) for i in range(0, len(s), 8)]
 
 
+def cadu(frame):
+    return ch.make_cadu(rs.encode_interleaved(frame, framing.RS_DEPTH))
+
+
+def ground_vectors(dl, images, ny):
+    """The system test's downlink: SYS_PASSES acquisitions of the same scenes,
+    scene IDs, timestamps (lines before the scene, counted from reset), packet
+    sequence counts and frame counts running on; AOS idle frames off while the
+    scenes go down. Returns (CADU count, packets, injected bits, captured
+    records)."""
+    framer = framing.AosFramer(SCID, VCID)
+    stream, seq, packets, i = bytearray(), 0, 0, 0
+    for _ in range(SYS_PASSES):
+        for img in images:
+            pk, seq = framing.packetize_scene(img, APID, i, i * ny, seq_count=seq, max_data=dl["pkt_data"])
+            packets += len(pk)
+            for p in pk:
+                framer.push(p)
+            for fr in framer.frames(flush=True):
+                stream += cadu(fr)
+            i += 1
+    ncadu = len(stream) // ch.CADU_BYTES
+    injected, flips = ch.inject_hw(bytes(stream), dl["ei_mode"], dl["seed"], dl["threshold"],
+                                   dl["burst_len"], dl["period"], dl["asm_bits"])
+    # then the testbench turns the error injector off and idle frames on (they
+    # let the frame sync decide the last CADUs). A record count of ncadu covers
+    # every science CADU even when the first one is lost (max_dims: the first
+    # burst destroys its ASM, so the frame sync acquires on the second CADU and
+    # the last record is an idle frame).
+    idle = framing.AosFramer(SCID, VCID)
+    tail = b"".join(cadu(idle.idle()) for _ in range(2))
+    records = ch.frame_sync(injected + tail)[:ncadu]
+    if len(records) != ncadu or any(r.sequence != k for k, r in enumerate(records)):
+        raise RuntimeError("system test downlink: frame sync records do not follow each other")
+    # gr_capture skips records whose VCID field is nearer to 63 than to the science VCID
+    def idle_like(v):
+        return bin(v ^ framing.IDLE_VCID).count("1") < bin(v ^ VCID).count("1")
+    kept = [r for r in records if not idle_like(r.codeblock[1] & 0x3F)]
+    rec = bytearray()
+    for r in kept:
+        rec += r.codeblock + struct.pack("<I", f.CaptureRecord.status_word(r.asm_errors, r.sync_state,
+                                                                           r.sequence))
+    return ncadu, packets, flips, len(kept), rec
+
+
 def write_test(out, name, spec):
     t = {**DEFAULT, **spec}
+    dl = {**DL_DEFAULT, **t.get("dl", {})}
     nx, ny, nz = t["dims"]
     depth = t["depth"]
     cfg = c.Config(**t["cfg"])
     ctx = c._Ctx.build(nx, ny, nz, depth, cfg)      # resolves R and K
     cal = calibration(t)
 
-    raw, corr, bip, expected, sizes = array("H"), array("H"), array("H"), bytearray(), []
+    raw, corr, bip, expected, sizes, images = array("H"), array("H"), array("H"), bytearray(), [], []
     stats = {"clamped": 0, "replaced": 0}
     for scene in raw_scenes(t, cal):
         if t["bypass"]:
@@ -128,6 +199,7 @@ def write_test(out, name, spec):
             raise RuntimeError(f"{name}: model round trip failed")
         expected += image
         sizes.append(len(image))
+        images.append(image)
 
     line = nx * nz
     period = line + 1 + t["slack"]
@@ -148,6 +220,12 @@ def write_test(out, name, spec):
     (d / "expected.hex").write_text("".join(f"{b:02x}\n" for b in expected))
     (d / "sizes.txt").write_text("".join(f"{s}\n" for s in sizes))
     (d / "stats.txt").write_text(f"{stats['clamped']} {stats['replaced']}\n")
+
+    ncadu, packets, flips, nrec, rec = ground_vectors(dl, images, ny)
+    dl_fields = [dl[k] for k in ("pkt_data", "ei_mode", "seed", "threshold", "burst_len", "period",
+                                 "asm_bits", "xfer", "rx_sel", "fabric")] + [ncadu, packets, flips, nrec]
+    (d / "dl_cfg.txt").write_text(" ".join(str(v) for v in dl_fields) + "\n")
+    (d / "ground.hex").write_text("".join(f"{b:02x}\n" for b in rec))
     return len(raw), len(expected), stats
 
 

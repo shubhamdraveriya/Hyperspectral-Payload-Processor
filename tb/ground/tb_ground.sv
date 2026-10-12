@@ -28,7 +28,7 @@ module tb_ground;
     error_injector u_inj (
         .clk, .rst,
         .mode (2'(mode)), .threshold (32'(threshold)), .seed (32'(seed)), .seed_load (1'b0),
-        .burst_len (16'(burst_len)), .period (32'(period)), .asm_bits (6'(asm_bits)),
+        .burst_len (16'(burst_len)), .period (32'(period)), .asm_bits (6'(asm_bits)), .cnt_clr (1'b0),
         .s_axis_tdata (i_tdata), .s_axis_tuser (i_tuser), .s_axis_tlast (i_tlast),
         .s_axis_tvalid (i_tvalid), .s_axis_tready (i_tready),
         .m_axis_tdata (e_tdata), .m_axis_tuser (e_tuser), .m_axis_tlast (e_tlast),
@@ -38,7 +38,7 @@ module tb_ground;
 
     frame_sync u_fs (
         .clk, .rst,
-        .asm_tol (6'(asm_tol)), .flywheel (4'(flywheel)),
+        .asm_tol (6'(asm_tol)), .flywheel (4'(flywheel)), .cnt_clr (1'b0),
         .s_tdata (e_tdata), .s_tvalid (e_tvalid),
         .m_axis_tdata (g_tdata), .m_axis_tlast (g_tlast), .m_axis_tvalid (g_tvalid),
         .m_axis_tready (g_tready),

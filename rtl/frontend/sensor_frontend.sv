@@ -41,11 +41,27 @@ module sensor_frontend import frontend_pkg::*; #(
     input  logic         m_axis_tready,
 
     output se_status_t   se_status,         // clk_sensor domain
-    output fe_status_t   fe_status          // clk_sys domain
+    output fe_status_t   fe_status,         // clk_sys domain
+
+    // A scene's first sample left the emulator (clk_sys pulse), with its
+    // timestamp: the number of lines before it, i.e. the emulator's
+    // scene_timestamp (SE-05) for this scene (both count from reset)
+    output logic         scene_start,
+    output logic [23:0]  scene_ts
 );
     logic        se_valid, se_last, rc_valid, rc_last;
     logic [15:0] se_data, rc_data;
     logic [1:0]  se_user, rc_user;
+
+    logic [23:0] lines_seen;
+    always_ff @(posedge clk_sys) begin
+        if (rst_sys)
+            lines_seen <= '0;
+        else if (se_valid && se_user[1])
+            lines_seen <= lines_seen + 24'd1;
+    end
+    assign scene_start = se_valid && se_user[0];
+    assign scene_ts    = lines_seen;
 
     sensor_emulator u_se (
         .clk_sys, .rst_sys,

@@ -3,14 +3,25 @@
 // System test of hpdp_core through its register interface, following the
 // sequence the bare-metal application uses (sw/baremetal/hpdp_run):
 //
-//   identify -> configure -> load the calibration table by "DMA" -> check it
-//   through the table debug registers -> stream the raw scenes -> run the
-//   sensor -> capture the compressed scenes -> check counters, interrupt,
-//   counter clears -> run the acquisition a second time -> soft reset.
+//   identify -> configure -> bring up the link (LOCKED) -> soft reset -> load
+//   the calibration table by "DMA" -> check it through the table debug
+//   registers -> stream the raw scenes -> run the sensor -> the compressed
+//   scenes go both to the capture DMA and down the downlink chain (packets,
+//   frames, RS, CADUs, error injector, link, frame sync, ground capture DMA)
+//   -> check counters -> run the acquisition a second time -> error injector
+//   off, idle frames on (they flush the frame sync) -> check the ground
+//   records, interrupt, counter clears -> soft reset.
+//
+// This is VER-05: the ground records equal the model's (tb/frontend/gen_vectors.py
+// builds the whole downlink, error injection and frame sync from the same
+// scenes), with a transceiver model that loops the transmitted words back on
+// one channel (LNK.CTRL.rx_sel) after a few cycles, or garbage on both when the
+// test uses the fabric loopback.
 //
 // Vectors come from tb/frontend/gen_vectors.py (+DIR=<test directory>).
-// clk_ctrl 100 MHz, clk_sys 250 MHz, clk_sensor 100 MHz (unrelated phase).
-// The DMA streams have random gaps, the S2MM side random back-pressure.
+// clk_ctrl 100 MHz, clk_sys 250 MHz, clk_sensor 100 MHz, clk_link 62.5 MHz
+// (unrelated phases). The DMA streams have random gaps, the S2MM sides random
+// back-pressure.
 module tb_hpdp_core;
     import hpdp_regs_addr_pkg::*;
 
@@ -19,7 +30,7 @@ module tb_hpdp_core;
     localparam logic [31:0] BUILD_ID = 32'hC0DE_1234;
     localparam int          PASSES   = 2;
 
-    logic clk_ctrl = 1'b0, clk_sys = 1'b0, clk_sensor = 1'b0;
+    logic clk_ctrl = 1'b0, clk_sys = 1'b0, clk_sensor = 1'b0, clk_link = 1'b0;
     logic rst_n = 1'b0;
     always #5 clk_ctrl = ~clk_ctrl;
     always #2 clk_sys  = ~clk_sys;
@@ -27,21 +38,40 @@ module tb_hpdp_core;
         #1.7;
         forever #5 clk_sensor = ~clk_sensor;
     end
+    initial begin
+        #3.3;
+        forever #8 clk_link = ~clk_link;
+    end
 
     // AXI4-Lite
     logic        awvalid = 1'b0, wvalid = 1'b0, arvalid = 1'b0;
     logic        awready, wready, bvalid, arready, rvalid;
-    logic [18:0] awaddr = '0, araddr = '0;
+    logic [19:0] awaddr = '0, araddr = '0;
     logic [31:0] wdata = '0, rdata;
     logic [1:0]  bresp, rresp;
 
     // streams
     logic [127:0] dma_tdata = '0;
     logic         dma_tlast = 1'b0, dma_tvalid = 1'b0, dma_tready;
-    logic [63:0]  cmp_tdata;
-    logic [7:0]   cmp_tkeep;
+    logic [63:0]  cmp_tdata, gr_tdata;
+    logic [7:0]   cmp_tkeep, gr_tkeep;
     logic         cmp_tlast, cmp_tvalid, cmp_tready = 1'b0;
+    logic         gr_tlast, gr_tvalid, gr_tready = 1'b0;
     logic         irq;
+
+    // transceivers
+    logic        gt_up = 1'b0;
+    logic        gt_reset_all, gt_reset_rx;
+    logic [1:0]  sfp_tx_enable;
+    logic [15:0] gt_txdata;
+    logic [1:0]  gt_txcharisk;
+    logic [3:0]  gt_prbs_sel;
+    logic        gt_prbs_force_err, gt_prbs_cnt_reset, gt_txpolarity, gt_rxpolarity;
+    logic [2:0]  gt_loopback;
+    logic [1:0]  gt_rxbufreset;
+    logic [31:0] gt_rxdata;
+    logic [3:0]  gt_rxcharisk, gt_rxdisperr;
+    logic [1:0]  gt_rxbyteisaligned;
 
     hpdp_core #(.NX_MAX(NX_MAX), .NZ_MAX(NZ_MAX), .BUILD_ID(BUILD_ID)) dut (
         .clk_ctrl, .rst_ctrl_n (rst_n),
@@ -61,8 +91,45 @@ module tb_hpdp_core;
         .s_axis_dma_tvalid (dma_tvalid), .s_axis_dma_tready (dma_tready),
         .m_axis_cmp_tdata (cmp_tdata), .m_axis_cmp_tkeep (cmp_tkeep), .m_axis_cmp_tlast (cmp_tlast),
         .m_axis_cmp_tvalid (cmp_tvalid), .m_axis_cmp_tready (cmp_tready),
+        .m_axis_gr_tdata (gr_tdata), .m_axis_gr_tkeep (gr_tkeep), .m_axis_gr_tlast (gr_tlast),
+        .m_axis_gr_tvalid (gr_tvalid), .m_axis_gr_tready (gr_tready),
+        .gt_tx_done (gt_up), .gt_rx_done (gt_up), .gt_cplllock ({2{gt_up}}), .gt_powergood (2'b11),
+        .gt_reset_all, .gt_reset_rx, .sfp_tx_enable,
+        .clk_link,
+        .gt_txdata, .gt_txcharisk, .gt_prbs_sel, .gt_prbs_force_err, .gt_prbs_cnt_reset,
+        .gt_loopback, .gt_txpolarity, .gt_rxpolarity, .gt_rxbufreset,
+        .gt_rxdata, .gt_rxcharisk, .gt_rxdisperr, .gt_rxnotintable (4'b0000),
+        .gt_rxbyteisaligned, .gt_rxprbserr (2'b00), .gt_rxprbslocked (2'b00),
+        .gt_rxclkcorcnt (4'b0000), .gt_rxbufstatus (6'b000000),
         .irq
     );
+
+    // -----------------------------------------------------------------
+    // Transceiver model (clk_link): the transmitted words come back on the
+    // receiving channel 4 cycles later, aligned; the other channel carries
+    // garbage with code errors. good_ch < 0: garbage on both (fabric loopback).
+    // -----------------------------------------------------------------
+    int          good_ch = 1;
+    logic [17:0] gt_pipe [4];
+    always @(posedge clk_link) begin
+        gt_pipe[0] <= {gt_txcharisk, gt_txdata};
+        for (int i = 1; i < 4; i++) gt_pipe[i] <= gt_pipe[i - 1];
+    end
+    always_comb begin
+        for (int c = 0; c < 2; c++) begin
+            if (c == good_ch && gt_up) begin
+                gt_rxdata[16 * c +: 16]  = gt_pipe[3][15:0];
+                gt_rxcharisk[2 * c +: 2] = gt_pipe[3][17:16];
+                gt_rxdisperr[2 * c +: 2] = 2'b00;
+                gt_rxbyteisaligned[c]    = 1'b1;
+            end else begin
+                gt_rxdata[16 * c +: 16]  = 16'hDEAD;
+                gt_rxcharisk[2 * c +: 2] = 2'b00;
+                gt_rxdisperr[2 * c +: 2] = 2'b11;
+                gt_rxbyteisaligned[c]    = 1'b0;
+            end
+        end
+    end
 
     // -----------------------------------------------------------------
     // AXI4-Lite master
@@ -71,7 +138,7 @@ module tb_hpdp_core;
 
     task automatic wr(logic [31:0] addr, logic [31:0] data);
         @(posedge clk_ctrl);
-        awvalid <= 1'b1;  awaddr <= addr[18:0];
+        awvalid <= 1'b1;  awaddr <= addr[19:0];
         wvalid  <= 1'b1;  wdata  <= data;
         fork
             begin @(posedge clk_ctrl iff awready); awvalid <= 1'b0; end
@@ -86,7 +153,7 @@ module tb_hpdp_core;
 
     task automatic rd(logic [31:0] addr, output logic [31:0] data);
         @(posedge clk_ctrl);
-        arvalid <= 1'b1;  araddr <= addr[18:0];
+        arvalid <= 1'b1;  araddr <= addr[19:0];
         @(posedge clk_ctrl iff arready);
         arvalid <= 1'b0;
         @(posedge clk_ctrl iff rvalid);
@@ -132,7 +199,9 @@ module tb_hpdp_core;
     int           nx, ny, nz, depth, bands, full, ls, omega, r, vmin, vmax, tinc, umax, g0, gs, kk, wb, rw, ud;
     int           source, period, bypass, scenes, dma_pct, out_pct, drop_t, overrun_t, limit_t;
     int           exp_clamped, exp_replaced;
-    logic [7:0]   expected [$];
+    int           pkt_data, ei_mode, ei_seed, ei_threshold, burst_len, ei_period, asm_bits, xfer, rx_sel, fabric;
+    int           n_cadus, n_packets, n_flips, n_records;
+    logic [7:0]   expected [$], ground [$];
     logic [127:0] tbl [$], dma [$];
     int           sizes [$];
 
@@ -169,6 +238,18 @@ module tb_hpdp_core;
         $fclose(fd);
         fd = $fopen({dir, "/stats.txt"}, "r");
         v = $fscanf(fd, "%d %d", exp_clamped, exp_replaced);
+        $fclose(fd);
+        fd = $fopen({dir, "/dl_cfg.txt"}, "r");
+        if (fd == 0) $fatal(1, "cannot open %s/dl_cfg.txt", dir);
+        n = $fscanf(fd, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d", pkt_data, ei_mode, ei_seed,
+                    ei_threshold, burst_len, ei_period, asm_bits, xfer, rx_sel, fabric,
+                    n_cadus, n_packets, n_flips, n_records);
+        if (n != 14) $fatal(1, "bad dl_cfg.txt (%0d fields)", n);
+        $fclose(fd);
+        fd = $fopen({dir, "/ground.hex"}, "r");
+        while ($fscanf(fd, "%h", v) == 1) begin
+            ground.push_back(8'(v));
+        end
         $fclose(fd);
         if (source != 0) $fatal(1, "tb_hpdp_core needs a DMA-source test");
     endtask
@@ -240,11 +321,53 @@ module tb_hpdp_core;
     end
 
     // -----------------------------------------------------------------
+    // Ground capture DMA: every byte against the model's records; tlast after
+    // every xfer-th record and after the last one (partial group: timeout)
+    // -----------------------------------------------------------------
+    int gpos = 0, g_err = 0, g_last_err = 0, g_lasts = 0;
+    always @(posedge clk_sys) begin
+        if (rst_n && gr_tvalid && gr_tready) begin
+            int         r;
+            logic       exp_last;
+            logic [7:0] gb, eb;
+            for (int b = 0; b < 8; b++) begin
+                gb = gr_tdata[8 * b +: 8];
+                eb = (gpos < ground.size()) ? ground[gpos] : 8'hxx;
+                if (gpos >= ground.size() || gb !== eb || gr_tkeep[b] !== 1'b1) begin
+                    g_err++;
+                    if (g_err <= 5) $display("  ground byte %0d (record %0d): got %02h, expected %02h",
+                                             gpos, gpos / 1024, gb, eb);
+                end
+                gpos++;
+            end
+            r = gpos / 1024 - 1;
+            exp_last = (gpos % 1024 == 0) && (((r + 1) % xfer == 0) || r == n_records - 1);
+            if (gr_tlast !== exp_last) begin
+                g_last_err++;
+                if (g_last_err <= 5) $display("  ground tlast %0d after byte %0d", gr_tlast, gpos);
+            end
+            if (gr_tlast) g_lasts++;
+        end
+        gr_tready <= ($urandom_range(0, 99) < out_pct);
+    end
+
+    // -----------------------------------------------------------------
     // Test sequence
     // -----------------------------------------------------------------
     task automatic configure();
+        wr(AOS_CTRL, 0);                                    // no idle frames until the end
         wr(SYS_NX, nx);  wr(SYS_NY, ny);  wr(SYS_NZ, nz);  wr(SYS_DEPTH, depth);
-        wr(SYS_MODE, 1);                                    // capture
+        wr(SYS_MODE, 3);                                    // capture and downlink
+        wr(PKT_PKT_DATA, pkt_data);
+        wr(EI_SEED, ei_seed);
+        wr(EI_THRESHOLD, ei_threshold);
+        wr(EI_BURST_LEN, burst_len);
+        wr(EI_PERIOD, ei_period);
+        wr(EI_ASM_BITS, asm_bits);
+        wr(EI_CTRL, ei_mode);
+        wr(GR_CTRL, 3);                                     // capture, skip idle frames
+        wr(GR_XFER, xfer);
+        wr(LNK_CTRL, 1 | (fabric << 3) | (rx_sel << 4));    // transmitters on
         wr(SYS_IRQ_EN, 32'h3);
         wr(SE_LINE_PERIOD, period);
         wr(SE_LINES, scenes * ny);
@@ -321,8 +444,12 @@ module tb_hpdp_core;
         load_vectors();
         total = nx * ny * nz * scenes;
         last_size = sizes[scenes - 1];
+        good_ch = fabric ? -1 : rx_sel ? 0 : 1;
         $display("tb_hpdp_core: %s, %0dx%0dx%0d, %0d scenes, %0d passes, dma %0d%%, out %0d%%",
                  dir, nx, ny, nz, scenes, PASSES, dma_pct, out_pct);
+        $display("  downlink: %0d CADUs, %0d packets, error injector mode %0d (%0d bits), %0d records, %s",
+                 n_cadus, n_packets, ei_mode, n_flips, n_records,
+                 fabric ? "fabric loopback" : rx_sel ? "received on SFP0" : "received on SFP1");
 
         repeat (30) @(posedge clk_sensor);
         rst_n <= 1'b1;
@@ -334,11 +461,36 @@ module tb_hpdp_core;
         expect_reg("RC.ID", RC_ID, 32'h0002_0100);
         expect_reg("CT.ID", CT_ID, 32'h0003_0100);
         expect_reg("CMP.ID", CMP_ID, 32'h0004_0100);
+        expect_reg("PKT.ID", PKT_ID, 32'h0005_0100);
+        expect_reg("AOS.ID", AOS_ID, 32'h0006_0100);
+        expect_reg("EI.ID", EI_ID, 32'h0007_0100);
+        expect_reg("LNK.ID", LNK_ID, 32'h0008_0100);
+        expect_reg("GR.ID", GR_ID, 32'h0009_0100);
         expect_reg("SYS.BUILD_ID", SYS_BUILD_ID, BUILD_ID);
         expect_reg("SE.LINE_PERIOD reset", SE_LINE_PERIOD, 1000);
         poll("sensor clock locked", SYS_STATUS, 32'h4, 32'h4, 5);
 
         configure();
+        expect_reg("LNK.STATUS, transceivers down", LNK_STATUS, 32'h0000_0C00);
+        sync_cfg();
+        if (sfp_tx_enable !== 2'b11 || gt_reset_all !== 1'b0) begin
+            errors++;
+            $display("  sfp_tx_enable %b, gt_reset_all %b", sfp_tx_enable, gt_reset_all);
+        end
+
+        // link up: aligned, 1024 good words -> LOCKED
+        gt_up <= 1'b1;
+        poll("link locked", LNK_STATUS, 32'h8, 32'h8, 100);
+        expect_reg("LNK.STATUS, link up", LNK_STATUS, 32'h0000_0F0F);
+        wr(LNK_CNT_CLEAR, 1);                               // errors while the channel was switched
+
+        // soft reset: whatever entered the chain before the configuration (idle
+        // frames) is gone, the error injector restarts from its seed
+        repeat (500) @(posedge clk_ctrl);
+        wr(SYS_CTRL, 32'h2);
+        repeat (100) @(posedge clk_ctrl);
+        wr(SYS_CTRL, 32'h0);
+        sync_cfg();
 
         // calibration table by DMA, then through the debug registers
         wr(SYS_DMA_ROUTE, 1);
@@ -373,6 +525,39 @@ module tb_hpdp_core;
             $display("  CMP.LAST_CYCLES = %0d, implausible", v);
         end
 
+        // downlink: every packet, frame and CADU sent; injected errors as the model
+        poll("AOS.CADUS", AOS_CADUS, 32'hFFFF_FFFF, n_cadus, 2000);
+        poll("EI.INJECTED_BITS", EI_INJECTED_BITS, 32'hFFFF_FFFF, n_flips, 50);
+        expect_reg("PKT.PACKETS", PKT_PACKETS, n_packets);
+        expect_reg("PKT.SCENES", PKT_SCENES, PASSES * scenes);
+        expect_reg("PKT.TS_OVERFLOWS", PKT_TS_OVERFLOWS, 0);
+        expect_reg("AOS.SCIENCE_FRAMES", AOS_SCIENCE_FRAMES, n_cadus);
+        expect_reg("AOS.IDLE_FRAMES", AOS_IDLE_FRAMES, 0);
+
+        // error injector off, idle frames on: the frame sync decides the last CADUs
+        wr(EI_CTRL, 0);
+        sync_cfg();
+        wr(AOS_CTRL, 1);
+        poll("GR.CAPTURED", GR_CAPTURED, 32'hFFFF_FFFF, n_records, 2000);
+        begin
+            realtime t0;
+            t0 = $realtime;
+            // a partial last group ends after 2^16 cycles without a record
+            while (gpos < ground.size() && $realtime - t0 < 1000_000.0) @(posedge clk_sys);
+            repeat (100) @(posedge clk_sys);
+        end
+        expect_reg("GR.CAPTURED after the flush", GR_CAPTURED, n_records);
+        expect_reg("GR.DROPPED_RECORDS", GR_DROPPED_RECORDS, 0);
+        expect_reg("GR.SYNC_LOSSES", GR_SYNC_LOSSES, 0);
+        expect_reg("GR.STATUS (LOCK)", GR_STATUS, 2);
+        expect_reg("LNK.CODE_ERRORS", LNK_CODE_ERRORS, 0);
+        expect_reg("LNK.LOCK_LOSSES", LNK_LOCK_LOSSES, 0);
+        expect_reg("LNK.RX_OVERFLOWS", LNK_RX_OVERFLOWS, 0);
+        rd(GR_SKIPPED_IDLE, v);
+        if (v == 0) begin errors++; $display("  GR.SKIPPED_IDLE = 0"); end
+        rd(LNK_RX_WORDS, v);
+        if (v < n_cadus * 512) begin errors++; $display("  LNK.RX_WORDS = %0d", v); end
+
         // interrupt: scene done raised, error not; write 1 to clear
         expect_reg("SYS.IRQ_STATUS", SYS_IRQ_STATUS, 32'h1);
         if (irq !== 1'b1) begin errors++; $display("  irq not raised"); end
@@ -389,6 +574,12 @@ module tb_hpdp_core;
         poll("CT counters cleared", CT_LINES_OUT, 32'hFFFF_FFFF, 0, 5);
         poll("CMP counters cleared", CMP_SCENES_DONE, 32'hFFFF_FFFF, 0, 5);
         expect_reg("CMP.BYTES_OUT after clear", CMP_BYTES_OUT, 0);
+        wr(PKT_CNT_CLEAR, 1);
+        wr(AOS_CNT_CLEAR, 1);
+        wr(GR_CNT_CLEAR, 1);
+        poll("PKT counters cleared", PKT_PACKETS, 32'hFFFF_FFFF, 0, 5);
+        poll("AOS counters cleared", AOS_SCIENCE_FRAMES, 32'hFFFF_FFFF, 0, 5);
+        poll("GR counters cleared", GR_CAPTURED, 32'hFFFF_FFFF, 0, 5);
 
         // soft reset: data path state cleared, registers kept
         wr(SYS_CTRL, 32'h2);
@@ -399,17 +590,21 @@ module tb_hpdp_core;
         expect_reg("SE.LINE_TIMESTAMP reset", SE_LINE_TIMESTAMP, 0);
 
         repeat (100) @(posedge clk_sys);
-        errors += bus_err + byte_err + last_err;
+        errors += bus_err + byte_err + last_err + g_err + g_last_err;
         if (pos != PASSES * expected.size()) begin
             errors++;
             $display("  %0d bytes captured, expected %0d", pos, PASSES * expected.size());
         end
+        if (gpos != ground.size()) begin
+            errors++;
+            $display("  %0d ground bytes captured, expected %0d", gpos, ground.size());
+        end
         if (errors == 0)
-            $display("PASS: tb_hpdp_core %s, %0d passes, %0d bytes, %0d scenes, last scene %0d cycles",
-                     dir, PASSES, pos, lasts, v);
+            $display("PASS: tb_hpdp_core %s, %0d passes, %0d bytes, %0d scenes; downlink %0d CADUs, %0d ground records in %0d transfers",
+                     dir, PASSES, pos, lasts, n_cadus, n_records, g_lasts);
         else
-            $display("FAIL: tb_hpdp_core %s: %0d errors (bytes %0d, tlast %0d, bus %0d)",
-                     dir, errors, byte_err, last_err, bus_err);
+            $display("FAIL: tb_hpdp_core %s: %0d errors (bytes %0d, tlast %0d, bus %0d, ground bytes %0d, ground tlast %0d)",
+                     dir, errors, byte_err, last_err, bus_err, g_err, g_last_err);
         $finish;
     end
 

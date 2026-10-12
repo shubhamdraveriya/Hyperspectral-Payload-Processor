@@ -73,13 +73,13 @@ CCSDS 123 compressor    │                             ▲
 Space packetizer        │                             ▲ clk_sys
   ▼                     │                           Link RX: 8b/10b, comma align,
 AOS framer (+ idle)     │                             ▲ clock correction, lock FSM
-  ▼                     │                             │ clk_link_rx
+  ▼                     │                             │ clk_link
 RS(255,223) I=4 → randomizer → ASM                    │
   ▼                     ┘                             │
 Error injector                                        │
   ▼                                                   │
 Link TX: 8b/10b, idles, CC ── GTH ── SFP0 ══ OM3 ══ SFP1 ── GTH
-            clk_link_tx
+            clk_link (TX and RX)
 ```
 
 ### 3.2 Hardware / software split
@@ -145,8 +145,9 @@ Link TX: 8b/10b, idles, CC ── GTH ── SFP0 ══ OM3 ══ SFP1 ── 
 | `clk_ctrl` | 100 MHz | PS `pl_clk0` | AXI4-Lite control, register blocks |
 | `clk_sys` | 250 MHz target, 200 MHz minimum | PS `pl_clk1` or MMCM | DMA data path, front end, compressor, downlink chain, ground receiver |
 | `clk_sensor` | 100 MHz | MMCM, independent of `clk_sys` | Sensor emulator output timing |
-| `clk_link_tx` / `clk_link_rx` | 62.5 MHz | GTH TXOUTCLK / RXOUTCLK via BUFG_GT | Link layer (16-bit user interface) |
-| GTH reference | 125 or 156.25 MHz | Board oscillator feeding the SFP quad (see UG1244, open item O-2) | Transceivers |
+| `clk_link` | 62.5 MHz | GTH TXOUTCLK via BUFG_GT (wizard TX user clock helper) | Link layer (16-bit user interface). The RX side runs on the same clock: the GTH elastic buffers bridge the recovered clocks |
+| `clk_fr` | 31.25 MHz | 125 MHz board clock (H9/G9) / 4, BUFGCE_DIV | GTH free-running and DRP clock |
+| GTH reference | 156.25 MHz | Si570 through an SI53340 buffer on MGTREFCLK1 of quad 226 (U10/U9), used by quad 225 one quad south; no I2C setup needed (O-2) | Transceivers |
 
 All clock-domain crossings use XPM macros (`xpm_fifo_async`, `xpm_cdc_*`). No hand-written
 synchronizers except where XPM has no equivalent.
@@ -330,7 +331,7 @@ Fixed frame length of 892 bytes (= 223 × I, with I = 4), so that one frame fill
 | ID | Requirement |
 |---|---|
 | AOS-01 | Shall output frames continuously. When no science data is ready and the link can accept a frame, it shall insert an idle frame (VCID 63, data field filled with a fixed pattern), so the downlink never pauses. |
-| AOS-02 | Shall support an optional science-frame rate limit (register, frames per second, 0 = unlimited) to emulate a lower downlink capacity. |
+| AOS-02 | Shall support an optional science-frame rate limit (register: minimum `clk_sys` cycles between science frames, set by software from a frames-per-second figure; 0 = unlimited) to emulate a lower downlink capacity. |
 | AOS-03 | Shall set the first header pointer correctly when packets span frames. |
 | AOS-04 | Shall count science frames and idle frames. |
 
@@ -370,7 +371,7 @@ Sits on the CADU byte stream between channel coding and the link, standing in fo
 | LNK-06 | `PRBS` mode: GTH built-in PRBS-31 generator and checker, with a readable error counter. |
 | LNK-07 | ≥ 999 Mbit/s available to CADUs (1.0 Gbit/s after 8b/10b, minus clock-correction overhead). |
 | LNK-08 | Crossings between `clk_sys` and the link clocks through XPM async FIFOs. |
-| LNK-09 | SFP `TX_DISABLE` shall be driven low through its control path, and `LOS` / `TX_FAULT` shall be readable (open item O-3). |
+| LNK-09 | SFP `TX_DISABLE` shall be driven low through its control path (on the ZCU106: PL pins `SFP0_TX_DISABLE_B` AE22 and `SFP1_TX_DISABLE_B` AF20, high = transmitter on). `LOS` / `TX_FAULT` are not wired to the PL on this board (O-3); *may*: read them from the module's diagnostics over I2C. |
 | LNK-10 | *should*: eye scan with In-System IBERT, documented in the project report. |
 
 ### 6.10 Ground receiver (GR)
@@ -444,8 +445,12 @@ Capture status word: bits [5:0] ASM mismatched bits, [7:6] sync state (0 SEARCH,
 | `0xA007_0000` | Error injector |
 | `0xA008_0000` | Link TX/RX (GTH control, PRBS, counters, SFP status) |
 | `0xA009_0000` | Ground receiver |
-| `0xA00A_0000` – `0xA00C_FFFF` | AXI DMA instances |
 | `0xA00F_0000` | Radiation monitor (SEM IP interface, ECC/TMR counters) |
+| `0xA010_0000` | AXI DMA: MM2S (raw scenes, tables), S2MM (compressor capture) |
+| `0xA011_0000` | AXI DMA: S2MM (ground capture) |
+
+The register blocks share one 1 MB window (`0xA000_0000` – `0xA00F_FFFF`), so the DMA
+instances sit above it.
 
 ### 8.2 Common register layout (every block)
 
@@ -600,10 +605,10 @@ Hyperspectral-Payload-Processor/
 │   │                  sample-adaptive coder, bit packer, header generator
 │   ├── downlink/      space_packetizer, aos_framer, rs_encoder, randomizer_asm, error_injector
 │   ├── link/          GTH wrapper, link_tx, link_rx
-│   ├── ground/        frame_sync, derandomizer
+│   ├── ground/        frame_sync (with the derandomizer), gr_capture
 │   ├── regs/          register block generated from regs/ (PeakRDL)
-│   └── system/        hpdp_core (registers, clock-domain crossings, data path) and its
-│                      block-design wrapper
+│   └── system/        hpdp_core (registers, clock-domain crossings, data path), its
+│                      block-design wrapper, hpdp_top (transceivers + block design)
 ├── regs/              SystemRDL register description and generator
 ├── tb/                block and system testbenches
 ├── model/             Python golden models and pytest tests
@@ -679,8 +684,8 @@ Total about 31 weeks at 15–20 hours per week.
 | # | Item | Needed by |
 |---|---|---|
 | O-1 | Is the OM3 cable duplex (2 fibers) or simplex (1 fiber)? Only the return-channel stretch goal depends on it | M5 |
-| O-2 | Which oscillator feeds the SFP quad (125 or 156.25 MHz), and must it be programmed over I2C at boot? (UG1244) | M5 |
-| O-3 | How SFP `TX_DISABLE`, `LOS` and `TX_FAULT` are wired: PL pins or I2C expander (UG1244) | M5 |
+| O-2 | ~~Which oscillator feeds the SFP quad, and must it be programmed over I2C at boot?~~ Closed: 156.25 MHz from the Si570 (through an SI53340) on MGTREFCLK1 of quad 226, no I2C setup; measured 156,250,064 Hz on this board. The Si5328 on MGTREFCLK1 of quad 225 would need I2C programming | M5 |
+| O-3 | ~~How SFP `TX_DISABLE`, `LOS` and `TX_FAULT` are wired~~ Closed (UG1244 table 3-32): `TX_DISABLE_B` on PL pins AE22 / AF20 (LVCMOS12); `LOS` and `TX_FAULT` are not wired to the PL | M5 |
 | O-4 | Vivado licence covering XCZU7EV (ZCU106 kit voucher) | M0 |
 | O-5 | Access to ESA WhiteDwarf 2.0 / CNES CCSDS 123.0-B-2 tools | M1 |
 | O-6 | `NZ_MIN` from the final compressor pipeline depth | M2 |

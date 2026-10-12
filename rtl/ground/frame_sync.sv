@@ -21,6 +21,7 @@ module frame_sync import downlink_pkg::*; (
     input  logic        rst,
     input  logic [5:0]  asm_tol,
     input  logic [3:0]  flywheel,
+    input  logic        cnt_clr,                // clear the counters
 
     input  logic [7:0]  s_tdata,
     input  logic        s_tvalid,
@@ -213,6 +214,9 @@ module frame_sync import downlink_pkg::*; (
                     end
                     seq <= seq + 16'd1;
                 end
+            end
+            if (cnt_clr) begin
+                cadus <= '0;  sync_losses <= '0;  asm_bit_errors <= '0;  dropped_records <= '0;
             end
         end
     end

@@ -18,6 +18,7 @@ module link_rx (
     input  logic [1:0]  rxdisperr,
     input  logic [1:0]  rxnotintable,
     input  logic        rxbyteisaligned,
+    input  logic        cnt_clr,                // clear the counters
 
     output logic [15:0] m_data,                 // to the FIFO towards clk_sys
     output logic        m_wr,
@@ -89,6 +90,11 @@ module link_rx (
                 end
                 default: state <= HUNT;
             endcase
+            if (cnt_clr) begin
+                code_errors <= '0;
+                lock_losses <= '0;
+                data_words  <= '0;
+            end
         end
     end
 endmodule
