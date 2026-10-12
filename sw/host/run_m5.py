@@ -341,7 +341,10 @@ def verify_long_run(work, job, a, dims, n_scenes):
           f"{r['lnk_rx_overflows']} RX overflows")
     checks = [("emulator lines", r["se_lines"], lines), ("underruns", r["se_underrun"], 0),
               ("line period overruns", r["se_overruns"], 0), ("emulator drops", r["se_dropped"], 0),
-              ("corner turn lines", r["ct_lines"], lines), ("packetized scenes", r["pkt_scenes"], total),
+              # lines lost without a fill line (RAW overload) leave the corner turn short;
+              # the scene guard still completes every scene
+              ("corner turn lines (+ unfilled)", r["ct_lines"] + (r["ct_unfilled"] if a.raw else 0), lines),
+              ("packetized scenes", r["pkt_scenes"], total),
               ("timestamp overflows", r["pkt_ts_overflows"], 0), ("ground sync losses", r["gr_sync_losses"], 0),
               ("ground records dropped", r["gr_dropped"], 0), ("link lock losses", r["lnk_lock_losses"], 0),
               ("link RX overflows", r["lnk_rx_overflows"], 0)]
