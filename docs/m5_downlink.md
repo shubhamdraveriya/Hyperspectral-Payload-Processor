@@ -162,6 +162,48 @@ RS(255,223) with I = 4 holds to 2 × 10^-3 and starts to fail at 3 × 10^-3, as 
 2e-3 and at 6e-3). "Injected bits" divided by all CADUs sent understates the BER a little,
 because idle CADUs after the run (error injector off) are counted too.
 
+### VER-08: throughput at the reference mission rate (2026-10-12)
+
+Reference mission scene (Nx 512, Nz 150, D 12, 256 lines, 1 line per ms = 76.8
+Msamples/s): one synthetic raw scene in DDR, streamed 2344 times by the looping DMA
+source (`run_m5.py --size 512 256 150 12 --scenes 1 --line-period 100000 --repeat 2344
+--no-capture`), COMPRESS mode, downlink over the fiber, ground capture counting only.
+
+| | Result |
+|---|---|
+| Duration | **600.1 s**, 600 064 lines, 2344 scenes, 46.08 × 10^9 samples: **76.8 Msamples/s** (922 Mbit/s raw), compression 2.10:1 |
+| Sensor emulator | 0 underruns, 0 overruns, 0 dropped samples |
+| Corner turn | 600 064 lines, **0 dropped** |
+| Downlink | 2344 scenes in 16 007 176 packets, 37 335 232 science + 35 879 980 idle frames, 73 215 212 CADUs |
+| Ground | 73 215 211 CADUs (the last one in flight), 0 sync losses, 0 records dropped |
+| Link | 0 code errors, 0 lock losses, 0 RX overflows |
+
+**VER-08 passes** for COMPRESS mode. For long runs the XSDB script now polls and reads back
+through the debug port's memory access without halting the A53 (a halt can delay a DMA
+re-arm and cause emulator underruns).
+
+### SYS-09: RAW mode at the same rate
+
+Same settings with the compressor bypassed (`--raw`, 60 s): raw data (922 Mbit/s)
+exceeds the downlink, so the corner turn drops lines, as SYS-09 expects: of 59 904 lines,
+52 797 were dropped and replaced by fill lines and 4 185 could not even be filled
+(`CT.DROPPED_LINES`, `CT.UNFILLED_LINES`); the link and the ground kept up with everything
+sent (0 sync losses).
+
+Two findings, for M7:
+
+- Under sustained overload the fill-line policy (CT-04) sends mostly fill lines: a fill
+  line costs as much bandwidth as a real line, so once the buffers are full nearly every
+  new line is dropped. Geometry cannot be kept at all when the output is slower than the
+  input (the unfilled lines).
+- **A scene short of lines is never ended.** The compressor restarts its position
+  counters on the next first-of-scene marker but ends an image (tlast) only at the last
+  sample of a full scene, so the short scene's bitstream merges with the next ones: 13 of
+  234 scenes completed. One lost line can cost every scene until the framing realigns,
+  against the intent of SYS-06. Fix: end the current image on a premature scene start
+  (flagged in the packet header). `hpdp_run` also needs an end-of-run condition that does
+  not depend on the scene count (it waited for its deadline).
+
 Observations:
 
 - End to end, the compressed scenes reach the ground at 582 Mbit/s: the sensor

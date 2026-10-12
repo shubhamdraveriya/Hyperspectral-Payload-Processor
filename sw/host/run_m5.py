@@ -42,7 +42,7 @@ from hpdp_model import channel as ch  # noqa: E402
 from hpdp_model import formats as f  # noqa: E402
 from hpdp_model import framing, pipeline, rs  # noqa: E402
 import run_m4 as m4  # noqa: E402
-from hpdp_job import (CAL_ADDR, GR_ADDR, JOB_LOAD_TABLE, JOB_NO_IDLE, MAX_SCENES,  # noqa: E402
+from hpdp_job import (CAL_ADDR, GR_ADDR, JOB_LOAD_TABLE, JOB_NO_GR_CAPTURE, JOB_NO_IDLE, MAX_SCENES,  # noqa: E402
                       MODE_CAPTURE, MODE_DOWNLINK, MODE_PRBS, NET_PORT, NET_UPLOAD, OUT_ADDR, RAW_ADDR,
                       RESULT_ADDR, RESULT_MAGIC, UPLOAD_STATUS, pack_job, pack_result, result_offset,
                       status_text, unpack_result)
@@ -107,7 +107,11 @@ def downlink_job(work, raws, cal, dims, a, cfg, ctx, expect, n_frames):
     capacity = ((n_frames + 2 * a.xfer + 256) * RECORD + (1 << 20) + 0xFFFF) & ~0xFFFF
     if OUT_ADDR + job["out_capacity"] > GR_ADDR or GR_ADDR + capacity > 0x8000_0000:
         sys.exit("buffers too large for the low 2 GB of PS DDR")
-    job.update(flags=JOB_LOAD_TABLE | (JOB_NO_IDLE if a.no_idle else 0),
+    if a.raw:
+        job["cmp_opts"] = m4.pack_reg("cmp.OPTS", raw=1, user_data=cfg.user_data)
+    job.update(flags=JOB_LOAD_TABLE | (JOB_NO_IDLE if a.no_idle else 0) |
+               (JOB_NO_GR_CAPTURE if a.no_ground_capture else 0),
+               repeat=a.repeat,
                mode=MODE_DOWNLINK | (0 if a.no_capture else MODE_CAPTURE),
                pkt_apid=a.apid, pkt_data=a.pkt_data,
                aos_frame_hdr=m4.pack_reg("aos.FRAME_HDR", scid=a.scid, vcid=a.vcid),
@@ -178,9 +182,9 @@ def write_xsdb(work, job, a, seconds):
         timeout = int(seconds * 3 + 60)
         reads = ""
         if job["mode"] & MODE_CAPTURE:
-            reads += f"mrd -bin -file {{{w}/out.bin}} 0x{OUT_ADDR:08X} {job['out_capacity'] // 4}\n"
-        reads += (f"set gr_bytes [mrd -value 0x{RESULT_ADDR + result_offset('gr_bytes'):08X}]\n"
-                  f"if {{$gr_bytes > 0}} {{ mrd -bin -file {{{w}/gr.bin}} 0x{GR_ADDR:08X} "
+            reads += f"mrd -force -bin -file {{{w}/out.bin}} 0x{OUT_ADDR:08X} {job['out_capacity'] // 4}\n"
+        reads += (f"set gr_bytes [mrd -force -value 0x{RESULT_ADDR + result_offset('gr_bytes'):08X}]\n"
+                  f"if {{$gr_bytes > 0}} {{ mrd -force -bin -file {{{w}/gr.bin}} 0x{GR_ADDR:08X} "
                   f"[expr {{($gr_bytes + 3) / 4}}] }} else {{ close [open {{{w}/gr.bin}} w] }}\n")
     m4.xsdb_script(work, a.xsa, m4.find_elf(a), loads, job["seq"], timeout, reads, "run_m5")
 
@@ -305,6 +309,64 @@ def verify_downlink(work, job, a, expect, dims, frames, packets):
     return ok
 
 
+def verify_long_run(work, job, a, dims, n_scenes):
+    """VER-08 / SYS-09: a long run is judged by its counters (the data itself was
+    checked by the shorter runs): every line through, no overflow anywhere, the
+    downlink and the ground keeping up. In RAW mode lines must be dropped instead."""
+    nx, ny, nz, depth = dims
+    r, _, _ = unpack_result((work / "result.bin").read_bytes())
+    problems = []
+    if r["magic"] != RESULT_MAGIC or r["seq"] != job["seq"]:
+        problems.append("no result block for this job")
+    if r["status"] != 0:
+        problems.append(f"status {r['status']} ({status_text(r['status'])})")
+    check_link(r, problems)
+    total = n_scenes * a.repeat
+    lines = total * ny
+    ticks = r["ticks_lo"] | (r["ticks_hi"] << 32)
+    seconds = ticks / r["timer_hz"] if r["timer_hz"] else 0
+    samples = nx * ny * nz * total
+    print(f"{total} scenes ({n_scenes} raw scenes streamed {a.repeat} times), {lines} lines, "
+          f"{samples / 1e9:.2f} Gsamples in {seconds:.1f} s: {samples / seconds / 1e6 if seconds else 0:.1f} Msamples/s "
+          f"({samples * depth / seconds / 1e6 if seconds else 0:.0f} Mbit/s raw), line period {job['line_period']} "
+          f"cycles = {100e6 / job['line_period'] * nx * nz / 1e6:.1f} Msamples/s offered")
+    print(f"emulator: {r['se_lines']} lines, {r['se_underrun']} underruns, {r['se_overruns']} overruns, "
+          f"{r['se_dropped']} dropped samples; corner turn: {r['ct_lines']} lines, {r['ct_dropped']} dropped, "
+          f"{r['ct_unfilled']} unfilled")
+    print(f"downlink: {r['pkt_scenes']} scenes packetized, {r['aos_science']} science + {r['aos_idle']} idle "
+          f"frames, {r['aos_cadus']} CADUs; compressor output stall cycles (cumulative, saturating) "
+          f"{r['cmp_stalls']}")
+    print(f"ground: {r['gr_cadus']} CADUs, {r['gr_sync_losses']} sync losses, {r['gr_dropped']} records dropped; "
+          f"link: {r['lnk_code_errors']} code errors, {r['lnk_lock_losses']} lock losses, "
+          f"{r['lnk_rx_overflows']} RX overflows")
+    checks = [("emulator lines", r["se_lines"], lines), ("underruns", r["se_underrun"], 0),
+              ("line period overruns", r["se_overruns"], 0), ("emulator drops", r["se_dropped"], 0),
+              ("corner turn lines", r["ct_lines"], lines), ("packetized scenes", r["pkt_scenes"], total),
+              ("timestamp overflows", r["pkt_ts_overflows"], 0), ("ground sync losses", r["gr_sync_losses"], 0),
+              ("ground records dropped", r["gr_dropped"], 0), ("link lock losses", r["lnk_lock_losses"], 0),
+              ("link RX overflows", r["lnk_rx_overflows"], 0)]
+    if not a.raw:
+        checks.append(("dropped lines", r["ct_dropped"], 0))
+    for name, got, exp in checks:
+        if got != exp:
+            problems.append(f"{name}: {got}, expected {exp}")
+    if r["gr_cadus"] + 4 < r["aos_cadus"]:
+        problems.append(f"the ground received {r['gr_cadus']} of {r['aos_cadus']} CADUs")
+    if a.raw:
+        frac = r["ct_dropped"] / lines if lines else 0
+        print(f"RAW mode (SYS-09): {r['ct_dropped']} of {lines} lines dropped ({100 * frac:.1f} %): "
+              f"raw data ({nx * nz * depth * 1000 * 100e3 / job['line_period'] / 1e6:.0f} Mbit/s) "
+              f"{'exceeds' if r['ct_dropped'] else 'did NOT exceed'} the link")
+        if r["ct_dropped"] == 0:
+            problems.append("RAW mode dropped no lines")
+    for p in problems:
+        print(f"  problem: {p}")
+    what = "RAW mode drops (SYS-09)" if a.raw else "no line dropped (VER-08)"
+    print(("PASS" if not problems else "FAIL") + f": run_m5 long run, {total} scenes {nx}x{ny}x{nz} D={depth}, "
+          f"{seconds / 60:.1f} min, {what}")
+    return not problems
+
+
 def verify_prbs(work, job, a):
     r, _, _ = unpack_result((work / "result.bin").read_bytes())
     problems = []
@@ -362,6 +424,11 @@ def main():
     g.add_argument("--asm-tol", type=int, default=2)
     g.add_argument("--flywheel", type=int, default=3)
     g.add_argument("--xfer", type=int, default=64, help="ground records per DMA transfer (default 64)")
+    g.add_argument("--repeat", type=int, default=1,
+                   help="stream the raw scenes this many times (long runs, VER-08; needs --no-capture)")
+    g.add_argument("--no-ground-capture", action="store_true",
+                   help="ground records counted, not captured (implied by --repeat > 1)")
+    g.add_argument("--raw", action="store_true", help="compressor bypass: RAW mode (SYS-09; a long run)")
     k = p.add_argument_group("link")
     k.add_argument("--rx", choices=("sfp1", "sfp0"), default="sfp1", help="receiving SFP cage (default sfp1)")
     k.add_argument("--loopback", choices=("none", "pcs", "pma", "fabric"), default="none",
@@ -413,19 +480,32 @@ def main():
     cfg = c.Config(**{k_: int(v) if v.lstrip("-").isdigit() else v
                       for k_, v in (kv.split("=", 1) for kv in a.cfg)})
     ctx = c._Ctx.build(nx, ny, nz, depth, cfg)
-    print(f"{len(raws)} scenes {nx}x{ny}x{nz} D={depth}, source {a.source}, "
-          f"correction {'off' if a.no_correction else 'on'}: computing the expected output ...")
-    expect = m4.expected_output(raws, cal, cfg, not a.no_correction)
-    # the corrected scenes, as references for the ground station (sw/ground/hpdp_gs.py --ref)
-    work.mkdir(parents=True, exist_ok=True)
-    for k, (fixed, _, _) in enumerate(expect):
-        f.write_scene(work / f"ref_{k:04d}.hpdp", fixed)
-    packets, frames = downlink_model(expect, ny, a)
-    print(f"downlink: {packets} packets in {len(frames)} science frames")
+    long_run = a.repeat > 1 or a.raw
+    if long_run:
+        # judged by the counters: no model output (full-size scenes take minutes each)
+        if not a.no_capture or a.source != "dma" or a.upload:
+            sys.exit("long runs (--repeat > 1, --raw) need --no-capture, the DMA source and no --upload")
+        a.no_ground_capture = True
+        print(f"{len(raws)} scenes {nx}x{ny}x{nz} D={depth} streamed {a.repeat} times "
+              f"({len(raws) * a.repeat * ny} lines){', RAW mode' if a.raw else ''}")
+        expect = [(raw, b"", {"clamped": 0, "replaced": 0}) for raw in raws]
+        packets, frames = 0, []
+    else:
+        print(f"{len(raws)} scenes {nx}x{ny}x{nz} D={depth}, source {a.source}, "
+              f"correction {'off' if a.no_correction else 'on'}: computing the expected output ...")
+        expect = m4.expected_output(raws, cal, cfg, not a.no_correction)
+        # the corrected scenes, as references for the ground station (sw/ground/hpdp_gs.py --ref)
+        work.mkdir(parents=True, exist_ok=True)
+        for k, (fixed, _, _) in enumerate(expect):
+            f.write_scene(work / f"ref_{k:04d}.hpdp", fixed)
+        packets, frames = downlink_model(expect, ny, a)
+        print(f"downlink: {packets} packets in {len(frames)} science frames")
     job = downlink_job(work, raws, cal, dims, a, cfg, ctx, expect, len(frames))
-    seconds = len(raws) * ny * job["line_period"] / 100e6 + len(frames) * 1024 / 100e6
+    seconds = len(raws) * a.repeat * ny * job["line_period"] / 100e6 + len(frames) * 1024 / 100e6
 
     if a.fake_board:
+        if long_run:
+            sys.exit("--fake-board does not apply to long runs")
         fake_board(work, job, a, expect, dims, frames, packets)
     elif not a.verify_only:
         write_xsdb(work, job, a, seconds)
@@ -436,6 +516,8 @@ def main():
         if subprocess.call([a.xsdb, str(work / "run.tcl")]) != 0:
             print("FAIL: XSDB reported an error")
             return 1
+    if long_run:
+        return 0 if verify_long_run(work, job, a, dims, len(raws)) else 1
     ok = verify_downlink(work, job, a, expect, dims, frames, packets)
     if a.upload and not a.fake_board:
         ok = check_upload(work, a) and ok

@@ -157,6 +157,8 @@ typedef struct {
     u32 ei_ctrl, ei_threshold, ei_seed, ei_burst_len, ei_period, ei_asm_bits;
     u32 lnk_ctrl, gr_sync, gr_xfer, gr_addr, gr_capacity, link_timeout_ms, prbs_seconds;
     u32 net_ctrl, net_ip, net_mask, net_port;
+    u32 repeat, total;                  /* raw buffer passes; scenes in all (scenes * repeat) */
+    int gr_capture;
 } run_t;
 
 /* LNK.CTRL without PRBS and without the reset requests */
@@ -226,7 +228,7 @@ static void configure(const run_t *r)
     wr(REG(sys.IRQ_STATUS), 0xFFFFFFFFu);
     wr(REG(se.CTRL), 0);
     wr(REG(se.LINE_PERIOD), r->line_period);
-    wr(REG(se.LINES), r->ny * r->scenes);
+    wr(REG(se.LINES), r->ny * r->total);
     wr(REG(se.SOURCE), r->source);
     wr(REG(rc.CTRL), r->rc_enable ? HPDP_RC__CTRL__ENABLE_bm : 0);
     wr(REG(cmp.PRED), r->pred);
@@ -248,7 +250,7 @@ static void configure(const run_t *r)
         wr(REG(ei.SEED_LOAD), 1);
         wr(REG(gr.SYNC), r->gr_sync);
         wr(REG(gr.XFER), r->gr_xfer);
-        wr(REG(gr.CTRL), HPDP_GR__CTRL__CAPTURE_bm | HPDP_GR__CTRL__SKIP_IDLE_bm);
+        wr(REG(gr.CTRL), (r->gr_capture ? HPDP_GR__CTRL__CAPTURE_bm : 0) | HPDP_GR__CTRL__SKIP_IDLE_bm);
     } else {
         wr(REG(aos.CTRL), 0);
         wr(REG(ei.CTRL), 0);
@@ -317,13 +319,13 @@ static int acquire(const run_t *r, u32 *offset, u32 *bytes, u64 *ticks, u32 *gr_
 {
     const int capture = (r->mode & MODE_CAPTURE) != 0, downlink = (r->mode & MODE_DOWNLINK) != 0;
     u32 mm2s_done = 0, scene = 0, out_off = 0, armed_len = 0, gr_off = 0, gr_armed = 0;
-    u32 sci_prev = 0, cadus_mark = 0;
+    u32 sci_prev = 0, cadus_mark = 0, pass = 0;
     int mm2s_busy = 0, s2mm_busy = 0, gr_busy = 0, gr_full = 0, drain = 0;
     u64 t0 = now(), deadline = ~0ull, run_us, quiet = 0, t_mark = 0;
     u64 settle = us_to_ticks(200u + r->aos_frame_gap / 250u);  /* frame_gap: clk_sys (250 MHz) cycles */
 
-    run_us = (u64)r->scenes * r->ny * r->line_period / 100u;    /* clk_sensor = 100 MHz */
-    run_us += (u64)r->nx * r->ny * r->nz * r->scenes * 2u / 50u; /* downlink at >= 50 MB/s */
+    run_us = (u64)r->total * r->ny * r->line_period / 100u;     /* clk_sensor = 100 MHz */
+    run_us += (u64)r->nx * r->ny * r->nz * r->total * 2u / 50u; /* downlink at >= 50 MB/s */
     *gr_bytes = 0;
     gr_avail = 0;
     wr(REG(sys.DMA_ROUTE), 0);
@@ -368,7 +370,7 @@ static int acquire(const run_t *r, u32 *offset, u32 *bytes, u64 *ticks, u32 *gr_
         }
         /* ground S2MM: transfers end on tlast after gr_xfer records (or a
          * partial group, after 2^16 clk_sys cycles without a record) */
-        if (downlink) {
+        if (downlink && r->gr_capture) {
             if (gr_busy && !XAxiDma_Busy(&dma_gr, XAXIDMA_DEVICE_TO_DMA)) {
                 gr_busy = 0;
                 gr_off += GR_REG(XAXIDMA_BUFFLEN_OFFSET);
@@ -388,10 +390,14 @@ static int acquire(const run_t *r, u32 *offset, u32 *bytes, u64 *ticks, u32 *gr_
                 }
             }
         }
-        /* MM2S: raw data in chunks */
+        /* MM2S: raw data in chunks; with repeat, the buffer again from the start */
         if (r->source == 0) {
             if (mm2s_busy && !XAxiDma_Busy(&dma, XAXIDMA_DMA_TO_DEVICE))
                 mm2s_busy = 0;
+            if (!mm2s_busy && mm2s_done == r->raw_bytes && pass + 1 < r->repeat) {
+                pass++;
+                mm2s_done = 0;
+            }
             if (!mm2s_busy && mm2s_done < r->raw_bytes) {
                 u32 len = r->raw_bytes - mm2s_done;
                 if (len > DMA_CHUNK)
@@ -411,7 +417,7 @@ static int acquire(const run_t *r, u32 *offset, u32 *bytes, u64 *ticks, u32 *gr_
             deadline = t0 + us_to_ticks(2 * run_us + 2000000u);
         }
 
-        cmp_done = capture ? scene == r->scenes : rd(REG(cmp.SCENES_DONE)) >= r->scenes;
+        cmp_done = capture ? scene == r->scenes : rd(REG(cmp.SCENES_DONE)) >= r->total;
         if (cmp_done && !capture && !*ticks)
             *ticks = now() - t0;
         if (cmp_done && !downlink)
@@ -422,7 +428,7 @@ static int acquire(const run_t *r, u32 *offset, u32 *bytes, u64 *ticks, u32 *gr_
                 return ST_GR_OVERFLOW;
             switch (drain) {
             case 0:
-                if (rd(REG(pkt.SCENES)) >= r->scenes) {
+                if (rd(REG(pkt.SCENES)) >= r->total) {
                     sci_prev = rd(REG(aos.SCIENCE_FRAMES));
                     t_mark = now();
                     drain = 1;
@@ -571,7 +577,7 @@ static void fill_counters(volatile result_t *o)
 
 static void print_summary(const run_t *r, volatile result_t *o, u64 ticks)
 {
-    u64 samples = (u64)r->nx * r->ny * r->nz * r->scenes;
+    u64 samples = (u64)r->nx * r->ny * r->nz * r->total;
     u64 us = ticks * 1000000u / COUNTS_PER_SECOND;
     u32 total = (r->mode & MODE_CAPTURE) ? 0 : o->cmp_bytes;
 
@@ -583,10 +589,21 @@ static void print_summary(const run_t *r, volatile result_t *o, u64 ticks)
                        (int)(800u * o->scene_bytes[s] / (r->nx * r->ny * r->nz) % 100u));
         }
     }
-    xil_printf("  %d samples in %d us: %d Msamples/s; ratio %d.%02d:1\r\n", (int)samples, (int)us,
-               us ? (int)(samples / us) : 0,
-               total ? (int)(samples * r->depth / (8u * total)) : 0,
-               total ? (int)(samples * r->depth * 100u / (8u * total) % 100u) : 0);
+    if (total == 0xFFFFFFFFu) {
+        /* long run: CMP.BYTES_OUT saturated; the ratio of the last scene instead */
+        samples /= r->total;
+        total = rd(REG(cmp.LAST_BYTES));
+        xil_printf("  %d Msamples in %d ms: %d Msamples/s; last scene ratio %d.%02d:1\r\n",
+                   (int)(samples * r->total / 1000000u), (int)(us / 1000u),
+                   us ? (int)(samples * r->total / us) : 0,
+                   total ? (int)(samples * r->depth / (8u * total)) : 0,
+                   total ? (int)(samples * r->depth * 100u / (8u * total) % 100u) : 0);
+    } else {
+        xil_printf("  %d Msamples in %d ms: %d Msamples/s; ratio %d.%02d:1\r\n", (int)(samples / 1000000u),
+                   (int)(us / 1000u), us ? (int)(samples / us) : 0,
+                   total ? (int)(samples * r->depth / (8u * total)) : 0,
+                   total ? (int)(samples * r->depth * 100u / (8u * total) % 100u) : 0);
+    }
     xil_printf("  emulator: %d lines, %d underruns, %d overruns, %d dropped; corner turn: %d lines, %d dropped\r\n",
                (int)o->se_lines, (int)o->se_underrun, (int)o->se_overruns, (int)o->se_dropped,
                (int)o->ct_lines, (int)o->ct_dropped);
@@ -632,6 +649,9 @@ static int run_job(void)
     r.link_timeout_ms = job->link_timeout_ms;  r.prbs_seconds = job->prbs_seconds;
     r.net_ctrl = job->net_ctrl;  r.net_ip = job->net_ip;  r.net_mask = job->net_mask;
     r.net_port = job->net_port ? job->net_port : NET_PORT;
+    r.repeat = job->repeat ? job->repeat : 1;
+    r.total = r.scenes * r.repeat;
+    r.gr_capture = !(job->flags & JOB_NO_GR_CAPTURE);
 
     memset((void *)res, 0, sizeof(result_t));
     res->version = JOB_VERSION;
@@ -659,8 +679,16 @@ static int run_job(void)
             (r.source == 0 && (r.raw_bytes % 16 || r.raw_bytes < 2u * r.nx * r.ny * r.nz * r.scenes)) ||
             (r.load_table && r.cal_bytes != 8u * r.nx * r.nz + (r.nx * r.nz % 2 ? 8u : 0u)) ||
             ((r.mode & MODE_DOWNLINK) && (r.gr_xfer == 0 || r.gr_xfer > 0xFFFFu || r.pkt_data == 0 ||
-                                          r.pkt_data > 2048u || r.gr_capacity < (r.gr_xfer + 1u) * RECORD_BYTES)))
+                                          r.pkt_data > 2048u || r.gr_capacity < (r.gr_xfer + 1u) * RECORD_BYTES)) ||
+            /* repeated runs: DMA source with no padding (scenes follow each other
+               exactly), compressed scenes not captured, the line count in 32 bits */
+            (r.repeat > 1 && (r.source != 0 || (r.mode & MODE_CAPTURE) ||
+                              r.raw_bytes != 2u * r.nx * r.ny * r.nz * r.scenes ||
+                              (u64)r.ny * r.scenes * r.repeat > 0xFFFFFFFFull)))
             st = ST_BAD_JOB;
+        if (r.repeat > 1)
+            xil_printf("  raw scenes streamed %d times: %d scenes, %d lines\r\n", (int)r.repeat, (int)r.total,
+                       (int)(r.total * r.ny));
         upload = st == ST_OK && (r.mode & MODE_DOWNLINK) && (r.net_ctrl & NET_UPLOAD);
         if (upload) {
             /* first upload job: bring the network up (DHCP can take 15 s) */
@@ -750,6 +778,7 @@ static int self_test(void)
         .out_addr = OUT_ADDR, .out_capacity = 4u << 20,
         .load_table = 0,
         .mode = MODE_CAPTURE,
+        .repeat = 1, .total = 2,
     };
     u32 offset[MAX_SCENES], bytes[MAX_SCENES], gr_bytes;
     u64 ticks = 0, dl_ticks = 0;

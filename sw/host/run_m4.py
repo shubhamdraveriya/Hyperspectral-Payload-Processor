@@ -135,7 +135,7 @@ def write_xsdb(work, job, a, run_seconds):
     w = work.as_posix()
     xsdb_script(work, a.xsa, find_elf(a), [("cal.bin", CAL_ADDR), ("raw.bin", RAW_ADDR)], job["seq"],
                 int(run_seconds * 3 + 30),
-                f"mrd -bin -file {{{w}/out.bin}} 0x{OUT_ADDR:08X} {job['out_capacity'] // 4}\n",
+                f"mrd -force -bin -file {{{w}/out.bin}} 0x{OUT_ADDR:08X} {job['out_capacity'] // 4}\n",
                 "run_m4")
 
 
@@ -174,19 +174,19 @@ rst -processor
 dow -data {{{w}/job.bin}} 0x{JOB_ADDR:08X}
 dow {{{w}/hpdp_run.elf}}
 con
+# poll and read back through the debug port's memory access (PSU target), so the
+# A53 is never halted: halting it could delay a DMA re-arm (emulator underrun)
+targets -set -nocase -filter {{name =~ "PSU"}}
 set t0 [clock seconds]
 while {{1}} {{
     after 1000
-    stop
-    set magic [mrd -value 0x{RESULT_ADDR:08X}]
-    set seq [mrd -value 0x{RESULT_ADDR + 8:08X}]
+    set magic [mrd -force -value 0x{RESULT_ADDR:08X}]
+    set seq [mrd -force -value 0x{RESULT_ADDR + 8:08X}]
     if {{$magic == 0x{RESULT_MAGIC:08X} && $seq == {seq}}} break
-    con
     if {{[clock seconds] - $t0 > {timeout}}} {{ error "no result after {timeout} s" }}
 }}
-mrd -bin -file {{{w}/result.bin}} 0x{RESULT_ADDR:08X} {RESULT_WORDS}
-{reads}con
-puts "{tool}: result read back"
+mrd -force -bin -file {{{w}/result.bin}} 0x{RESULT_ADDR:08X} {RESULT_WORDS}
+{reads}puts "{tool}: result read back"
 """
     (work / "run.tcl").write_text(tcl, encoding="utf-8", newline="\n")
 

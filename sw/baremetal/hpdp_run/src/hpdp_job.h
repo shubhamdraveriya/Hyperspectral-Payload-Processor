@@ -33,6 +33,8 @@
 #define MAX_SCENES      64u
 
 #define JOB_LOAD_TABLE  0x1u            /* flags: DMA the calibration table first */
+#define JOB_NO_IDLE     0x2u            /*        no AOS idle frames while the scenes go down */
+#define JOB_NO_GR_CAPTURE 0x4u          /*        ground records counted, not captured (long runs) */
 
 #define MODE_CAPTURE    0x1u            /* mode bits */
 #define MODE_DOWNLINK   0x2u
@@ -60,6 +62,8 @@ typedef struct {
     u32 prbs_seconds;
     /* version 3 */
     u32 net_ctrl, net_ip, net_mask, net_port;      /* ground record upload (net.h) */
+    u32 repeat;                                    /* the raw scenes streamed this many times (0 = 1):
+                                                      long runs (VER-08); DOWNLINK without CAPTURE */
 } job_t;
 
 enum {
