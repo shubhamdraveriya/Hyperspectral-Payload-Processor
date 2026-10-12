@@ -35,6 +35,7 @@
 #endif
 #include "hpdp_regs.h"
 #include "hpdp_job.h"
+#include "net.h"
 
 #define HPDP_BASE       0xA0000000u                 /* SPEC.md 8.1 */
 #define DMA_BASE        0xA0100000u                 /* MM2S + compressor capture S2MM */
@@ -48,6 +49,7 @@
 static XAxiDma dma, dma_gr;
 static volatile job_t *const job = (job_t *)JOB_ADDR;
 static volatile result_t *const res = (result_t *)RESULT_ADDR;
+static volatile u32 gr_avail;                       /* ground record bytes in DDR (upload stream) */
 
 #define MM2S_REG(off)   XAxiDma_ReadReg(dma.RegBase + XAXIDMA_TX_OFFSET, (off))
 #define S2MM_REG(off)   XAxiDma_ReadReg(dma.RegBase + XAXIDMA_RX_OFFSET, (off))
@@ -154,6 +156,7 @@ typedef struct {
     u32 pkt_apid, pkt_data, aos_frame_hdr, aos_frame_gap;
     u32 ei_ctrl, ei_threshold, ei_seed, ei_burst_len, ei_period, ei_asm_bits;
     u32 lnk_ctrl, gr_sync, gr_xfer, gr_addr, gr_capacity, link_timeout_ms, prbs_seconds;
+    u32 net_ctrl, net_ip, net_mask, net_port;
 } run_t;
 
 /* LNK.CTRL without PRBS and without the reset requests */
@@ -322,6 +325,7 @@ static int acquire(const run_t *r, u32 *offset, u32 *bytes, u64 *ticks, u32 *gr_
     run_us = (u64)r->scenes * r->ny * r->line_period / 100u;    /* clk_sensor = 100 MHz */
     run_us += (u64)r->nx * r->ny * r->nz * r->scenes * 2u / 50u; /* downlink at >= 50 MB/s */
     *gr_bytes = 0;
+    gr_avail = 0;
     wr(REG(sys.DMA_ROUTE), 0);
     if (sync_cfg())
         return ST_NO_HW;
@@ -368,6 +372,7 @@ static int acquire(const run_t *r, u32 *offset, u32 *bytes, u64 *ticks, u32 *gr_
             if (gr_busy && !XAxiDma_Busy(&dma_gr, XAXIDMA_DEVICE_TO_DMA)) {
                 gr_busy = 0;
                 gr_off += GR_REG(XAXIDMA_BUFFLEN_OFFSET);
+                gr_avail = gr_off;                  /* complete records: ready for the upload */
                 *dl_ticks = now() - t0;
             }
             if (!gr_busy && !gr_full) {
@@ -459,10 +464,19 @@ static int acquire(const run_t *r, u32 *offset, u32 *bytes, u64 *ticks, u32 *gr_
             return ST_DMA;
         if (now() > deadline)
             return ST_TIMEOUT;
+        net_poll();                                 /* live upload (no-op without network) */
     }
     wr(REG(se.CTRL), 0);
     *gr_bytes = gr_off;
     return ST_OK;
+}
+
+/* Waits about us microseconds, keeping the network going */
+static void idle_us(u32 us)
+{
+    u64 end = now() + us_to_ticks(us);
+    while (now() < end)
+        net_poll();
 }
 
 /* PRBS-31 over the link (LNK-06, VER-06): generator on both transmitters,
@@ -596,7 +610,7 @@ static int run_job(void)
     run_t r;
     u32 offset[MAX_SCENES], bytes[MAX_SCENES], mismatch = 0, gr_bytes = 0, tries = 0;
     u64 ticks = 0, dl_ticks = 0;
-    int st = ST_OK;
+    int st = ST_OK, upload = 0;
 
     memset(offset, 0, sizeof(offset));
     memset(bytes, 0, sizeof(bytes));
@@ -616,6 +630,8 @@ static int run_job(void)
     r.lnk_ctrl = job->lnk_ctrl;  r.gr_sync = job->gr_sync;  r.gr_xfer = job->gr_xfer;
     r.gr_addr = job->gr_addr;  r.gr_capacity = job->gr_capacity;
     r.link_timeout_ms = job->link_timeout_ms;  r.prbs_seconds = job->prbs_seconds;
+    r.net_ctrl = job->net_ctrl;  r.net_ip = job->net_ip;  r.net_mask = job->net_mask;
+    r.net_port = job->net_port ? job->net_port : NET_PORT;
 
     memset((void *)res, 0, sizeof(result_t));
     res->version = JOB_VERSION;
@@ -645,6 +661,16 @@ static int run_job(void)
             ((r.mode & MODE_DOWNLINK) && (r.gr_xfer == 0 || r.gr_xfer > 0xFFFFu || r.pkt_data == 0 ||
                                           r.pkt_data > 2048u || r.gr_capacity < (r.gr_xfer + 1u) * RECORD_BYTES)))
             st = ST_BAD_JOB;
+        upload = st == ST_OK && (r.mode & MODE_DOWNLINK) && (r.net_ctrl & NET_UPLOAD);
+        if (upload) {
+            /* first upload job: bring the network up (DHCP can take 15 s) */
+            if (net_start(r.net_ip, r.net_mask, r.net_port) == 0) {
+                net_stream((const u8 *)(UINTPTR)r.gr_addr, &gr_avail);
+            } else {
+                xil_printf("  network not available: no upload\r\n");
+                upload = 0;
+            }
+        }
         if (st == ST_OK && (r.mode & MODE_DOWNLINK)) {
             if (link_up(&r, &tries)) {
                 xil_printf("  link not LOCKED: LNK.STATUS 0x%08x after %d RX resets\r\n",
@@ -670,7 +696,19 @@ static int run_job(void)
             wr(REG(gr.CTRL), HPDP_GR__CTRL__SKIP_IDLE_bm);   /* stop capturing */
             reset_dma_gr();
         }
+        if (upload) {
+            /* every record is in DDR: deliver the rest to the connected client
+               (one that connects later still gets the whole stream) */
+            net_stream_end();
+            res->upload_status = net_finish(60000u);
+            xil_printf("  upload: %d of %d bytes acknowledged, %s\r\n", (int)net_acked(), (int)gr_bytes,
+                       res->upload_status == UPLOAD_COMPLETE ? "complete" :
+                       res->upload_status == UPLOAD_NO_CLIENT ? "no client connected (served on request)" :
+                       "incomplete");
+        }
     }
+    res->net_ip = net_ip();
+    res->upload_bytes = net_acked();
 
     fill_counters(res);
     res->tbl_mismatch = mismatch;
@@ -773,6 +811,6 @@ int main(void)
             have_job = 1;                           /* self-test once, then wait for jobs */
             last_seq = 0xFFFFFFFFu;
         }
-        delay_us(1000);
+        idle_us(1000);                              /* serves late upload clients */
     }
 }

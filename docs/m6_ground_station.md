@@ -1,8 +1,9 @@
 # M6: PC ground station
 
 Status: **in progress** (2026-10-12). The ground station decodes captures from a file or
-a TCP stream, verifies every scene and displays it (GS-01 .. GS-06). Still to do: the
-board's upload of the ground records over Ethernet (SW-05) and a live run with it.
+a TCP stream, verifies every scene and displays it (GS-01 .. GS-06). The board's upload
+over Ethernet (SW-05) is written and builds; the board test is still to do (the board's
+Ethernet is not connected yet).
 
 ```
 .cap file / TCP ──► records ──► RS(255,223) I=4 ──► AOS frame checks ──► packets ──► scenes ──► CCSDS 123
@@ -64,10 +65,27 @@ A note from the tests: an error pattern that repeats with a period dividing 255 
 valid RS codeword (zero syndromes for these generator roots), so it passes the decoder as
 "no errors" and is caught only by the frame header checks. Random errors do not do that.
 
-## Next: upload from the board (SW-05)
+## Upload from the board (SW-05): written, not yet run on the board
 
-The board will run a TCP server (lwIP on the PS Gigabit Ethernet) and send the ground
-records as they are captured; the ground station connects to it, so the PC needs no
-open port and no administrator rights. Addressing: DHCP first (the office network), then
-a fixed link-local address (169.254.x.x) for a cable straight to a PC port; the board
-prints its address on the UART.
+`hpdp_run` (job and result version 3) serves the ground records over TCP when a
+DOWNLINK job sets `net_ctrl` bit 0 (`run_m5.py --upload`). `sw/baremetal/hpdp_run/src/net.c`:
+
+- lwIP 2.2, raw API, no OS (BSP settings of AMD's `lwip_tcp_perf_server`, added by
+  `sw/baremetal/build.py`); GEM3, RGMII to the board's DP83867; locally administered MAC
+  `02:48:50:44:50:01`. A 50 ms xiltimer tick only sets flags: the lwIP timers, received
+  packets and sending all run in `net_poll()` from the main loop.
+- Address: DHCP for up to 15 s (fine on the office network), else the link-local
+  `169.254.77.10/16` (a cable straight to a PC port, where Windows takes a 169.254
+  address by itself), or a fixed one (`--board-ip`). Printed on the UART and kept in a
+  status block at `0x1000_2000`.
+- TCP server on port 5001, one client at a time; the ground station connects to it, so
+  the PC needs no open port and no administrator rights. Each job's records are sent as
+  the ground DMA completes them (live, best effort), the connection closes when all are
+  acknowledged, and a client that connects after the run still gets the whole stream
+  until the next job (complete upload after the run, as SW-05 asks).
+- The app (with lwIP's pools) ends at 37 MB, below the job block at `0x1000_0000`.
+
+`run_m5.py --upload` fetches the stream after the run and compares it byte for byte with
+the copy read over JTAG; `hpdp_gs.py decode --tcp <board>:5001 --show` decodes and
+displays it, during or after the run. Builds cleanly; the board test waits until the
+board's Ethernet can be connected.

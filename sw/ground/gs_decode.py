@@ -286,17 +286,35 @@ def capture_records(path):
 
 def tcp_records(host, port, timeout=None):
     """Records from a TCP stream of back-to-back 1024-byte capture records (the
-    board's ground upload, SW-05); ends when the sender closes the connection."""
+    board's ground upload, SW-05); ends when the sender closes the connection.
+    A thread receives as fast as the network delivers, so slow decoding does not
+    hold the sender back."""
+    import queue
     import socket
-    with socket.create_connection((host, port), timeout=timeout) as s:
-        s.settimeout(None)
-        buf = bytearray()
-        while True:
-            chunk = s.recv(1 << 16)
-            if not chunk:
-                break
-            buf += chunk
-            n = len(buf) // RECORD_BYTES * RECORD_BYTES
-            for off in range(0, n, RECORD_BYTES):
-                yield bytes(buf[off:off + RECORD_BYTES])
-            del buf[:n]
+    import threading
+    s = socket.create_connection((host, port), timeout=timeout)
+    s.settimeout(None)
+    chunks = queue.Queue()
+
+    def receive():
+        try:
+            while True:
+                chunk = s.recv(1 << 16)
+                if not chunk:
+                    break
+                chunks.put(chunk)
+        finally:
+            s.close()
+            chunks.put(None)
+
+    threading.Thread(target=receive, daemon=True).start()
+    buf = bytearray()
+    while True:
+        chunk = chunks.get()
+        if chunk is None:
+            break
+        buf += chunk
+        n = len(buf) // RECORD_BYTES * RECORD_BYTES
+        for off in range(0, n, RECORD_BYTES):
+            yield bytes(buf[off:off + RECORD_BYTES])
+        del buf[:n]

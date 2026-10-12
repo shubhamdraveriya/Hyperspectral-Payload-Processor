@@ -5,17 +5,20 @@ import struct
 
 JOB_ADDR, RESULT_ADDR = 0x1000_0000, 0x1000_1000
 CAL_ADDR, RAW_ADDR, OUT_ADDR, GR_ADDR = 0x1100_0000, 0x1200_0000, 0x3000_0000, 0x4000_0000
-JOB_MAGIC, RESULT_MAGIC, JOB_VERSION, MAX_SCENES = 0x424F4A48, 0x53455248, 2, 64
+JOB_MAGIC, RESULT_MAGIC, JOB_VERSION, MAX_SCENES = 0x424F4A48, 0x53455248, 3, 64
 
 JOB_LOAD_TABLE, JOB_NO_IDLE = 0x1, 0x2                  # flags
 MODE_CAPTURE, MODE_DOWNLINK, MODE_PRBS = 0x1, 0x2, 0x4  # mode bits
+NET_UPLOAD, NET_PORT = 0x1, 5001                        # net_ctrl: ground records over TCP (net.h)
+UPLOAD_STATUS = ["not requested", "complete", "no client connected (served on request)", "incomplete"]
 
 JOB_FIELDS = ("magic version seq flags nx ny nz depth scenes line_period source rc_enable "
               "cmp_pred cmp_wupd cmp_coder cmp_opts cal_addr cal_bytes raw_addr raw_bytes "
               "out_addr out_capacity "
               "mode pkt_apid pkt_data aos_frame_hdr aos_frame_gap "
               "ei_ctrl ei_threshold ei_seed ei_burst_len ei_period ei_asm_bits "
-              "lnk_ctrl gr_sync gr_xfer gr_addr gr_capacity link_timeout_ms prbs_seconds").split()
+              "lnk_ctrl gr_sync gr_xfer gr_addr gr_capacity link_timeout_ms prbs_seconds "
+              "net_ctrl net_ip net_mask net_port").split()
 
 RESULT_FIELDS = ("magic version seq status build_id scenes_done timer_hz ticks_lo ticks_hi "
                  "se_lines se_underrun se_overruns se_dropped rc_clamped rc_replaced tbl_words "
@@ -27,7 +30,8 @@ RESULT_FIELDS = ("magic version seq status build_id scenes_done timer_hz ticks_l
                  "lnk_code_errors lnk_lock_losses lnk_rx_words lnk_tx_data lnk_tx_idle "
                  "lnk_rx_overflows lnk_clk_corr lnk_buf_errors "
                  "prbs_errors prbs_words_lo prbs_words_hi prbs_ticks_lo prbs_ticks_hi prbs_status "
-                 "downlink_ticks_lo downlink_ticks_hi").split()
+                 "downlink_ticks_lo downlink_ticks_hi "
+                 "net_ip upload_status upload_bytes").split()
 RESULT_WORDS = len(RESULT_FIELDS) + 2 * MAX_SCENES      # then scene_offset[], scene_bytes[]
 
 STATUS = ["OK", "bad job", "HPDP not found", "compressor configuration error",

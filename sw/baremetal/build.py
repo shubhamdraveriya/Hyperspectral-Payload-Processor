@@ -48,6 +48,30 @@ shutil.copy2(xsa, local_xsa)
 
 platform = client.create_platform_component(
     name=PLATFORM, hw_design=str(local_xsa), os="standalone", cpu=CPU, domain_name=DOMAIN)
+
+# lwIP for the ground record upload (hpdp_run/src/net.c, SW-05): raw API without
+# an OS, settings of AMD's lwip_tcp_perf_server; xiltimer's interval timer
+# drives the lwIP timers
+LWIP = "lwip220"
+LWIP_CONFIG = {
+    "lwip220_api_mode": "RAW_API",
+    "lwip220_dhcp": "true",
+    "lwip220_lwip_dhcp_does_acd_check": "true",
+    "lwip220_ipv6_enable": "false",
+    "lwip220_mem_size": "524288",
+    "lwip220_memp_n_pbuf": "1024",
+    "lwip220_memp_n_tcp_seg": "1024",
+    "lwip220_n_rx_descriptors": "512",
+    "lwip220_n_tx_descriptors": "512",
+    "lwip220_pbuf_pool_size": "16384",
+    "lwip220_tcp_snd_buf": "65535",
+    "lwip220_tcp_wnd": "65535",
+}
+domain = platform.get_domain(DOMAIN)
+domain.set_lib(lib_name=LWIP)
+for param, value in LWIP_CONFIG.items():
+    domain.set_config(option="lib", param=param, value=value, lib_name=LWIP)
+domain.set_config(option="lib", param="XILTIMER_en_interval_timer", value="true", lib_name="xiltimer")
 platform.build()
 xpfm = ws / PLATFORM / "export" / PLATFORM / f"{PLATFORM}.xpfm"
 
@@ -59,6 +83,9 @@ for name in APPS:
                      dest_dir_in_cmp="src")
     app.import_files(from_loc=str(COMMON), files=sorted(p.name for p in COMMON.iterdir()),
                      dest_dir_in_cmp="src")
+    ld = app.get_ld_script()                    # lwIP and the Ethernet driver need more than 8 KB
+    ld.set_stack_size("0x10000")
+    ld.set_heap_size("0x10000")
     app.build()
     print(f"built {ws / name / 'build' / (name + '.elf')}")
 

@@ -202,7 +202,7 @@ def fake_board(work, job, expect, dims):
         sizes.append(len(image))
         off = (off + len(image) + 63) & ~63
     last = expect[-1][2]
-    r = dict(magic=RESULT_MAGIC, version=2, seq=job["seq"], status=0, build_id=0,
+    r = dict(magic=RESULT_MAGIC, version=3, seq=job["seq"], status=0, build_id=0,
              scenes_done=len(expect), timer_hz=100_000_000, ticks_lo=0, ticks_hi=0,
              se_lines=ny * len(expect), se_underrun=0, se_overruns=0, se_dropped=0,
              rc_clamped=last["clamped"], rc_replaced=last["replaced"], tbl_words=(nx * nz + 1) // 2,

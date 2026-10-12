@@ -43,8 +43,9 @@ from hpdp_model import formats as f  # noqa: E402
 from hpdp_model import framing, pipeline, rs  # noqa: E402
 import run_m4 as m4  # noqa: E402
 from hpdp_job import (CAL_ADDR, GR_ADDR, JOB_LOAD_TABLE, JOB_NO_IDLE, MAX_SCENES,  # noqa: E402
-                      MODE_CAPTURE, MODE_DOWNLINK, MODE_PRBS, OUT_ADDR, RAW_ADDR, RESULT_ADDR,
-                      RESULT_MAGIC, pack_job, pack_result, result_offset, status_text, unpack_result)
+                      MODE_CAPTURE, MODE_DOWNLINK, MODE_PRBS, NET_PORT, NET_UPLOAD, OUT_ADDR, RAW_ADDR,
+                      RESULT_ADDR, RESULT_MAGIC, UPLOAD_STATUS, pack_job, pack_result, result_offset,
+                      status_text, unpack_result)
 
 RECORD = 1024
 CLK_SYS_HZ = 250e6
@@ -114,9 +115,50 @@ def downlink_job(work, raws, cal, dims, a, cfg, ctx, expect, n_frames):
                ei_ctrl=mode, ei_threshold=threshold, ei_seed=a.ei_seed, ei_burst_len=burst_len,
                ei_period=period, ei_asm_bits=asm_bits,
                lnk_ctrl=link_ctrl(a), gr_sync=m4.pack_reg("gr.SYNC", asm_tol=a.asm_tol, flywheel=a.flywheel),
-               gr_xfer=a.xfer, gr_addr=GR_ADDR, gr_capacity=capacity, link_timeout_ms=a.link_timeout)
+               gr_xfer=a.xfer, gr_addr=GR_ADDR, gr_capacity=capacity, link_timeout_ms=a.link_timeout,
+               net_ctrl=NET_UPLOAD if a.upload else 0, net_ip=ip_word(a.board_ip),
+               net_mask=ip_word(a.board_mask), net_port=NET_PORT)
     (work / "job.bin").write_bytes(pack_job(**job))
     return job
+
+
+def ip_word(text):
+    """'a.b.c.d' -> 0xaabbccdd (0 for none)"""
+    if not text:
+        return 0
+    parts = [int(p) for p in text.split(".")]
+    if len(parts) != 4 or not all(0 <= p <= 255 for p in parts):
+        sys.exit(f"bad IPv4 address: {text}")
+    return (parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3]
+
+
+def ip_text(word):
+    return ".".join(str(word >> s & 255) for s in (24, 16, 8, 0))
+
+
+def check_upload(work, a):
+    """SW-05: fetch the ground records the board serves over TCP and compare them
+    with the copy read over JTAG (gr.bin)."""
+    sys.path.insert(0, str(REPO / "sw" / "ground"))
+    from gs_decode import tcp_records
+    r, _, _ = unpack_result((work / "result.bin").read_bytes())
+    print(f"upload: board at {ip_text(r['net_ip'])}:{NET_PORT}, during the run: "
+          f"{UPLOAD_STATUS[r['upload_status']] if r['upload_status'] < len(UPLOAD_STATUS) else r['upload_status']}, "
+          f"{r['upload_bytes']} bytes acknowledged")
+    if not r["net_ip"]:
+        print("  problem: the board has no network address")
+        return False
+    try:
+        got = b"".join(tcp_records(ip_text(r["net_ip"]), NET_PORT, timeout=10))
+    except OSError as exc:
+        print(f"  problem: cannot fetch the records over TCP: {exc}")
+        return False
+    (work / "gr_tcp.bin").write_bytes(got)
+    ref = (work / "gr.bin").read_bytes()[:r["gr_bytes"]]
+    same = got == ref
+    print(f"  fetched {len(got)} bytes over TCP: {'identical to' if same else 'DIFFERENT from'} "
+          f"the {len(ref)} bytes read over JTAG")
+    return same
 
 
 def prbs_job(work, a):
@@ -168,7 +210,7 @@ def fake_board(work, job, a, expect, dims, frames, packets):
                                                               rec.sequence).to_bytes(4, "little")
                   for rec in kept)
     (work / "gr.bin").write_bytes(gr)
-    r.update(magic=RESULT_MAGIC, version=2, seq=job["seq"], status=0, scenes_done=len(expect),
+    r.update(magic=RESULT_MAGIC, version=3, seq=job["seq"], status=0, scenes_done=len(expect),
              timer_hz=100_000_000, cmp_samples=nx * ny * nz * len(expect),
              cmp_bytes=sum(len(e[1]) for e in expect), lnk_status=0xF0F,
              pkt_packets=packets, pkt_scenes=len(expect), aos_science=len(frames), aos_cadus=len(frames) + 6,
@@ -326,6 +368,11 @@ def main():
                    help="GTH near-end PCS / PMA loopback, or inside the FPGA (default: the fiber)")
     k.add_argument("--link-timeout", type=int, default=1000, help="ms to wait for LOCKED (default 1000)")
     k.add_argument("--prbs", type=int, metavar="SECONDS", help="PRBS-31 test instead of scenes")
+    n = p.add_argument_group("ground record upload over Ethernet (SW-05)")
+    n.add_argument("--upload", action="store_true",
+                   help="the board serves the ground records over TCP; fetched and compared after the run")
+    n.add_argument("--board-ip", default="", help="fixed board address (default: DHCP, else 169.254.77.10)")
+    n.add_argument("--board-mask", default="", help="netmask for --board-ip (default 255.255.255.0)")
     p.add_argument("--seq", type=int, default=1, help="job sequence number")
     p.add_argument("--work", default=str(Path.home() / "hpdp_m5"), help="work directory (no spaces)")
     p.add_argument("--xsa", default=str(REPO / "build" / "m5" / "hpdp.xsa"))
@@ -389,7 +436,10 @@ def main():
         if subprocess.call([a.xsdb, str(work / "run.tcl")]) != 0:
             print("FAIL: XSDB reported an error")
             return 1
-    return 0 if verify_downlink(work, job, a, expect, dims, frames, packets) else 1
+    ok = verify_downlink(work, job, a, expect, dims, frames, packets)
+    if a.upload and not a.fake_board:
+        ok = check_upload(work, a) and ok
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":

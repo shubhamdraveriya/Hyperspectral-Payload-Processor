@@ -11,6 +11,9 @@
  *   mode DOWNLINK    compressed scenes down the downlink chain and the link; the
  *                    ground records (1024 bytes each) to gr_addr, back to back
  *   mode PRBS        no scenes: PRBS-31 over the link for prbs_seconds (VER-06)
+ *
+ * Version 3 (M6) adds the upload of the ground records over Ethernet (net.h):
+ * net_ctrl bit 0, address net_ip / net_mask (0: DHCP, else link-local), port.
  */
 #ifndef HPDP_JOB_H
 #define HPDP_JOB_H
@@ -26,7 +29,7 @@
 
 #define JOB_MAGIC       0x424F4A48u     /* "HJOB" */
 #define RESULT_MAGIC    0x53455248u     /* "HRES" */
-#define JOB_VERSION     2u
+#define JOB_VERSION     3u
 #define MAX_SCENES      64u
 
 #define JOB_LOAD_TABLE  0x1u            /* flags: DMA the calibration table first */
@@ -34,6 +37,8 @@
 #define MODE_CAPTURE    0x1u            /* mode bits */
 #define MODE_DOWNLINK   0x2u
 #define MODE_PRBS       0x4u
+
+#define NET_UPLOAD      0x1u            /* net_ctrl: serve the ground records over TCP */
 
 typedef struct {
     u32 magic, version, seq, flags;
@@ -53,6 +58,8 @@ typedef struct {
     u32 gr_addr, gr_capacity;                      /* ground records, a multiple of gr_xfer KB */
     u32 link_timeout_ms;                           /* wait for LOCKED */
     u32 prbs_seconds;
+    /* version 3 */
+    u32 net_ctrl, net_ip, net_mask, net_port;      /* ground record upload (net.h) */
 } job_t;
 
 enum {
@@ -87,6 +94,8 @@ typedef struct {
     u32 prbs_errors, prbs_words_lo, prbs_words_hi; /* words of 20 line bits */
     u32 prbs_ticks_lo, prbs_ticks_hi, prbs_status;
     u32 downlink_ticks_lo, downlink_ticks_hi;      /* run start to the last ground record */
+    /* version 3 */
+    u32 net_ip, upload_status, upload_bytes;       /* UPLOAD_* (net.h), bytes acknowledged */
     u32 scene_offset[MAX_SCENES];                  /* from out_addr */
     u32 scene_bytes[MAX_SCENES];
 } result_t;
