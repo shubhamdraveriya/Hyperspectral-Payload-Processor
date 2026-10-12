@@ -13,7 +13,10 @@
 // dropped line is sent as a fill line of zeros, so scenes keep their geometry
 // and the compressor stays aligned with scene boundaries; the drop is counted
 // (SYS-05). If the descriptor queue is full too, the line is lost without fill
-// (counted separately; the scene is then corrupt).
+// (counted separately; the scene guard after the corner turn pads the scene).
+// A lost line that started a scene passes its first-of-scene marker on to the
+// next line sent, so no scene start is lost (unless a whole scene is): the
+// compressor sees every scene, and scene IDs and timestamps stay aligned.
 //
 // Output: tuser[0] first sample of a scene, tuser[1] first sample of a line,
 // tlast last sample of a line. cfg must be static while lines flow.
@@ -62,6 +65,7 @@ module corner_turn import frontend_pkg::*, ecc_pkg::*; #(
     // ---------------------------------------------------------------------
     logic          wb;                  // buffer the next line goes to
     logic          wr_on, wr_drop, wr_scene;
+    logic          scene_lost;          // a lost line started a scene: mark the next one sent
     logic [EB-1:0] wcnt;
 
     wire           line_start = s_valid && s_user[1];
@@ -76,7 +80,7 @@ module corner_turn import frontend_pkg::*, ecc_pkg::*; #(
 
     always_comb begin
         dq_push = 1'b0;
-        dq_din  = '{fill: 1'b0, buffer: wb, scene: scene_now};
+        dq_din  = '{fill: 1'b0, buffer: wb, scene: scene_now || scene_lost};
         if (wr_now && s_last) begin
             dq_push = 1'b1;
         end else if (drop_now && s_last && dq_count <= DQ - 3) begin
@@ -89,7 +93,7 @@ module corner_turn import frontend_pkg::*, ecc_pkg::*; #(
     always_ff @(posedge clk) begin
         if (rst) begin
             wb <= 1'b0;
-            {wr_on, wr_drop} <= '0;
+            {wr_on, wr_drop, scene_lost} <= '0;
             dropped_lines  <= '0;
             unfilled_lines <= '0;
         end else if (s_valid) begin
@@ -100,8 +104,9 @@ module corner_turn import frontend_pkg::*, ecc_pkg::*; #(
                 wr_scene <= s_user[0];
             end
             if (s_last) begin
-                wr_on   <= 1'b0;
-                wr_drop <= 1'b0;
+                wr_on      <= 1'b0;
+                wr_drop    <= 1'b0;
+                scene_lost <= dq_push ? 1'b0 : (scene_lost || (drop_now && scene_now));
                 if (wr_now) wb <= !wb;
                 if (drop_now) begin
                     dropped_lines <= sat_inc(dropped_lines);

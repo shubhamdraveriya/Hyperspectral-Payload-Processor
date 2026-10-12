@@ -11,8 +11,9 @@
 // arrives before the current scene is complete holds the input while zero
 // samples complete the short scene; the compressor then ends it normally and the
 // framing recovers at once. The scene's packets already carry the lines-dropped
-// flag. A scene whose first line was lost (no marker) is simply counted from its
-// first sample, as the compressor does.
+// flag. The corner turn moves the marker of a lost first line to the next line
+// it sends, so a scene start is only missed when a whole scene is lost (its
+// samples are then counted into the scene before, as the compressor does).
 //
 // Stream: tdata[15:0], tuser[0] first sample of a scene; tuser[1] and tlast pass
 // through (zero on padding samples: the compressor does not use them).

@@ -16,6 +16,7 @@ set tests {
     link         tb_link              {}
     scene_guard  tb_scene_guard       {}
     sample_ram   tb_sample_ram        {}
+    corner_turn  tb_corner_turn       {}
 }
 
 set repo  [file normalize [file join [file dirname [info script]] ..]]
