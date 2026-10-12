@@ -40,7 +40,14 @@ module scene_guard (
     logic [39:0] total, n;              // samples per scene, samples of this scene so far
     logic        pad;
 
-    always_ff @(posedge clk) total <= 40'(nx) * 40'(ny) * 40'(nz);
+    // Nx*Ny*Nz, pipelined (3 cycles; the geometry is static while scenes flow)
+    logic [31:0] nxy;
+    logic [39:0] nxyz;
+    always_ff @(posedge clk) begin
+        nxy   <= 32'(nx) * 32'(ny);
+        nxyz  <= 40'(nxy) * 40'(nz);
+        total <= nxyz;
+    end
 
     // a new scene starts while this one is incomplete
     wire early = !pad && s_tvalid && s_tuser[0] && n != 40'd0;
