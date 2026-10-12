@@ -264,6 +264,39 @@ static void configure(const run_t *r)
     wr(REG(ei.CNT_CLEAR), 1);
     wr(REG(gr.CNT_CLEAR), 1);
     wr(REG(lnk.CNT_CLEAR), 1);
+    wr(REG(rad.CNT_CLEAR), 1);
+}
+
+/* Memory ECC (RAD-02): arm the job's error injections. Each must have reached
+   clk_sys (cfg_pending clear) before the next. A calibration table entry is
+   rewritten with its own value, so that the error goes in now. */
+static int ecc_arm(void)
+{
+    static const char *const name[3] = {"calibration table", "corner-turn buffers", "compressor line buffer"};
+
+    for (u32 i = 0; i < 3; i++) {
+        u32 v = job->ecc_inject[i];
+        u32 m = (v >> ECC_INJ_MEM_SH) & 3u, a = v & ECC_INJ_ADDR_bm, lo, hi;
+        if (!(v & ECC_INJ_ENABLE))
+            continue;
+        wr(REG(rad.ECC_INJECT_ADDR), a);
+        wr(REG(rad.ECC_INJECT), HPDP_RAD__ECC_INJECT__GO_bm | ((v & ECC_INJ_DBE) ? HPDP_RAD__ECC_INJECT__DBE_bm : 0) | m);
+        if (sync_cfg() || poll(REG(rad.STATUS), 1u << m, 1u << m, 1000))
+            return -1;
+        if (m == 0) {
+            if (table_read(a, &lo, &hi))
+                return -1;
+            wr(REG(rc.TBL_WDATA_LO), lo);
+            wr(REG(rc.TBL_WDATA_HI), hi);
+            wr(REG(rc.TBL_CMD), HPDP_RC__TBL_CMD__WRITE_bm);
+            if (poll(REG(rc.STATUS), HPDP_RC__STATUS__TBL_BUSY_bm, 0, 1000) ||
+                poll(REG(rad.STATUS), 1u, 0, 1000))
+                return -1;
+        }
+        xil_printf("  ECC: %s error injected into the %s at address %d\r\n",
+                   (v & ECC_INJ_DBE) ? "double-bit" : "single-bit", name[m], (int)a);
+    }
+    return 0;
 }
 
 static int load_table(const run_t *r, u32 *mismatch)
@@ -573,6 +606,13 @@ static void fill_counters(volatile result_t *o)
     o->lnk_rx_overflows = rd(REG(lnk.RX_OVERFLOWS));
     o->lnk_clk_corr     = rd(REG(lnk.CLK_CORRECTIONS));
     o->lnk_buf_errors   = rd(REG(lnk.BUF_ERRORS));
+    o->ecc_cal_sbe      = rd(REG(rad.CAL_SBE));
+    o->ecc_cal_dbe      = rd(REG(rad.CAL_DBE));
+    o->ecc_ct_sbe       = rd(REG(rad.CT_SBE));
+    o->ecc_ct_dbe       = rd(REG(rad.CT_DBE));
+    o->ecc_lb_sbe       = rd(REG(rad.LB_SBE));
+    o->ecc_lb_dbe       = rd(REG(rad.LB_DBE));
+    o->ecc_pending      = rd(REG(rad.STATUS));
 }
 
 static void print_summary(const run_t *r, volatile result_t *o, u64 ticks)
@@ -610,6 +650,9 @@ static void print_summary(const run_t *r, volatile result_t *o, u64 ticks)
                (int)o->ct_lines, (int)o->ct_dropped, (int)o->ct_unfilled, (int)rd(REG(ct.SCENES_PADDED)));
     xil_printf("  correction: %d clamped, %d replaced (last scene); compressor: %d cycles last scene, %d output stalls\r\n",
                (int)o->rc_clamped, (int)o->rc_replaced, (int)o->cmp_last_cycles, (int)o->cmp_stalls);
+    xil_printf("  memory ECC, corrected / uncorrectable reads: table %d / %d, corner turn %d / %d, "
+               "line buffer %d / %d\r\n", (int)o->ecc_cal_sbe, (int)o->ecc_cal_dbe, (int)o->ecc_ct_sbe,
+               (int)o->ecc_ct_dbe, (int)o->ecc_lb_sbe, (int)o->ecc_lb_dbe);
     if (r->mode & MODE_DOWNLINK) {
         xil_printf("  downlink: %d packets, %d scenes, %d science / %d idle frames, %d CADUs, %d bits injected\r\n",
                    (int)o->pkt_packets, (int)o->pkt_scenes, (int)o->aos_science, (int)o->aos_idle,
@@ -687,6 +730,9 @@ static int run_job(void)
                               r.raw_bytes != 2u * r.nx * r.ny * r.nz * r.scenes ||
                               (u64)r.ny * r.scenes * r.repeat > 0xFFFFFFFFull)))
             st = ST_BAD_JOB;
+        for (u32 i = 0; i < 3; i++)
+            if ((job->ecc_inject[i] & ECC_INJ_ENABLE) && ((job->ecc_inject[i] >> ECC_INJ_MEM_SH) & 3u) > 2u)
+                st = ST_BAD_JOB;
         if (r.repeat > 1)
             xil_printf("  raw scenes streamed %d times: %d scenes, %d lines\r\n", (int)r.repeat, (int)r.total,
                        (int)(r.total * r.ny));
@@ -718,6 +764,8 @@ static int run_job(void)
             st = ST_TABLE;
         if (st == ST_OK && mismatch)
             st = ST_TABLE;
+        if (st == ST_OK && ecc_arm())
+            st = ST_ECC;
         if (st == ST_OK)
             st = acquire(&r, offset, bytes, &ticks, &gr_bytes, &dl_ticks);
         wr(REG(se.CTRL), 0);

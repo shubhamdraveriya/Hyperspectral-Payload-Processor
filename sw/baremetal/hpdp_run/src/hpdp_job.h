@@ -14,6 +14,10 @@
  *
  * Version 3 (M6) adds the upload of the ground records over Ethernet (net.h):
  * net_ctrl bit 0, address net_ip / net_mask (0: DHCP, else link-local), port.
+ *
+ * Version 4 (M7) adds memory ECC (RAD-02): up to three error injections armed
+ * before the scenes (ecc_inject[], ECC_INJ_*; a calibration table entry is
+ * rewritten so that the error goes in), and the ECC counters in the result.
  */
 #ifndef HPDP_JOB_H
 #define HPDP_JOB_H
@@ -29,7 +33,7 @@
 
 #define JOB_MAGIC       0x424F4A48u     /* "HJOB" */
 #define RESULT_MAGIC    0x53455248u     /* "HRES" */
-#define JOB_VERSION     3u
+#define JOB_VERSION     4u
 #define MAX_SCENES      64u
 
 #define JOB_LOAD_TABLE  0x1u            /* flags: DMA the calibration table first */
@@ -41,6 +45,11 @@
 #define MODE_PRBS       0x4u
 
 #define NET_UPLOAD      0x1u            /* net_ctrl: serve the ground records over TCP */
+
+#define ECC_INJ_ENABLE  0x80000000u     /* ecc_inject[]: arm this injection */
+#define ECC_INJ_DBE     0x40000000u     /*   double-bit error (else single-bit) */
+#define ECC_INJ_MEM_SH  28u             /*   memory [29:28]: 0 table, 1 corner turn, 2 line buffer */
+#define ECC_INJ_ADDR_bm 0x0003FFFFu     /*   address [17:0], as RAD.ECC_INJECT_ADDR */
 
 typedef struct {
     u32 magic, version, seq, flags;
@@ -64,6 +73,8 @@ typedef struct {
     u32 net_ctrl, net_ip, net_mask, net_port;      /* ground record upload (net.h) */
     u32 repeat;                                    /* the raw scenes streamed this many times (0 = 1):
                                                       long runs (VER-08); DOWNLINK without CAPTURE */
+    /* version 4 */
+    u32 ecc_inject[3];                             /* ECC_INJ_* */
 } job_t;
 
 enum {
@@ -77,6 +88,7 @@ enum {
     ST_OVERFLOW,            /* output buffer too small */
     ST_LINK,                /* link not LOCKED (or PRBS checker not locked) */
     ST_GR_OVERFLOW,         /* ground buffer full */
+    ST_ECC,                 /* an ECC error injection could not be armed */
 };
 
 typedef struct {
@@ -100,6 +112,9 @@ typedef struct {
     u32 downlink_ticks_lo, downlink_ticks_hi;      /* run start to the last ground record */
     /* version 3 */
     u32 net_ip, upload_status, upload_bytes;       /* UPLOAD_* (net.h), bytes acknowledged */
+    /* version 4: RAD counters, reads that returned a corrected / an uncorrectable word */
+    u32 ecc_cal_sbe, ecc_cal_dbe, ecc_ct_sbe, ecc_ct_dbe, ecc_lb_sbe, ecc_lb_dbe;
+    u32 ecc_pending;                               /* RAD.STATUS: injections not yet written */
     u32 scene_offset[MAX_SCENES];                  /* from out_addr */
     u32 scene_bytes[MAX_SCENES];
 } result_t;

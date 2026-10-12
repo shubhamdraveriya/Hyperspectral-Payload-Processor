@@ -44,8 +44,8 @@ from hpdp_model import framing, pipeline, rs  # noqa: E402
 import run_m4 as m4  # noqa: E402
 from hpdp_job import (CAL_ADDR, GR_ADDR, JOB_LOAD_TABLE, JOB_NO_GR_CAPTURE, JOB_NO_IDLE, MAX_SCENES,  # noqa: E402
                       MODE_CAPTURE, MODE_DOWNLINK, MODE_PRBS, NET_PORT, NET_UPLOAD, OUT_ADDR, RAW_ADDR,
-                      RESULT_ADDR, RESULT_MAGIC, UPLOAD_STATUS, pack_job, pack_result, result_offset,
-                      status_text, unpack_result)
+                      RESULT_ADDR, RESULT_MAGIC, UPLOAD_STATUS, ECC_MEMORIES, ECC_NAMES, ecc_inject_word,
+                      pack_job, pack_result, result_offset, status_text, unpack_result)
 
 RECORD = 1024
 CLK_SYS_HZ = 250e6
@@ -122,6 +122,8 @@ def downlink_job(work, raws, cal, dims, a, cfg, ctx, expect, n_frames):
                gr_xfer=a.xfer, gr_addr=GR_ADDR, gr_capacity=capacity, link_timeout_ms=a.link_timeout,
                net_ctrl=NET_UPLOAD if a.upload else 0, net_ip=ip_word(a.board_ip),
                net_mask=ip_word(a.board_mask), net_port=NET_PORT)
+    for i, spec in enumerate(a.ecc):
+        job[f"ecc_inject{i}"] = ecc_inject_word(spec)
     (work / "job.bin").write_bytes(pack_job(**job))
     return job
 
@@ -236,6 +238,27 @@ def check_link(r, problems):
         problems.append("link not LOCKED after bring-up")
 
 
+def check_ecc(r, a, problems):
+    """RAD-02 counters against the injections asked for (--ecc); True if a
+    double-bit (uncorrectable) error was injected: the data is then corrupt."""
+    counts = [(r["ecc_cal_sbe"], r["ecc_cal_dbe"]), (r["ecc_ct_sbe"], r["ecc_ct_dbe"]),
+              (r["ecc_lb_sbe"], r["ecc_lb_dbe"])]
+    print("memory ECC, corrected / uncorrectable reads: " +
+          ", ".join(f"{n} {s} / {d}" for n, (s, d) in zip(("table", "corner turn", "line buffer"), counts)))
+    injected = {ECC_MEMORIES[spec.split(":")[0]]: spec.endswith(":dbe") for spec in a.ecc}
+    for m, (s, d) in enumerate(counts):
+        if m not in injected:
+            if s or d:
+                problems.append(f"{ECC_NAMES[m]}: ECC errors without an injection ({s} corrected, {d} uncorrectable)")
+        elif injected[m] and d == 0:
+            problems.append(f"{ECC_NAMES[m]}: injected double-bit error not detected")
+        elif not injected[m] and (s == 0 or d != 0):
+            problems.append(f"{ECC_NAMES[m]}: injected single-bit error: {s} corrected, {d} uncorrectable reads")
+    if r["ecc_pending"]:
+        problems.append(f"ECC injections armed but never written (RAD.STATUS 0x{r['ecc_pending']:X})")
+    return any(injected.values())
+
+
 def verify_downlink(work, job, a, expect, dims, frames, packets):
     nx, ny, nz, depth = dims
     r, _, _ = unpack_result((work / "result.bin").read_bytes())
@@ -246,11 +269,14 @@ def verify_downlink(work, job, a, expect, dims, frames, packets):
         problems.append(f"status {r['status']} ({status_text(r['status'])})")
     print(f"build 0x{r['build_id']:08X}, {r['scenes_done']} scenes compressed")
     check_link(r, problems)
+    corrupt = check_ecc(r, a, problems)
+    if corrupt:
+        print("  (uncorrectable errors injected: the data is not expected to match the model)")
 
     ok = True
     if job["mode"] & MODE_CAPTURE:
         print("compressed scenes (capture DMA):")
-        ok = m4.verify(work, job, expect, dims, name="capture path")
+        ok = m4.verify(work, job, expect, dims, name="capture path") or corrupt
 
     # ground chain on the captured records
     gr = (work / "gr.bin").read_bytes() if (work / "gr.bin").exists() else b""
@@ -276,7 +302,8 @@ def verify_downlink(work, job, a, expect, dims, frames, packets):
         else:
             why = next((reason for sid, good, reason in gs.scenes if sid == k), "not received")
             print(f"  scene {k}: NOT reconstructed ({why or 'differs from the corrected scene'})")
-            problems.append(f"scene {k} not reconstructed at the ground")
+            if not corrupt:
+                problems.append(f"scene {k} not reconstructed at the ground")
 
     checks = [("packets", r["pkt_packets"], packets), ("packetized scenes", r["pkt_scenes"], len(expect)),
               ("science frames", r["aos_science"], len(frames)), ("timestamp overflows", r["pkt_ts_overflows"], 0),
@@ -339,6 +366,7 @@ def verify_long_run(work, job, a, dims, n_scenes):
     print(f"ground: {r['gr_cadus']} CADUs, {r['gr_sync_losses']} sync losses, {r['gr_dropped']} records dropped; "
           f"link: {r['lnk_code_errors']} code errors, {r['lnk_lock_losses']} lock losses, "
           f"{r['lnk_rx_overflows']} RX overflows")
+    check_ecc(r, a, problems)
     checks = [("emulator lines", r["se_lines"], lines), ("underruns", r["se_underrun"], 0),
               ("line period overruns", r["se_overruns"], 0), ("emulator drops", r["se_dropped"], 0),
               # lines lost without a fill line (RAW overload) leave the corner turn short;
@@ -443,6 +471,10 @@ def main():
                    help="the board serves the ground records over TCP; fetched and compared after the run")
     n.add_argument("--board-ip", default="", help="fixed board address (default: DHCP, else 169.254.77.10)")
     n.add_argument("--board-mask", default="", help="netmask for --board-ip (default 255.255.255.0)")
+    p.add_argument("--ecc", action="append", default=[], metavar="MEMORY:ADDR[:dbe]",
+                   help="RAD-02: inject an ECC error before the scenes into the word that holds ADDR "
+                        "(MEMORY cal: table entry z*Nx+x; ct: corner-turn sample buffer*2^17+z*Nx+x; "
+                        "lb: line buffer sample x*Nz+z); single-bit unless ':dbe'; up to 3, one per memory")
     p.add_argument("--seq", type=int, default=1, help="job sequence number")
     p.add_argument("--work", default=str(Path.home() / "hpdp_m5"), help="work directory (no spaces)")
     p.add_argument("--xsa", default=str(REPO / "build" / "m5" / "hpdp.xsa"))
@@ -474,6 +506,13 @@ def main():
                 return 1
         return 0 if verify_prbs(work, job, a) else 1
 
+    if len(a.ecc) > 3 or len({s.split(":")[0] for s in a.ecc}) != len(a.ecc):
+        sys.exit("--ecc: at most one injection per memory")
+    for spec in a.ecc:
+        try:
+            ecc_inject_word(spec)
+        except ValueError as exc:
+            sys.exit(str(exc))
     raws, cal, dims = m4.build_inputs(a)
     nx, ny, nz, depth = dims
     if len(raws) > MAX_SCENES:
