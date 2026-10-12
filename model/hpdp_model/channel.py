@@ -115,3 +115,56 @@ def inject_burst(data, start_bit, length):
     for b in range(start_bit, min(start_bit + length, 8 * len(out))):
         out[b >> 3] ^= 0x80 >> (b & 7)
     return bytes(out)
+
+
+# ---------------------------------------------------------------------------
+# Bit-exact model of the error injector RTL (rtl/downlink/error_injector.sv)
+# ---------------------------------------------------------------------------
+INJ_OFF, INJ_RANDOM, INJ_BURST, INJ_ASM = 0, 1, 2, 3
+_GOLDEN = 0x9E3779B9
+
+
+def _xorshift32(x):
+    x ^= (x << 13) & 0xFFFFFFFF
+    x ^= x >> 17
+    x ^= (x << 5) & 0xFFFFFFFF
+    return x
+
+
+def inject_hw(data, mode, seed=1, threshold=0, burst_len=0, period=1, asm_bits=0, cadu_bytes=CADU_BYTES):
+    """Apply the hardware error injector to a byte stream whose CADUs start at
+    multiples of cadu_bytes. Returns (new bytes, number of flipped bits).
+
+    random: bit 7-k of each byte flips when lane k (xorshift32, seeded with
+            seed ^ (k+1) * 0x9E3779B9) is below threshold; all lanes step per byte.
+    burst:  burst_len bits from the first bit of every period-th byte.
+    asm:    the first asm_bits bits of the marker of every period-th CADU.
+    """
+    lanes = [((seed ^ (_GOLDEN * (k + 1))) & 0xFFFFFFFF) or 1 for k in range(8)]
+    out = bytearray(data)
+    flips = bc = cc = burst_left = 0
+    hit = False
+    for i, b in enumerate(data):
+        mask = 0
+        if mode == INJ_RANDOM:
+            for k in range(8):
+                if lanes[k] < threshold:
+                    mask |= 0x80 >> k
+        elif mode == INJ_BURST:
+            bl = burst_len if bc == 0 else burst_left
+            n = min(bl, 8)
+            mask = (0xFF00 >> n) & 0xFF
+            burst_left = bl - n
+        elif mode == INJ_ASM:
+            j = i % cadu_bytes
+            if j == 0:
+                hit = cc == 0
+                cc = (cc + 1) % period if period > 1 else 0
+            if hit and j < 4:
+                n = min(max(asm_bits - 8 * j, 0), 8)
+                mask = (0xFF00 >> n) & 0xFF
+        lanes = [_xorshift32(x) for x in lanes]
+        bc = (bc + 1) % period if period > 1 else 0
+        out[i] = b ^ mask
+        flips += bin(mask).count("1")
+    return bytes(out), flips

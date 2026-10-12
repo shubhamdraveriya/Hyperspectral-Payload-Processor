@@ -76,3 +76,18 @@ def test_bit_error_injection():
     assert 40 < na < 130                              # about 80 expected
     burst = ch.inject_burst(data, 12, 20)
     assert sum(bin(x).count("1") for x in burst) == 20
+
+
+def test_hw_injector_rates_and_modes():
+    data = bytes(64 * 1024)
+    out, flips = ch.inject_hw(data, ch.INJ_RANDOM, seed=7, threshold=int(1e-3 * 2**32))
+    assert flips == sum(bin(b).count("1") for b in out)
+    assert 0.8e-3 < flips / (8 * len(data)) < 1.2e-3
+    assert ch.inject_hw(data, ch.INJ_RANDOM, seed=7, threshold=0)[1] == 0
+    # burst: 12 bits every 100 bytes
+    out, flips = ch.inject_hw(bytes(1000), ch.INJ_BURST, burst_len=12, period=100)
+    assert flips == 120 and out[0] == 0xFF and out[1] == 0xF0 and out[100] == 0xFF and out[2] == 0
+    # ASM: 3 bits of every second CADU's marker
+    stream = b"".join(ch.make_cadu(bytes(1020)) for _ in range(4))
+    out, flips = ch.inject_hw(stream, ch.INJ_ASM, asm_bits=3, period=2)
+    assert flips == 6 and out[0] == stream[0] ^ 0xE0 and out[1024] == stream[1024] and out[2048] == stream[2048] ^ 0xE0
