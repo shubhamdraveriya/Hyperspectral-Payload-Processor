@@ -10,19 +10,28 @@
 // band z sits at z*Nx + x, the sample's position in its BIL line, so a counter
 // reset at every line start addresses it.
 //
-// Table: two 36-bit entries {3'b0, bad, gain, dark} per 72-bit word (one
-// UltraRAM word). The table-load stream carries the .cal records as stored in
-// memory, two 8-byte records per 128-bit beat (dark [15:0], gain [31:16],
-// bad [32]; next record at +64), from entry 0; tlast ends the table. Load
-// only while no samples flow. tbl_cmd reads or writes one entry (debug,
-// SPEC RC-02): a write takes a cycle without table-load beat, a read a cycle
-// without sample; tbl_done pulses when it is complete (tbl_rdata for a read).
+// Table: one entry {31'b0, bad, gain, dark} per 64-bit word, with the
+// UltraRAM's built-in ECC (SPEC RAD-02), in two banks of even and odd entries
+// so that a load beat writes its two entries in one cycle. The table-load
+// stream carries the .cal records as stored in memory, two 8-byte records per
+// 128-bit beat (dark [15:0], gain [31:16], bad [32]; next record at +64), from
+// entry 0; tlast ends the table. Load only while no samples flow. tbl_cmd
+// reads or writes one entry (debug, SPEC RC-02): a write takes a cycle without
+// table-load beat, a read a cycle without sample; tbl_done pulses when it is
+// complete (tbl_rdata for a read).
+//
+// Scrubbing: the table is static, so a single-bit upset would stay until a
+// second one in the same word made it uncorrectable. A read that returns a
+// corrected entry writes it back, in the next cycle without other table
+// write; the write-back is dropped if the table was written since the read
+// (the next read of the entry finds the error again). tbl_inj arms an error
+// injection into the next write of entry tbl_inj.addr.
 //
 // Pipeline: S0 input, table read (TL = 4 cycles: the UltraRAM cascade wants 3
 // output pipeline stages), then S3 x - dark, S4 product, S5 rounding, S6 clamp,
 // S7 bad-pixel window -> output. A sample is held in the window until its right
 // neighbour arrives (not needed for the last pixel of a band).
-module radiometric_corr import frontend_pkg::*; #(
+module radiometric_corr import frontend_pkg::*, ecc_pkg::*; #(
     parameter int NX_MAX = 512,
     parameter int NZ_MAX = 256
 ) (
@@ -48,6 +57,8 @@ module radiometric_corr import frontend_pkg::*; #(
     input  tbl_cmd_t     tbl_cmd,
     output logic [32:0]  tbl_rdata,         // {bad, gain, dark}
     output logic         tbl_done,
+    input  ecc_inj_t     tbl_inj,
+    output ecc_evt_t     tbl_ecc,
 
     output logic [31:0]  scene_clamped,     // clamp events in the current scene (saturating)
     output logic [31:0]  scene_replaced,    // bad pixels replaced in the current scene (saturating)
@@ -58,11 +69,11 @@ module radiometric_corr import frontend_pkg::*; #(
     localparam int TL = 4;                          // table read latency
 
     // ---------------------------------------------------------------------
-    // Table
+    // Table: banks of even and odd entries
     // ---------------------------------------------------------------------
     logic [WB-1:0] load_addr;
     logic [EB-1:0] tbl_raddr;
-    logic [71:0]   tbl_q;
+    logic          tbl_re;
 
     assign s_tbl_tready = 1'b1;
     wire load = s_tbl_tvalid;
@@ -99,37 +110,74 @@ module radiometric_corr import frontend_pkg::*; #(
         end
     end
 
-    logic [7:0]    tbl_we;
+    // Scrub write-back of a corrected entry (captured after the table read)
+    logic          sc_pend, sc_bank;
+    logic [WB-1:0] sc_addr;
+    logic [32:0]   sc_data;
+    wire           sc_go = sc_pend && !load && !dbg_wr;
+
+    // Error injection, armed until the next write of the target entry
+    logic          armed, armed_dbe;
+    logic [EB-1:0] target;
+
+    logic [1:0]    bank_we, bank_inj;
     logic [WB-1:0] tbl_waddr;
-    logic [71:0]   tbl_wdata;
+    logic [32:0]   bank_wdata [2];
     always_comb begin
         if (load) begin
-            tbl_we    = 8'hFF;
-            tbl_waddr = load_addr;
-            tbl_wdata = {3'b000, s_tbl_tdata[96], s_tbl_tdata[95:64],
-                         3'b000, s_tbl_tdata[32], s_tbl_tdata[31:0]};
+            bank_we       = 2'b11;
+            tbl_waddr     = load_addr;
+            bank_wdata[0] = s_tbl_tdata[32:0];
+            bank_wdata[1] = s_tbl_tdata[96:64];
+            bank_inj      = (armed && load_addr == target[EB-1:1]) ? 2'b01 << target[0] : 2'b00;
         end else begin
-            tbl_we    = !dbg_wr ? 8'h00 : dbg_addr[0] ? 8'hF0 : 8'h0F;
-            tbl_waddr = dbg_addr[EB-1:1];
-            tbl_wdata = {2{3'b000, dbg_wdata}};
+            bank_we       = dbg_wr ? 2'b01 << dbg_addr[0] : sc_go ? 2'b01 << sc_bank : 2'b00;
+            tbl_waddr     = dbg_wr ? dbg_addr[EB-1:1] : sc_addr;
+            bank_wdata[0] = dbg_wr ? dbg_wdata : sc_data;
+            bank_wdata[1] = dbg_wr ? dbg_wdata : sc_data;
+            bank_inj      = (armed && tbl_waddr == target[EB-1:1]) ? bank_we & (2'b01 << target[0]) : 2'b00;
+        end
+    end
+    wire tbl_write = |bank_we;
+
+    always_ff @(posedge clk) begin
+        if (rst) begin
+            armed <= 1'b0;
+        end else if (tbl_inj.arm) begin
+            armed     <= 1'b1;
+            armed_dbe <= tbl_inj.dbe;
+            target    <= tbl_inj.addr[EB-1:0];
+        end else if (|bank_inj) begin
+            armed <= 1'b0;
         end
     end
 
-    sdp_ram #(
-        .WIDTH   (72),
-        .DEPTH   (NX_MAX * NZ_MAX / 2),
-        .STYLE   (NX_MAX * NZ_MAX >= 65536 ? "ultra" : "block"),
-        .LATENCY (TL),
-        .BYTE_W  (9)
-    ) u_table (
-        .clk   (clk),
-        .ce    (1'b1),
-        .we    (tbl_we),
-        .waddr (tbl_waddr),
-        .wdata (tbl_wdata),
-        .raddr (tbl_raddr[EB-1:1]),
-        .rdata (tbl_q)
-    );
+    logic [63:0] bank_q [2];
+    logic [1:0]  bank_sbe, bank_dbe;
+
+    for (genvar b = 0; b < 2; b++) begin : g_bank
+        ecc_ram #(
+            .DEPTH   (NX_MAX * NZ_MAX / 2),
+            .STYLE   (NX_MAX * NZ_MAX >= 65536 ? "ultra" : "block"),
+            .LATENCY (TL)
+        ) u_table (
+            .clk     (clk),
+            .rst     (rst),
+            .ce      (1'b1),
+            .we      (bank_we[b]),
+            .waddr   (tbl_waddr),
+            .wdata   ({31'd0, bank_wdata[b]}),
+            .inj_sbe (bank_inj[b] && !armed_dbe),
+            .inj_dbe (bank_inj[b] && armed_dbe),
+            .re      (tbl_re && tbl_raddr[0] == 1'(b)),
+            .raddr   (tbl_raddr[EB-1:1]),
+            .rdata   (bank_q[b]),
+            .sbe     (bank_sbe[b]),
+            .dbe     (bank_dbe[b])
+        );
+    end
+
+    assign tbl_ecc = '{pending: armed, sbe: |bank_sbe, dbe: |bank_dbe};
 
     // ---------------------------------------------------------------------
     // S0: position in the line
@@ -141,6 +189,7 @@ module radiometric_corr import frontend_pkg::*; #(
     wire [15:0]   x0     = s_user[1] ? '0 : x_cnt;
     wire          last_x = (x0 == cfg.nx - 16'd1);
     assign tbl_raddr = dbg_rd_go ? dbg_addr : idx0;
+    assign tbl_re    = s_valid || dbg_rd_go;
 
     always_ff @(posedge clk) begin
         if (rst) begin
@@ -164,7 +213,9 @@ module radiometric_corr import frontend_pkg::*; #(
     logic vr [TL];                      // sample
     logic dr [TL];                      // debug read
     tag_t tr [TL];
-    logic lr [TL];                      // entry lane in the table word
+    logic lr [TL];                      // bank of the entry
+    logic [WB-1:0] ar [TL];             // word address of the entry
+    logic [TL-1:0] wr_hist;             // table writes in the last TL cycles
 
     always_ff @(posedge clk) begin
         if (rst) begin
@@ -184,9 +235,11 @@ module radiometric_corr import frontend_pkg::*; #(
         end
         tr[0] <= '{raw: s_data, user: s_user, last: s_last, first_x: x0 == 16'd0, last_x: last_x};
         lr[0] <= tbl_raddr[0];
+        ar[0] <= tbl_raddr[EB-1:1];
         for (int i = 1; i < TL; i++) begin
             tr[i] <= tr[i - 1];
             lr[i] <= lr[i - 1];
+            ar[i] <= ar[i - 1];
         end
     end
 
@@ -200,10 +253,29 @@ module radiometric_corr import frontend_pkg::*; #(
     // ---------------------------------------------------------------------
     // S3 - S6 (after the table read): c = clamp(((x - dark) * gain + 2^13) >>> 14, 0, 2^D - 1)
     // ---------------------------------------------------------------------
-    wire [35:0] entry = lane2 ? tbl_q[71:36] : tbl_q[35:0];
+    wire [32:0] entry = bank_q[lane2][32:0];
 
     always_ff @(posedge clk) begin
-        if (dr[TL - 1]) tbl_rdata <= entry[32:0];
+        if (dr[TL - 1]) tbl_rdata <= entry;
+    end
+
+    // Scrub: a corrected entry is written back, unless the table was written
+    // between its read (TL cycles ago) and now
+    always_ff @(posedge clk) begin
+        if (rst) begin
+            sc_pend <= 1'b0;
+            wr_hist <= '0;
+        end else begin
+            wr_hist <= TL'({wr_hist, tbl_write});
+            if (load || dbg_wr || sc_go)
+                sc_pend <= 1'b0;
+            else if (|bank_sbe && !sc_pend && !(|wr_hist)) begin
+                sc_pend <= 1'b1;
+                sc_bank <= lane2;
+                sc_addr <= ar[TL - 1];
+                sc_data <= entry;
+            end
+        end
     end
 
     logic signed [16:0] diff3;

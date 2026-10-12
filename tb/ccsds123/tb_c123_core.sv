@@ -35,7 +35,9 @@ module tb_c123_core;
         .m_axis_tlast  (m_tlast),
         .m_axis_tvalid (m_tvalid),
         .m_axis_tready (m_tready),
-        .cfg_error     (cfg_error)
+        .cfg_error     (cfg_error),
+        .lb_inj        ('0),
+        .lb_ecc        ()
     );
 
     string       dir;

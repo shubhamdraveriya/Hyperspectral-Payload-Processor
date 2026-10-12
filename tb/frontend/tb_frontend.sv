@@ -18,6 +18,7 @@
 module tb_frontend;
     import frontend_pkg::*;
     import c123_pkg::*;
+    import ecc_pkg::*;
 
     localparam int NX_MAX = 64;
     localparam int NZ_MAX = 64;
@@ -56,6 +57,13 @@ module tb_frontend;
     tbl_cmd_t    tbl_cmd = '0;
     logic [32:0] tbl_rdata;
     logic        tbl_done;
+    ecc_evt_t    tbl_ecc, ct_ecc, lb_ecc;    // no ECC errors expected (none injected)
+    int          ecc_err = 0;
+    always @(posedge clk_sys)
+        if (tbl_ecc.sbe || tbl_ecc.dbe || ct_ecc.sbe || ct_ecc.dbe || lb_ecc.sbe || lb_ecc.dbe) begin
+            if (ecc_err == 0) $display("  ECC error reported without injection");
+            ecc_err++;
+        end
 
     sensor_frontend #(.NX_MAX(NX_MAX), .NZ_MAX(NZ_MAX)) u_fe (
         .clk_sys, .rst_sys, .clk_sensor, .rst_sensor,
@@ -64,6 +72,10 @@ module tb_frontend;
         .cnt_clr_sys    (1'b0),
         .cnt_clr_sensor (1'b0),
         .tbl_cmd, .tbl_rdata, .tbl_done,
+        .tbl_inj       ('0),
+        .tbl_ecc       (tbl_ecc),
+        .ct_inj        ('0),
+        .ct_ecc        (ct_ecc),
         .s_dma_tdata   (dma_tdata),
         .s_dma_tvalid  (dma_tvalid),
         .s_dma_tready  (dma_tready),
@@ -108,7 +120,9 @@ module tb_frontend;
         .m_axis_tlast  (m_tlast),
         .m_axis_tvalid (m_tvalid),
         .m_axis_tready (m_tready),
-        .cfg_error     (cfg_error)
+        .cfg_error     (cfg_error),
+        .lb_inj        ('0),
+        .lb_ecc        (lb_ecc)
     );
 
     // -----------------------------------------------------------------
@@ -419,7 +433,7 @@ module tb_frontend;
         disable fork;
         repeat (300) @(posedge clk_sys);       // anything extra would show up here
 
-        errors = se_err + rc_err + ct_err + byte_err + last_err + tbl_err;
+        errors = se_err + rc_err + ct_err + byte_err + last_err + tbl_err + ecc_err;
         check("SE samples", se_i, total, errors);
         check("RC samples", rc_i, total, errors);
         check("CT samples", ct_i, total, errors);

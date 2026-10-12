@@ -5,7 +5,7 @@ package hpdp_regs_pkg;
 
     localparam HPDP_REGS_DATA_WIDTH = 32;
     localparam HPDP_REGS_MIN_ADDR_WIDTH = 20;
-    localparam HPDP_REGS_SIZE = 'h90098;
+    localparam HPDP_REGS_SIZE = 'hf0098;
 
     typedef struct {
         logic next;
@@ -520,6 +520,72 @@ package hpdp_regs_pkg;
     } hpdp_gr__in_t;
 
     typedef struct {
+        logic [2:0] next;
+    } hpdp_rad__STATUS__inj_pending__in_t;
+
+    typedef struct {
+        hpdp_rad__STATUS__inj_pending__in_t inj_pending;
+    } hpdp_rad__STATUS__in_t;
+
+    typedef struct {
+        logic [31:0] next;
+    } counter_desc_39b3f3e0__count__in_t;
+
+    typedef struct {
+        counter_desc_39b3f3e0__count__in_t count;
+    } counter_desc_39b3f3e0__in_t;
+
+    typedef struct {
+        logic [31:0] next;
+    } counter_desc_59fcf2ac__count__in_t;
+
+    typedef struct {
+        counter_desc_59fcf2ac__count__in_t count;
+    } counter_desc_59fcf2ac__in_t;
+
+    typedef struct {
+        logic [31:0] next;
+    } counter_desc_e2657fdd__count__in_t;
+
+    typedef struct {
+        counter_desc_e2657fdd__count__in_t count;
+    } counter_desc_e2657fdd__in_t;
+
+    typedef struct {
+        logic [31:0] next;
+    } counter_desc_f1ba7390__count__in_t;
+
+    typedef struct {
+        counter_desc_f1ba7390__count__in_t count;
+    } counter_desc_f1ba7390__in_t;
+
+    typedef struct {
+        logic [31:0] next;
+    } counter_desc_d1e5d135__count__in_t;
+
+    typedef struct {
+        counter_desc_d1e5d135__count__in_t count;
+    } counter_desc_d1e5d135__in_t;
+
+    typedef struct {
+        logic [31:0] next;
+    } counter_desc_04efc7f6__count__in_t;
+
+    typedef struct {
+        counter_desc_04efc7f6__count__in_t count;
+    } counter_desc_04efc7f6__in_t;
+
+    typedef struct {
+        hpdp_rad__STATUS__in_t STATUS;
+        counter_desc_39b3f3e0__in_t CAL_SBE;
+        counter_desc_59fcf2ac__in_t CAL_DBE;
+        counter_desc_e2657fdd__in_t CT_SBE;
+        counter_desc_f1ba7390__in_t CT_DBE;
+        counter_desc_d1e5d135__in_t LB_SBE;
+        counter_desc_04efc7f6__in_t LB_DBE;
+    } hpdp_rad__in_t;
+
+    typedef struct {
         hpdp_sys__in_t sys;
         hpdp_se__in_t se;
         hpdp_rc__in_t rc;
@@ -530,6 +596,7 @@ package hpdp_regs_pkg;
         hpdp_ei__in_t ei;
         hpdp_lnk__in_t lnk;
         hpdp_gr__in_t gr;
+        hpdp_rad__in_t rad;
     } hpdp_regs__in_t;
 
     typedef struct {
@@ -1102,6 +1169,38 @@ package hpdp_regs_pkg;
     } hpdp_gr__out_t;
 
     typedef struct {
+        logic [1:0] value;
+    } hpdp_rad__ECC_INJECT__memory__out_t;
+
+    typedef struct {
+        logic value;
+    } hpdp_rad__ECC_INJECT__dbe__out_t;
+
+    typedef struct {
+        logic value;
+    } hpdp_rad__ECC_INJECT__go__out_t;
+
+    typedef struct {
+        hpdp_rad__ECC_INJECT__memory__out_t memory;
+        hpdp_rad__ECC_INJECT__dbe__out_t dbe;
+        hpdp_rad__ECC_INJECT__go__out_t go;
+    } hpdp_rad__ECC_INJECT__out_t;
+
+    typedef struct {
+        logic [17:0] value;
+    } hpdp_rad__ECC_INJECT_ADDR__addr__out_t;
+
+    typedef struct {
+        hpdp_rad__ECC_INJECT_ADDR__addr__out_t addr;
+    } hpdp_rad__ECC_INJECT_ADDR__out_t;
+
+    typedef struct {
+        hpdp_rad__ECC_INJECT__out_t ECC_INJECT;
+        hpdp_rad__ECC_INJECT_ADDR__out_t ECC_INJECT_ADDR;
+        cnt_clear__out_t CNT_CLEAR;
+    } hpdp_rad__out_t;
+
+    typedef struct {
         hpdp_sys__out_t sys;
         hpdp_se__out_t se;
         hpdp_rc__out_t rc;
@@ -1112,5 +1211,6 @@ package hpdp_regs_pkg;
         hpdp_ei__out_t ei;
         hpdp_lnk__out_t lnk;
         hpdp_gr__out_t gr;
+        hpdp_rad__out_t rad;
     } hpdp_regs__out_t;
 endpackage

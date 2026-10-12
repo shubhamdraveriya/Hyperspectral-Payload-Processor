@@ -537,6 +537,45 @@ regfile hpdp_gr {
 };
 
 // ---------------------------------------------------------------------------
+regfile hpdp_rad {
+    name = "Radiation mitigation";
+    desc = "SPEC.md 10. Memory ECC (RAD-02): the calibration table, the corner-turn buffers and the compressor line buffer run with the UltraRAM / block RAM built-in ECC (single-bit errors corrected, double-bit errors detected). Counters of corrected and uncorrectable reads, and error injection.";
+
+    block_id #(.BLOCK(16'h000F)) ID @ 0x00;
+
+    reg {
+        name = "Status";
+        field { sw = r; hw = w; desc = "Armed ECC error injections not yet written: bit 0 calibration table, bit 1 corner-turn buffers, bit 2 compressor line buffer"; } inj_pending[2:0];
+    } STATUS @ 0x08;
+
+    reg {
+        name = "ECC error injection";
+        desc = "Writing go = 1 arms an injection: the next write of the word that holds ECC_INJECT_ADDR in the selected memory stores a single-bit error (corrected on read) or a double-bit error (uncorrectable). Calibration table: a table load, a TBL_CMD write or the write-back of a corrected entry; line buffers: the sample stream. Wait for SYS.STATUS.cfg_pending = 0 before arming another memory.";
+        field { sw = rw; hw = r; desc = "0: calibration table, 1: corner-turn buffers, 2: compressor line buffer"; } memory[1:0] = 0;
+        field { sw = rw; hw = r; desc = "1: double-bit error; 0: single-bit error"; } dbe[4:4] = 0;
+        field { sw = rw; hw = r; singlepulse; desc = "Write 1 to arm"; } go[31:31] = 0;
+    } ECC_INJECT @ 0x40;
+    reg {
+        name = "ECC error injection address";
+        field { sw = rw; hw = r; desc = "Calibration table: entry z*Nx + x. Corner-turn buffers: buffer * 2^17 + z*Nx + x (sample in the BIL line). Compressor line buffer: x*Nz + z (sample in the BIP row). The error goes into the 64-bit word that holds it (one table entry, four samples)."; } addr[17:0] = 0;
+    } ECC_INJECT_ADDR @ 0x44;
+
+    cnt_clear CNT_CLEAR @ 0x7C;
+    counter CAL_SBE @ 0x80;
+    CAL_SBE -> desc = "Calibration table reads that returned a corrected word (the entry is then written back)";
+    counter CAL_DBE @ 0x84;
+    CAL_DBE -> desc = "Calibration table reads that returned an uncorrectable word";
+    counter CT_SBE @ 0x88;
+    CT_SBE -> desc = "Corner-turn buffer reads that returned a corrected word (one per sample read)";
+    counter CT_DBE @ 0x8C;
+    CT_DBE -> desc = "Corner-turn buffer reads that returned an uncorrectable word";
+    counter LB_SBE @ 0x90;
+    LB_SBE -> desc = "Compressor line buffer reads that returned a corrected word (one per sample read)";
+    counter LB_DBE @ 0x94;
+    LB_DBE -> desc = "Compressor line buffer reads that returned an uncorrectable word";
+};
+
+// ---------------------------------------------------------------------------
 addrmap hpdp_regs {
     name = "HPDP";
     desc = "Hyperspectral Payload Data Processor, base 0xA000_0000 (1 MB window)";
@@ -552,4 +591,5 @@ addrmap hpdp_regs {
     hpdp_ei  ei  @ 0x70000;
     hpdp_lnk lnk @ 0x80000;
     hpdp_gr  gr  @ 0x90000;
+    hpdp_rad rad @ 0xF0000;
 };

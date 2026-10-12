@@ -12,6 +12,12 @@
 //   off, idle frames on (they flush the frame sync) -> check the ground
 //   records, interrupt, counter clears -> soft reset.
 //
+// Memory ECC (RAD-02): before the acquisitions, a single-bit error is injected
+// into a word of each ECC memory (calibration table, corner-turn buffer,
+// compressor line buffer) that the data path reads; the outputs must stay
+// bit-exact, the errors must be counted, and the table entry must be written
+// back after its first read (counted once, not once per line).
+//
 // This is VER-05: the ground records equal the model's (tb/frontend/gen_vectors.py
 // builds the whole downlink, error injection and frame sync from the same
 // scenes), with a transceiver model that loops the transmitted words back on
@@ -423,6 +429,14 @@ module tb_hpdp_core;
         table_access(1'b1, n - 1, orig, got);
     endtask
 
+    // Arm an ECC error injection (RAD.ECC_INJECT) and wait until it is armed
+    task automatic ecc_inject(int memory, int addr, logic dbe);
+        wr(RAD_ECC_INJECT_ADDR, addr);
+        wr(RAD_ECC_INJECT, 32'h8000_0000 | (dbe << 4) | memory);
+        sync_cfg();
+        poll("RAD.STATUS armed", RAD_STATUS, 32'h1 << memory, 32'h1 << memory, 5);
+    endtask
+
     task automatic acquire(int pass);
         int timeout_us;
         timeout_us = 20 + (scenes * ny * period / 100 + expected.size() / 2) * 2 * 100 / (out_pct + 1);
@@ -500,6 +514,25 @@ module tb_hpdp_core;
         poll("table load", RC_TBL_WORDS, 32'hFFFF_FFFF, tbl.size(), 10);
         check_table();
 
+        // memory ECC: single-bit errors into words that the acquisitions read
+        begin
+            int e;
+            logic [32:0] got;
+            expect_reg("RAD.ID", RAD_ID, 32'h000F_0100);
+            e = nx * nz / 2;                                // table entry used by every line
+            ecc_inject(0, e, 1'b0);
+            table_access(1'b1, e, tbl_entry(e), got);       // the rewrite stores the error
+            expect_reg("RAD.STATUS, table injection done", RAD_STATUS, 0);
+            table_access(1'b0, e, '0, got);                 // corrected, and written back
+            if (got !== tbl_entry(e)) begin
+                errors++;
+                $display("  table entry %0d with a single-bit error: read %09h, expected %09h", e, got, tbl_entry(e));
+            end
+            expect_reg("RAD.CAL_SBE after the read", RAD_CAL_SBE, 1);
+            ecc_inject(1, 8, 1'b0);                         // corner turn: BIL samples 8 - 11 of the first line
+            ecc_inject(2, 2 * nz, 1'b0);                    // line buffer: x = 2 of the first row, read in the second
+        end
+
         // two acquisitions, the second without reset
         for (int pass = 0; pass < PASSES; pass++) begin
             acquire(pass);
@@ -519,6 +552,16 @@ module tb_hpdp_core;
             expect_reg("CMP.STATUS", CMP_STATUS, 0);
             expect_reg("SYS.STATUS", SYS_STATUS, 32'h4);     // locked, not busy, no error
         end
+        expect_reg("RAD.STATUS, injections done", RAD_STATUS, 0);
+        expect_reg("RAD.CAL_SBE (written back)", RAD_CAL_SBE, 1);
+        expect_reg("RAD.CT_SBE (one word, four samples)", RAD_CT_SBE, 4);
+        expect_reg("RAD.LB_SBE (one word, four samples)", RAD_LB_SBE, 4);
+        expect_reg("RAD.CAL_DBE", RAD_CAL_DBE, 0);
+        expect_reg("RAD.CT_DBE", RAD_CT_DBE, 0);
+        expect_reg("RAD.LB_DBE", RAD_LB_DBE, 0);
+        wr(RAD_CNT_CLEAR, 1);
+        poll("RAD counters cleared", RAD_CAL_SBE, 32'hFFFF_FFFF, 0, 5);
+        expect_reg("RAD.CT_SBE after clear", RAD_CT_SBE, 0);
         rd(CMP_LAST_CYCLES, v);
         if (v < nx * ny * nz || v > 4 * nx * ny * nz * period / (nx * nz) + 10000) begin
             errors++;

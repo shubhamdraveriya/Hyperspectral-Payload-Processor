@@ -17,7 +17,7 @@
 //
 // Output: tuser[0] first sample of a scene, tuser[1] first sample of a line,
 // tlast last sample of a line. cfg must be static while lines flow.
-module corner_turn import frontend_pkg::*; #(
+module corner_turn import frontend_pkg::*, ecc_pkg::*; #(
     parameter int NX_MAX = 512,
     parameter int NZ_MAX = 256
 ) (
@@ -39,7 +39,10 @@ module corner_turn import frontend_pkg::*; #(
     input  logic        cnt_clr,
     output logic [31:0] lines_out,      // counters saturate; cnt_clr clears them
     output logic [31:0] dropped_lines,  // includes unfilled_lines
-    output logic [31:0] unfilled_lines
+    output logic [31:0] unfilled_lines,
+
+    input  ecc_inj_t    inj,            // buffer ECC (SPEC RAD-02)
+    output ecc_evt_t    ecc
 );
     localparam int EB = $clog2(NX_MAX * NZ_MAX);
     localparam int DQ = 16;             // line descriptors
@@ -193,12 +196,17 @@ module corner_turn import frontend_pkg::*; #(
         .LATENCY (RL)
     ) u_buf (
         .clk   (clk),
+        .rst   (rst),
         .ce    (1'b1),
         .we    (wr_now),
+        .wlast (s_last),
         .waddr ({wb, widx}),
         .wdata (s_data),
+        .re    (issue),
         .raddr ({rd.buffer, ra}),
-        .rdata (rdata)
+        .rdata (rdata),
+        .inj   (inj),
+        .ecc   (ecc)
     );
 
     typedef struct packed {

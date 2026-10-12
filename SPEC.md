@@ -135,7 +135,7 @@ Link TX: 8b/10b, idles, CC ── GTH ── SFP0 ══ OM3 ══ SFP1 ── 
 | Flip-flops | 460,800 | < 20 % |
 | DSP48E2 | 1,728 | < 5 % |
 | Block RAM (36 Kb) | 312 | < 40 % |
-| UltraRAM (288 Kb) | 96 | < 50 % |
+| UltraRAM (288 Kb) | 96 | < 60 % (RAD-02: the ECC calibration table holds one entry per 64-bit word, 32 URAM) |
 | GTH transceivers | used: 2 lanes (SFP0 TX, SFP1 RX) | |
 
 ### 5.2 Clocks
@@ -569,7 +569,7 @@ injector, link layer with two GTH channels, ground receiver and ground DMA) meas
 | Block | LUT | FF | DSP | BRAM36 | URAM |
 |---|---|---|---|---|---|
 | Sensor emulator * | 0.5 k | 0.8 k | 0 | 7.5 | 0 |
-| Radiometric correction * | 0.3 k | 0.3 k | 1 | 0 | 16 |
+| Radiometric correction * | 0.3 k | 0.3 k | 1 | 0 | 32 |
 | Corner turn * | 0.2 k | 0.3 k | 0 | 0 | 16 |
 | CCSDS 123 compressor * | 13.6 k | 6.2 k | 19 | 5.5 | 8 |
 | Packetizer, framer, RS, randomizer, ASM | 4 k | 5 k | 0 | 8 | 0 |
@@ -578,7 +578,7 @@ injector, link layer with two GTH channels, ground receiver and ground DMA) meas
 | Ground receiver | 2 k | 3 k | 0 | 4 | 0 |
 | DMA, interconnect, register blocks | 10 k | 15 k | 0 | 15 | 0 |
 | Radiation mitigation (SEM IP, ECC, TMR) | 3 k | 4 k | 0 | 2 | 0 |
-| **Total** | **≈ 37 k (16 %)** | **≈ 39 k (8 %)** | **≈ 20 (1 %)** | **≈ 44 (14 %)** | **40 (42 %)** |
+| **Total** | **≈ 37 k (16 %)** | **≈ 39 k (8 %)** | **≈ 20 (1 %)** | **≈ 44 (14 %)** | **56 (58 %)** |
 
 ### 12.2 Data-rate budget
 

@@ -909,6 +909,89 @@ typedef struct __attribute__ ((__packed__)) {
     uint32_t CAPTURED;
 } hpdp_gr_t;
 
+// reg - block_id_BLOCK_f
+#define BLOCK_ID_BLOCK_F__VERSION_bm 0xffff
+#define BLOCK_ID_BLOCK_F__VERSION_bp 0
+#define BLOCK_ID_BLOCK_F__VERSION_bw 16
+#define BLOCK_ID_BLOCK_F__VERSION_reset 0x100
+#define BLOCK_ID_BLOCK_F__BLOCK_bm 0xffff0000
+#define BLOCK_ID_BLOCK_F__BLOCK_bp 16
+#define BLOCK_ID_BLOCK_F__BLOCK_bw 16
+#define BLOCK_ID_BLOCK_F__BLOCK_reset 0xf
+
+// reg - hpdp_rad::STATUS
+#define HPDP_RAD__STATUS__INJ_PENDING_bm 0x7
+#define HPDP_RAD__STATUS__INJ_PENDING_bp 0
+#define HPDP_RAD__STATUS__INJ_PENDING_bw 3
+
+// reg - hpdp_rad::ECC_INJECT
+#define HPDP_RAD__ECC_INJECT__MEMORY_bm 0x3
+#define HPDP_RAD__ECC_INJECT__MEMORY_bp 0
+#define HPDP_RAD__ECC_INJECT__MEMORY_bw 2
+#define HPDP_RAD__ECC_INJECT__MEMORY_reset 0x0
+#define HPDP_RAD__ECC_INJECT__DBE_bm 0x10
+#define HPDP_RAD__ECC_INJECT__DBE_bp 4
+#define HPDP_RAD__ECC_INJECT__DBE_bw 1
+#define HPDP_RAD__ECC_INJECT__DBE_reset 0x0
+#define HPDP_RAD__ECC_INJECT__GO_bm 0x80000000
+#define HPDP_RAD__ECC_INJECT__GO_bp 31
+#define HPDP_RAD__ECC_INJECT__GO_bw 1
+#define HPDP_RAD__ECC_INJECT__GO_reset 0x0
+
+// reg - hpdp_rad::ECC_INJECT_ADDR
+#define HPDP_RAD__ECC_INJECT_ADDR__ADDR_bm 0x3ffff
+#define HPDP_RAD__ECC_INJECT_ADDR__ADDR_bp 0
+#define HPDP_RAD__ECC_INJECT_ADDR__ADDR_bw 18
+#define HPDP_RAD__ECC_INJECT_ADDR__ADDR_reset 0x0
+
+// reg - counter_desc_39b3f3e0
+#define COUNTER_DESC_39B3F3E0__COUNT_bm 0xffffffff
+#define COUNTER_DESC_39B3F3E0__COUNT_bp 0
+#define COUNTER_DESC_39B3F3E0__COUNT_bw 32
+
+// reg - counter_desc_59fcf2ac
+#define COUNTER_DESC_59FCF2AC__COUNT_bm 0xffffffff
+#define COUNTER_DESC_59FCF2AC__COUNT_bp 0
+#define COUNTER_DESC_59FCF2AC__COUNT_bw 32
+
+// reg - counter_desc_e2657fdd
+#define COUNTER_DESC_E2657FDD__COUNT_bm 0xffffffff
+#define COUNTER_DESC_E2657FDD__COUNT_bp 0
+#define COUNTER_DESC_E2657FDD__COUNT_bw 32
+
+// reg - counter_desc_f1ba7390
+#define COUNTER_DESC_F1BA7390__COUNT_bm 0xffffffff
+#define COUNTER_DESC_F1BA7390__COUNT_bp 0
+#define COUNTER_DESC_F1BA7390__COUNT_bw 32
+
+// reg - counter_desc_d1e5d135
+#define COUNTER_DESC_D1E5D135__COUNT_bm 0xffffffff
+#define COUNTER_DESC_D1E5D135__COUNT_bp 0
+#define COUNTER_DESC_D1E5D135__COUNT_bw 32
+
+// reg - counter_desc_04efc7f6
+#define COUNTER_DESC_04EFC7F6__COUNT_bm 0xffffffff
+#define COUNTER_DESC_04EFC7F6__COUNT_bp 0
+#define COUNTER_DESC_04EFC7F6__COUNT_bw 32
+
+// regfile - hpdp_rad
+typedef struct __attribute__ ((__packed__)) {
+    uint32_t ID;
+    uint8_t RESERVED_4_7[0x4];
+    uint32_t STATUS;
+    uint8_t RESERVED_c_3f[0x34];
+    uint32_t ECC_INJECT;
+    uint32_t ECC_INJECT_ADDR;
+    uint8_t RESERVED_48_7b[0x34];
+    uint32_t CNT_CLEAR;
+    uint32_t CAL_SBE;
+    uint32_t CAL_DBE;
+    uint32_t CT_SBE;
+    uint32_t CT_DBE;
+    uint32_t LB_SBE;
+    uint32_t LB_DBE;
+} hpdp_rad_t;
+
 // addrmap - hpdp_regs
 typedef struct __attribute__ ((__packed__)) {
     hpdp_sys_t sys;
@@ -930,10 +1013,12 @@ typedef struct __attribute__ ((__packed__)) {
     hpdp_lnk_t lnk;
     uint8_t RESERVED_800ac_8ffff[0xff54];
     hpdp_gr_t gr;
+    uint8_t RESERVED_90098_effff[0x5ff68];
+    hpdp_rad_t rad;
 } hpdp_regs_t;
 
 
-static_assert(sizeof(hpdp_regs_t) == 0x90098, "Packing error");
+static_assert(sizeof(hpdp_regs_t) == 0xf0098, "Packing error");
 
 #ifdef __cplusplus
 }

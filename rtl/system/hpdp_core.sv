@@ -28,6 +28,7 @@
 module hpdp_core
     import frontend_pkg::*;
     import c123_pkg::*;
+    import ecc_pkg::*;
 #(
     parameter int          NX_MAX   = 512,
     parameter int          NZ_MAX   = 256,
@@ -149,6 +150,10 @@ module hpdp_core
         logic        tbl_write;
         logic [17:0] tbl_addr;
         logic [32:0] tbl_wdata;
+        logic [7:0]  rad_clr_seq, inj_seq;      // ECC: counter clears, injections
+        logic [1:0]  inj_mem;
+        logic        inj_dbe;
+        logic [17:0] inj_addr;
     } sys_cfg_t;
 
     typedef struct packed {
@@ -191,6 +196,11 @@ module hpdp_core
         dl_stat_t    dl;
     } sys_stat_t;
 
+    typedef struct packed {                     // memory ECC (RAD-02), clk_sys
+        logic [2:0]  inj_pending;               // table, corner turn, line buffer
+        logic [2:0][1:0][31:0] ecc_count;       // [memory][sbe, dbe]
+    } rad_stat_t;
+
     typedef struct packed {
         logic [7:0]  wr_seq_echo;
         logic        locked, aligned, prbs_locked;
@@ -221,12 +231,14 @@ module hpdp_core
     // Event counts (clk_ctrl)
     logic [7:0] wr_seq, se_clr_seq, ct_clr_seq, cmp_clr_seq, tbl_seq;
     logic [7:0] pkt_clr_seq, aos_clr_seq, ei_clr_seq, gr_clr_seq, ei_seed_seq, lnk_clr_seq, lnk_inj_seq;
+    logic [7:0] rad_clr_seq, inj_seq;
     logic       tbl_write;
 
     always_ff @(posedge clk_ctrl) begin
         if (rst_ctrl) begin
             {wr_seq, se_clr_seq, ct_clr_seq, cmp_clr_seq, tbl_seq} <= '0;
             {pkt_clr_seq, aos_clr_seq, ei_clr_seq, gr_clr_seq, ei_seed_seq, lnk_clr_seq, lnk_inj_seq} <= '0;
+            {rad_clr_seq, inj_seq} <= '0;
             tbl_write <= 1'b0;
         end else begin
             if (s_axil_bvalid && s_axil_bready) wr_seq <= wr_seq + 8'd1;
@@ -240,6 +252,8 @@ module hpdp_core
             if (hwif_out.lnk.CNT_CLEAR.clear.value) lnk_clr_seq <= lnk_clr_seq + 8'd1;
             if (hwif_out.ei.SEED_LOAD.load.value)   ei_seed_seq <= ei_seed_seq + 8'd1;
             if (hwif_out.lnk.PRBS_INJECT.inject.value) lnk_inj_seq <= lnk_inj_seq + 8'd1;
+            if (hwif_out.rad.CNT_CLEAR.clear.value) rad_clr_seq <= rad_clr_seq + 8'd1;
+            if (hwif_out.rad.ECC_INJECT.go.value)   inj_seq     <= inj_seq + 8'd1;
             if (hwif_out.rc.TBL_CMD.write.value || hwif_out.rc.TBL_CMD.read.value) begin
                 tbl_seq   <= tbl_seq + 8'd1;
                 tbl_write <= hwif_out.rc.TBL_CMD.write.value;
@@ -305,6 +319,7 @@ module hpdp_core
     sen_cfg_t  sen_cfg_src, sen_cfg;        // clk_ctrl -> clk_sensor
     lnk_cfg_t  lnk_cfg_src, lnk_cfg;        // clk_ctrl -> clk_link
     sys_stat_t sys_stat_src, sys_stat;      // clk_sys -> clk_ctrl
+    rad_stat_t rad_stat_src, rad_stat;      // clk_sys -> clk_ctrl
     sen_stat_t sen_stat_src, sen_stat;      // clk_sensor -> clk_ctrl
     lnk_stat_t lnk_stat_src, lnk_stat;      // clk_link -> clk_ctrl
     se_status_t se_stat;
@@ -333,6 +348,11 @@ module hpdp_core
         sys_cfg_src.tbl_wdata   = {hwif_out.rc.TBL_WDATA_HI.bad.value,
                                    hwif_out.rc.TBL_WDATA_LO.gain.value,
                                    hwif_out.rc.TBL_WDATA_LO.dark.value};
+        sys_cfg_src.rad_clr_seq = rad_clr_seq;
+        sys_cfg_src.inj_seq     = inj_seq;
+        sys_cfg_src.inj_mem     = hwif_out.rad.ECC_INJECT.memory.value;
+        sys_cfg_src.inj_dbe     = hwif_out.rad.ECC_INJECT.dbe.value;
+        sys_cfg_src.inj_addr    = hwif_out.rad.ECC_INJECT_ADDR.addr.value;
 
         sen_cfg_src.soft_reset  = hwif_out.sys.CTRL.soft_reset.value;
         sen_cfg_src.fe          = fe_ctrl;
@@ -388,6 +408,10 @@ module hpdp_core
         .src_clk (clk_sys), .src_rst (rst_sys_hard), .src_data (sys_stat_src),
         .dest_clk (clk_ctrl), .dest_rst (rst_ctrl), .dest_data (sys_stat));
 
+    cdc_bus #(.WIDTH($bits(rad_stat_t))) u_cdc_rad_stat (
+        .src_clk (clk_sys), .src_rst (rst_sys_hard), .src_data (rad_stat_src),
+        .dest_clk (clk_ctrl), .dest_rst (rst_ctrl), .dest_data (rad_stat));
+
     cdc_bus #(.WIDTH($bits(sen_stat_t))) u_cdc_sen_stat (
         .src_clk (clk_sensor), .src_rst (rst_sensor_hard), .src_data (sen_stat_src),
         .dest_clk (clk_ctrl), .dest_rst (rst_ctrl), .dest_data (sen_stat));
@@ -411,7 +435,9 @@ module hpdp_core
     // Event counts arriving in the data path clocks -> one-cycle pulses
     logic [7:0] se_clr_seen, ct_clr_seen, cmp_clr_seen, tbl_seen;
     logic [7:0] pkt_clr_seen, aos_clr_seen, ei_clr_seen, gr_clr_seen, ei_seed_seen;
-    logic       se_clr, ct_clr, cmp_clr, pkt_clr, aos_clr, ei_clr, gr_clr, ei_seed;
+    logic [7:0] rad_clr_seen, inj_seen;
+    logic       se_clr, ct_clr, cmp_clr, pkt_clr, aos_clr, ei_clr, gr_clr, ei_seed, rad_clr;
+    ecc_inj_t   inj [3];                    // ECC injection: table, corner turn, line buffer
 
     assign sen_stat_src.wr_seq_echo = sen_cfg.wr_seq;
 
@@ -438,6 +464,8 @@ module hpdp_core
             {ct_clr_seen, cmp_clr_seen, tbl_seen, tbl_done_seq} <= '0;
             {pkt_clr_seen, aos_clr_seen, ei_clr_seen, gr_clr_seen, ei_seed_seen} <= '0;
             {ct_clr, cmp_clr, pkt_clr, aos_clr, ei_clr, gr_clr, ei_seed} <= '0;
+            {rad_clr_seen, inj_seen, rad_clr} <= '0;
+            for (int m = 0; m < 3; m++) inj[m] <= '0;
             tbl_cmd.valid <= 1'b0;
         end else begin
             ct_clr       <= (sys_cfg.ct_clr_seq != ct_clr_seen);
@@ -454,6 +482,13 @@ module hpdp_core
             gr_clr_seen  <= sys_cfg.gr_clr_seq;
             ei_seed      <= (sys_cfg.ei_seed_seq != ei_seed_seen);
             ei_seed_seen <= sys_cfg.ei_seed_seq;
+            rad_clr      <= (sys_cfg.rad_clr_seq != rad_clr_seen);
+            rad_clr_seen <= sys_cfg.rad_clr_seq;
+            for (int m = 0; m < 3; m++)
+                inj[m] <= '{arm:  sys_cfg.inj_seq != inj_seen && sys_cfg.inj_mem == 2'(m),
+                            dbe:  sys_cfg.inj_dbe,
+                            addr: sys_cfg.inj_addr};
+            inj_seen     <= sys_cfg.inj_seq;
 
             tbl_cmd.valid <= (sys_cfg.tbl_seq != tbl_seen);
             tbl_cmd.write <= sys_cfg.tbl_write;
@@ -476,6 +511,7 @@ module hpdp_core
     fe_status_t  fe_stat;
     logic        fe_scene_start;
     logic [23:0] fe_scene_ts;
+    ecc_evt_t    ecc [3];                   // ECC events: table, corner turn, line buffer
 
     assign s_axis_dma_tready = to_table ? 1'b1 : se_dma_tready;
 
@@ -496,6 +532,10 @@ module hpdp_core
         .s_tbl_tvalid   (s_axis_dma_tvalid && to_table),
         .s_tbl_tready   (),
         .tbl_cmd, .tbl_rdata, .tbl_done,
+        .tbl_inj        (inj[0]),
+        .tbl_ecc        (ecc[0]),
+        .ct_inj         (inj[1]),
+        .ct_ecc         (ecc[1]),
         .m_axis_tdata   (fe_tdata),
         .m_axis_tuser   (fe_tuser),
         .m_axis_tlast   (fe_tlast),
@@ -546,8 +586,27 @@ module hpdp_core
         .m_axis_tlast  (c_tlast),
         .m_axis_tvalid (c_tvalid),
         .m_axis_tready (c_tready),
-        .cfg_error     (cfg_error)
+        .cfg_error     (cfg_error),
+        .lb_inj        (inj[2]),
+        .lb_ecc        (ecc[2])
     );
+
+    // ---------------------------------------------------------------------
+    // Memory ECC counters (RAD-02): reads that returned a corrected word,
+    // reads that returned an uncorrectable word
+    // ---------------------------------------------------------------------
+    logic [2:0][1:0][31:0] ecc_count;
+
+    always_ff @(posedge clk_sys) begin
+        if (rst_sys || rad_clr) begin
+            ecc_count <= '0;
+        end else begin
+            for (int m = 0; m < 3; m++) begin
+                if (ecc[m].sbe) ecc_count[m][0] <= sat_inc(ecc_count[m][0]);
+                if (ecc[m].dbe) ecc_count[m][1] <= sat_inc(ecc_count[m][1]);
+            end
+        end
+    end
 
     // Fork to the capture DMA and the downlink chain: each enabled output takes
     // every word; the compressor moves on when both have it
@@ -909,6 +968,8 @@ module hpdp_core
         sys_stat_src.out_stalls      = out_stalls;
         sys_stat_src.scenes_padded   = scenes_padded;
         sys_stat_src.samples_padded  = samples_padded;
+        rad_stat_src.inj_pending     = {ecc[2].pending, ecc[1].pending, ecc[0].pending};
+        rad_stat_src.ecc_count       = ecc_count;
         sys_stat_src.dl              = dl_src;
     end
 
@@ -976,6 +1037,14 @@ module hpdp_core
         hwif_in.ct.UNFILLED_LINES.count.next    = sys_stat.fe.unfilled_lines;
         hwif_in.ct.SCENES_PADDED.count.next     = sys_stat.scenes_padded;
         hwif_in.ct.SAMPLES_PADDED.count.next    = sys_stat.samples_padded;
+
+        hwif_in.rad.STATUS.inj_pending.next     = rad_stat.inj_pending;
+        hwif_in.rad.CAL_SBE.count.next          = rad_stat.ecc_count[0][0];
+        hwif_in.rad.CAL_DBE.count.next          = rad_stat.ecc_count[0][1];
+        hwif_in.rad.CT_SBE.count.next           = rad_stat.ecc_count[1][0];
+        hwif_in.rad.CT_DBE.count.next           = rad_stat.ecc_count[1][1];
+        hwif_in.rad.LB_SBE.count.next           = rad_stat.ecc_count[2][0];
+        hwif_in.rad.LB_DBE.count.next           = rad_stat.ecc_count[2][1];
 
         hwif_in.cmp.STATUS.busy.next            = sys_stat.cmp_busy;
         hwif_in.cmp.STATUS.cfg_error.next       = sys_stat.cmp_cfg_error;

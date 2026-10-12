@@ -10,7 +10,7 @@
 // The pipeline advances as a whole on `ce`, which drops when the codeword FIFO
 // is nearly full (output back-pressure, SPEC CMP-04); bubbles flow through it
 // when no sample is offered. cfg must be stable while a scene is processed.
-module c123_core import c123_pkg::*; #(
+module c123_core import c123_pkg::*, ecc_pkg::*; #(
     parameter int NX_MAX = 512,
     parameter int NZ_MAX = 256
 ) (
@@ -29,7 +29,10 @@ module c123_core import c123_pkg::*; #(
     output logic        m_axis_tvalid,
     input  logic        m_axis_tready,
 
-    output logic        cfg_error       // configuration outside what the core supports
+    output logic        cfg_error,      // configuration outside what the core supports
+
+    input  ecc_inj_t    lb_inj,         // line buffer ECC (SPEC RAD-02)
+    output ecc_evt_t    lb_ecc
 );
     localparam int CW_DEPTH = 32;
 
@@ -92,7 +95,8 @@ module c123_core import c123_pkg::*; #(
         .s_tvalid (s_axis_tvalid),
         .s_tready (s_axis_tready),
         .o_valid  (nb_valid),
-        .o        (nb)
+        .o        (nb),
+        .lb_inj, .lb_ecc
     );
 
     c123_localdiff u_ld (

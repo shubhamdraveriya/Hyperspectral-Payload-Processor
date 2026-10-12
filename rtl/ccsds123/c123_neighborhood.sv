@@ -10,10 +10,11 @@
 //                        it comes from a per-band copy of the row's first pixel
 //   NW = s(z, y-1, x-1)  N of the previous pixel (per-band memory)
 // The line buffer is read Nz samples before the same address is overwritten
-// with the current row; the line buffer packs four samples per word, so Nz >= 4
-// keeps reads off the word being written (its other lanes were already read).
-// Per-band memories need Nz >= 3.
-module c123_neighborhood import c123_pkg::*; #(
+// with the current row. It gathers four samples per ECC word (sample_ram,
+// SPEC RAD-02) and writes the word when its last lane (or the row's last
+// sample) arrives, so a read in the word being gathered still finds the
+// previous row there. Per-band memories need Nz >= 3.
+module c123_neighborhood import c123_pkg::*, ecc_pkg::*; #(
     parameter int NX_MAX = 512,
     parameter int NZ_MAX = 256
 ) (
@@ -28,7 +29,10 @@ module c123_neighborhood import c123_pkg::*; #(
     output logic        s_tready,
 
     output logic        o_valid,
-    output nb_t         o
+    output nb_t         o,
+
+    input  ecc_inj_t    lb_inj,         // line buffer ECC
+    output ecc_evt_t    lb_ecc
 );
     localparam int ZB = $clog2(NZ_MAX);
     localparam int AB = $clog2(NX_MAX * NZ_MAX);
@@ -75,7 +79,7 @@ module c123_neighborhood import c123_pkg::*; #(
     logic [15:0]   s1, z1;
     logic [31:0]   tv1;
     logic [AB-1:0] a1;
-    logic          fr1, fc1, lc1, sos1, eos1;
+    logic          fr1, fc1, lc1, sos1, eos1, eor1;
 
     always_ff @(posedge clk) begin
         if (rst) begin
@@ -91,6 +95,7 @@ module c123_neighborhood import c123_pkg::*; #(
             lc1  <= last_x;
             sos1 <= (t0 == 0) && (z0 == 16'd0);
             eos1 <= last_z && last_x && last_y;
+            eor1 <= last_z && last_x;
         end
     end
 
@@ -125,12 +130,17 @@ module c123_neighborhood import c123_pkg::*; #(
         .STYLE (NX_MAX * NZ_MAX >= 65536 ? "ultra" : "block")
     ) u_line (
         .clk   (clk),
+        .rst   (rst),
         .ce    (ce),
         .we    (ce && v1),
+        .wlast (eor1),
         .waddr (a1),
         .wdata (s1),
+        .re    (v1),
         .raddr (a1 + AB'(cfg.nz)),
-        .rdata (ne_rd)
+        .rdata (ne_rd),
+        .inj   (lb_inj),
+        .ecc   (lb_ecc)
     );
 
     // rho(t) = clip(v_min + floor((t - Nx) / t_inc), v_min, v_max) + D - omega

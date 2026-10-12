@@ -114,5 +114,16 @@ package hpdp_regs_addr_pkg;
     localparam logic [31:0] GR_DROPPED_RECORDS               = 32'h9008C;
     localparam logic [31:0] GR_SKIPPED_IDLE                  = 32'h90090;
     localparam logic [31:0] GR_CAPTURED                      = 32'h90094;
+    localparam logic [31:0] RAD_ID                           = 32'hF0000;
+    localparam logic [31:0] RAD_STATUS                       = 32'hF0008;
+    localparam logic [31:0] RAD_ECC_INJECT                   = 32'hF0040;
+    localparam logic [31:0] RAD_ECC_INJECT_ADDR              = 32'hF0044;
+    localparam logic [31:0] RAD_CNT_CLEAR                    = 32'hF007C;
+    localparam logic [31:0] RAD_CAL_SBE                      = 32'hF0080;
+    localparam logic [31:0] RAD_CAL_DBE                      = 32'hF0084;
+    localparam logic [31:0] RAD_CT_SBE                       = 32'hF0088;
+    localparam logic [31:0] RAD_CT_DBE                       = 32'hF008C;
+    localparam logic [31:0] RAD_LB_SBE                       = 32'hF0090;
+    localparam logic [31:0] RAD_LB_DBE                       = 32'hF0094;
 
 endpackage

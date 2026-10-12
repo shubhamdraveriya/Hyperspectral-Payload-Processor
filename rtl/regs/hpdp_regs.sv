@@ -382,6 +382,19 @@ module hpdp_regs (
             logic SKIPPED_IDLE;
             logic CAPTURED;
         } gr;
+        struct {
+            logic ID;
+            logic STATUS;
+            logic ECC_INJECT;
+            logic ECC_INJECT_ADDR;
+            logic CNT_CLEAR;
+            logic CAL_SBE;
+            logic CAL_DBE;
+            logic CT_SBE;
+            logic CT_DBE;
+            logic LB_SBE;
+            logic LB_DBE;
+        } rad;
     } decoded_reg_strb_t;
     decoded_reg_strb_t decoded_reg_strb;
     logic decoded_err;
@@ -508,6 +521,17 @@ module hpdp_regs (
         decoded_reg_strb.gr.DROPPED_RECORDS = cpuif_req_masked & (cpuif_addr == 20'h9008c) & !cpuif_req_is_wr;
         decoded_reg_strb.gr.SKIPPED_IDLE = cpuif_req_masked & (cpuif_addr == 20'h90090) & !cpuif_req_is_wr;
         decoded_reg_strb.gr.CAPTURED = cpuif_req_masked & (cpuif_addr == 20'h90094) & !cpuif_req_is_wr;
+        decoded_reg_strb.rad.ID = cpuif_req_masked & (cpuif_addr == 20'hf0000) & !cpuif_req_is_wr;
+        decoded_reg_strb.rad.STATUS = cpuif_req_masked & (cpuif_addr == 20'hf0008) & !cpuif_req_is_wr;
+        decoded_reg_strb.rad.ECC_INJECT = cpuif_req_masked & (cpuif_addr == 20'hf0040);
+        decoded_reg_strb.rad.ECC_INJECT_ADDR = cpuif_req_masked & (cpuif_addr == 20'hf0044);
+        decoded_reg_strb.rad.CNT_CLEAR = cpuif_req_masked & (cpuif_addr == 20'hf007c);
+        decoded_reg_strb.rad.CAL_SBE = cpuif_req_masked & (cpuif_addr == 20'hf0080) & !cpuif_req_is_wr;
+        decoded_reg_strb.rad.CAL_DBE = cpuif_req_masked & (cpuif_addr == 20'hf0084) & !cpuif_req_is_wr;
+        decoded_reg_strb.rad.CT_SBE = cpuif_req_masked & (cpuif_addr == 20'hf0088) & !cpuif_req_is_wr;
+        decoded_reg_strb.rad.CT_DBE = cpuif_req_masked & (cpuif_addr == 20'hf008c) & !cpuif_req_is_wr;
+        decoded_reg_strb.rad.LB_SBE = cpuif_req_masked & (cpuif_addr == 20'hf0090) & !cpuif_req_is_wr;
+        decoded_reg_strb.rad.LB_DBE = cpuif_req_masked & (cpuif_addr == 20'hf0094) & !cpuif_req_is_wr;
         decoded_err = '0;
     end
 
@@ -954,6 +978,34 @@ module hpdp_regs (
                 } clear;
             } CNT_CLEAR;
         } gr;
+        struct {
+            struct {
+                struct {
+                    logic [1:0] next;
+                    logic load_next;
+                } memory;
+                struct {
+                    logic next;
+                    logic load_next;
+                } dbe;
+                struct {
+                    logic next;
+                    logic load_next;
+                } go;
+            } ECC_INJECT;
+            struct {
+                struct {
+                    logic [17:0] next;
+                    logic load_next;
+                } addr;
+            } ECC_INJECT_ADDR;
+            struct {
+                struct {
+                    logic next;
+                    logic load_next;
+                } clear;
+            } CNT_CLEAR;
+        } rad;
     } field_combo_t;
     field_combo_t field_combo;
 
@@ -1311,6 +1363,29 @@ module hpdp_regs (
                 } clear;
             } CNT_CLEAR;
         } gr;
+        struct {
+            struct {
+                struct {
+                    logic [1:0] value;
+                } memory;
+                struct {
+                    logic value;
+                } dbe;
+                struct {
+                    logic value;
+                } go;
+            } ECC_INJECT;
+            struct {
+                struct {
+                    logic [17:0] value;
+                } addr;
+            } ECC_INJECT_ADDR;
+            struct {
+                struct {
+                    logic value;
+                } clear;
+            } CNT_CLEAR;
+        } rad;
     } field_storage_t;
     field_storage_t field_storage;
 
@@ -3179,6 +3254,127 @@ module hpdp_regs (
         end
     end
     assign hwif_out.gr.CNT_CLEAR.clear.value = field_storage.gr.CNT_CLEAR.clear.value;
+    // Field: hpdp_regs.rad.ECC_INJECT.memory
+    always_comb begin
+        automatic logic [1:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.rad.ECC_INJECT.memory.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.rad.ECC_INJECT && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.rad.ECC_INJECT.memory.value & ~decoded_wr_biten[1:0]) | (decoded_wr_data[1:0] & decoded_wr_biten[1:0]);
+            load_next_c = '1;
+        end
+        field_combo.rad.ECC_INJECT.memory.next = next_c;
+        field_combo.rad.ECC_INJECT.memory.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.rad.ECC_INJECT.memory.value <= 2'h0;
+        end else begin
+            if(field_combo.rad.ECC_INJECT.memory.load_next) begin
+                field_storage.rad.ECC_INJECT.memory.value <= field_combo.rad.ECC_INJECT.memory.next;
+            end
+        end
+    end
+    assign hwif_out.rad.ECC_INJECT.memory.value = field_storage.rad.ECC_INJECT.memory.value;
+    // Field: hpdp_regs.rad.ECC_INJECT.dbe
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.rad.ECC_INJECT.dbe.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.rad.ECC_INJECT && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.rad.ECC_INJECT.dbe.value & ~decoded_wr_biten[4:4]) | (decoded_wr_data[4:4] & decoded_wr_biten[4:4]);
+            load_next_c = '1;
+        end
+        field_combo.rad.ECC_INJECT.dbe.next = next_c;
+        field_combo.rad.ECC_INJECT.dbe.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.rad.ECC_INJECT.dbe.value <= 1'h0;
+        end else begin
+            if(field_combo.rad.ECC_INJECT.dbe.load_next) begin
+                field_storage.rad.ECC_INJECT.dbe.value <= field_combo.rad.ECC_INJECT.dbe.next;
+            end
+        end
+    end
+    assign hwif_out.rad.ECC_INJECT.dbe.value = field_storage.rad.ECC_INJECT.dbe.value;
+    // Field: hpdp_regs.rad.ECC_INJECT.go
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.rad.ECC_INJECT.go.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.rad.ECC_INJECT && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.rad.ECC_INJECT.go.value & ~decoded_wr_biten[31:31]) | (decoded_wr_data[31:31] & decoded_wr_biten[31:31]);
+            load_next_c = '1;
+        end else begin // singlepulse clears back to 0
+            next_c = '0;
+            load_next_c = '1;
+        end
+        field_combo.rad.ECC_INJECT.go.next = next_c;
+        field_combo.rad.ECC_INJECT.go.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.rad.ECC_INJECT.go.value <= 1'h0;
+        end else begin
+            if(field_combo.rad.ECC_INJECT.go.load_next) begin
+                field_storage.rad.ECC_INJECT.go.value <= field_combo.rad.ECC_INJECT.go.next;
+            end
+        end
+    end
+    assign hwif_out.rad.ECC_INJECT.go.value = field_storage.rad.ECC_INJECT.go.value;
+    // Field: hpdp_regs.rad.ECC_INJECT_ADDR.addr
+    always_comb begin
+        automatic logic [17:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.rad.ECC_INJECT_ADDR.addr.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.rad.ECC_INJECT_ADDR && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.rad.ECC_INJECT_ADDR.addr.value & ~decoded_wr_biten[17:0]) | (decoded_wr_data[17:0] & decoded_wr_biten[17:0]);
+            load_next_c = '1;
+        end
+        field_combo.rad.ECC_INJECT_ADDR.addr.next = next_c;
+        field_combo.rad.ECC_INJECT_ADDR.addr.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.rad.ECC_INJECT_ADDR.addr.value <= 18'h0;
+        end else begin
+            if(field_combo.rad.ECC_INJECT_ADDR.addr.load_next) begin
+                field_storage.rad.ECC_INJECT_ADDR.addr.value <= field_combo.rad.ECC_INJECT_ADDR.addr.next;
+            end
+        end
+    end
+    assign hwif_out.rad.ECC_INJECT_ADDR.addr.value = field_storage.rad.ECC_INJECT_ADDR.addr.value;
+    // Field: hpdp_regs.rad.CNT_CLEAR.clear
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.rad.CNT_CLEAR.clear.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.rad.CNT_CLEAR && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.rad.CNT_CLEAR.clear.value & ~decoded_wr_biten[0:0]) | (decoded_wr_data[0:0] & decoded_wr_biten[0:0]);
+            load_next_c = '1;
+        end else begin // singlepulse clears back to 0
+            next_c = '0;
+            load_next_c = '1;
+        end
+        field_combo.rad.CNT_CLEAR.clear.next = next_c;
+        field_combo.rad.CNT_CLEAR.clear.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.rad.CNT_CLEAR.clear.value <= 1'h0;
+        end else begin
+            if(field_combo.rad.CNT_CLEAR.clear.load_next) begin
+                field_storage.rad.CNT_CLEAR.clear.value <= field_combo.rad.CNT_CLEAR.clear.next;
+            end
+        end
+    end
+    assign hwif_out.rad.CNT_CLEAR.clear.value = field_storage.rad.CNT_CLEAR.clear.value;
 
     //--------------------------------------------------------------------------
     // Write response
@@ -3588,6 +3784,42 @@ module hpdp_regs (
         end
         if(rd_mux_addr == 20'h90094) begin
             readback_data_var[31:0] = hwif_in.gr.CAPTURED.count.next;
+        end
+        if(rd_mux_addr == 20'hf0000) begin
+            readback_data_var[15:0] = 16'h100;
+            readback_data_var[31:16] = 16'hf;
+        end
+        if(rd_mux_addr == 20'hf0008) begin
+            readback_data_var[2:0] = hwif_in.rad.STATUS.inj_pending.next;
+        end
+        if(rd_mux_addr == 20'hf0040) begin
+            readback_data_var[1:0] = field_storage.rad.ECC_INJECT.memory.value;
+            readback_data_var[4] = field_storage.rad.ECC_INJECT.dbe.value;
+            readback_data_var[31] = field_storage.rad.ECC_INJECT.go.value;
+        end
+        if(rd_mux_addr == 20'hf0044) begin
+            readback_data_var[17:0] = field_storage.rad.ECC_INJECT_ADDR.addr.value;
+        end
+        if(rd_mux_addr == 20'hf007c) begin
+            readback_data_var[0] = field_storage.rad.CNT_CLEAR.clear.value;
+        end
+        if(rd_mux_addr == 20'hf0080) begin
+            readback_data_var[31:0] = hwif_in.rad.CAL_SBE.count.next;
+        end
+        if(rd_mux_addr == 20'hf0084) begin
+            readback_data_var[31:0] = hwif_in.rad.CAL_DBE.count.next;
+        end
+        if(rd_mux_addr == 20'hf0088) begin
+            readback_data_var[31:0] = hwif_in.rad.CT_SBE.count.next;
+        end
+        if(rd_mux_addr == 20'hf008c) begin
+            readback_data_var[31:0] = hwif_in.rad.CT_DBE.count.next;
+        end
+        if(rd_mux_addr == 20'hf0090) begin
+            readback_data_var[31:0] = hwif_in.rad.LB_SBE.count.next;
+        end
+        if(rd_mux_addr == 20'hf0094) begin
+            readback_data_var[31:0] = hwif_in.rad.LB_DBE.count.next;
         end
         readback_data = readback_data_var;
         readback_done = decoded_req & ~decoded_req_is_wr;

@@ -8,7 +8,7 @@
 // Only the corner turn output can be back-pressured; everything before it runs
 // at the sensor's pace, and overflows are counted (SYS-05). The configuration
 // comes in once per clock domain (the same values, synchronized by the caller).
-module sensor_frontend import frontend_pkg::*; #(
+module sensor_frontend import frontend_pkg::*, ecc_pkg::*; #(
     parameter int NX_MAX = 512,
     parameter int NZ_MAX = 256
 ) (
@@ -33,6 +33,11 @@ module sensor_frontend import frontend_pkg::*; #(
     input  tbl_cmd_t     tbl_cmd,           // calibration table debug access (clk_sys)
     output logic [32:0]  tbl_rdata,
     output logic         tbl_done,
+
+    input  ecc_inj_t     tbl_inj,           // memory ECC (SPEC RAD-02, clk_sys):
+    output ecc_evt_t     tbl_ecc,           //   calibration table
+    input  ecc_inj_t     ct_inj,            //   corner-turn buffers
+    output ecc_evt_t     ct_ecc,
 
     output logic [15:0]  m_axis_tdata,
     output logic [1:0]   m_axis_tuser,      // [0] first sample of a scene, [1] first of a line
@@ -91,7 +96,7 @@ module sensor_frontend import frontend_pkg::*; #(
         .m_data         (rc_data),
         .m_user         (rc_user),
         .m_last         (rc_last),
-        .tbl_cmd, .tbl_rdata, .tbl_done,
+        .tbl_cmd, .tbl_rdata, .tbl_done, .tbl_inj, .tbl_ecc,
         .scene_clamped  (fe_status.scene_clamped),
         .scene_replaced (fe_status.scene_replaced),
         .tbl_words      (fe_status.tbl_words)
@@ -109,6 +114,8 @@ module sensor_frontend import frontend_pkg::*; #(
         .cnt_clr        (cnt_clr_sys),
         .lines_out      (fe_status.lines_out),
         .dropped_lines  (fe_status.dropped_lines),
-        .unfilled_lines (fe_status.unfilled_lines)
+        .unfilled_lines (fe_status.unfilled_lines),
+        .inj            (ct_inj),
+        .ecc            (ct_ecc)
     );
 endmodule

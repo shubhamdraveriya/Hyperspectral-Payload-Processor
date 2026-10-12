@@ -1,7 +1,38 @@
 # M7: Radiation mitigation and robustness: plan
 
-Status: **plan** (2026-10-12). SPEC.md 10 (RAD-01 .. RAD-07); done when RAD-01 .. RAD-07
-are met and the fault-injection report is written.
+Status: **in progress** (2026-10-12). SPEC.md 10 (RAD-01 .. RAD-07); done when RAD-01 ..
+RAD-07 are met and the fault-injection report is written.
+
+## Progress
+
+| # | State |
+|---|---|
+| 0 | Scene guard (`rtl/frontend/scene_guard.sv`, `tb_scene_guard`): regression passes; build met timing after pipelining the Nx·Ny·Nz product (WNS +0.175 ns). SYS-09 board re-run pending |
+| 1 | UltraRAM ECC (below): regression passes (63 tests); build and board test pending |
+
+### Item 1: memory ECC (RAD-02)
+
+- `ecc_ram`: 64-bit simple dual-port `xpm_memory_sdpram` with ECC (encode and decode),
+  UltraRAM or block RAM; `sbe` / `dbe` pulse once per read that counts (`re`) and returned a
+  corrected / an uncorrectable word; `inj_sbe` / `inj_dbe` on a write store an error.
+- `sample_ram` (corner-turn buffers, compressor line buffer) gathers four samples per word:
+  runs of consecutive writes start on a word boundary, `wlast` ends a run, a word is written
+  at lane 3 or the run's end. A read of the word being gathered still returns its previous
+  content, which is what the compressor's look-ahead read (Nz samples ahead) needs.
+- Calibration table: layout A, one entry per word, in two banks (even / odd entries) so a
+  128-bit load beat still writes in one cycle: 32 URAM (was 16). Scrubbing: a read that
+  returns a corrected entry writes it back (the table is static; without this a second upset
+  in the word would make it uncorrectable), unless the table was written since the read.
+- `RAD` register block (`0xA00F_0000`): `STATUS.inj_pending`, `ECC_INJECT` (memory, single /
+  double, go) with `ECC_INJECT_ADDR` (the word that holds this sample / entry address gets
+  the error at its next write), counters `CAL_SBE` / `CAL_DBE`, `CT_SBE` / `CT_DBE`,
+  `LB_SBE` / `LB_DBE` (reads, not upsets: a line-buffer word is read once per sample).
+- Tests: `tb_sample_ram` (both configurations: UltraRAM latency 4, block RAM latency 2 with
+  stalls; random runs, abandoned runs, reads in the gathered word, injections: about 73 k
+  checked reads); `tb_hpdp_core` injects a single-bit error into a read word of each memory:
+  outputs stay bit-exact, counters table 1 (written back after the first read; without
+  scrubbing it would be 25), corner turn 4, line buffer 4; the front-end tests check that no
+  error is ever reported without injection.
 
 ## Facts found so far
 
