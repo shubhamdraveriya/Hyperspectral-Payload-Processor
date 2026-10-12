@@ -4,6 +4,8 @@ satellite(): raw scenes -> correction -> CCSDS 123 -> packets -> AOS frames ->
              RS(255,223) I=4 -> randomizer + ASM -> CADU byte stream
 ground():    CADU byte stream -> frame sync -> derandomize -> RS decode ->
              deframe -> reassemble scenes -> decompress
+ground_records(): the same from derandomized codeblocks, e.g. the records
+             captured by the hardware ground receiver
 """
 
 from dataclasses import dataclass, field
@@ -27,6 +29,7 @@ class GroundStats:
     rs_uncorrectable: int = 0
     lost_frames: int = 0
     idle_frames: int = 0
+    foreign_frames: int = 0                         # decoded, but not this spacecraft's AOS frames
     scenes: list = field(default_factory=list)      # per scene: (scene_id, ok, reason)
 
 
@@ -60,18 +63,27 @@ def satellite(raw_scenes, cal, cfg=None, link=None, first_scene_id=0, timestamps
 
 def ground(stream, link=None):
     """Returns (list of (scene_id, Scene or None)), GroundStats)."""
+    return ground_records([rec.codeblock for rec in channel.frame_sync(stream)], link)
+
+
+def ground_records(codeblocks, link=None):
+    """Ground chain from derandomized 1020-byte codeblocks, in reception order.
+    Returns (list of (scene_id, Scene or None)), GroundStats)."""
     link = link or LinkConfig()
     stats = GroundStats()
     deframer = framing.AosDeframer(link.scid, link.vcid)
     packets = []
-    for rec in channel.frame_sync(stream):
+    for block in codeblocks:
         stats.cadus += 1
-        frame, counts = rs.decode_interleaved(rec.codeblock, framing.RS_DEPTH)
+        frame, counts = rs.decode_interleaved(block, framing.RS_DEPTH)
         if frame is None:
             stats.rs_uncorrectable += 1
             continue        # the deframer sees the frame-count gap and resynchronizes
         stats.rs_corrected_symbols += sum(counts)
-        packets += deframer.feed(frame)
+        try:
+            packets += deframer.feed(frame)
+        except ValueError:
+            stats.foreign_frames += 1
     stats.lost_frames = deframer.lost_frames
     stats.idle_frames = deframer.idle_frames
     results = []

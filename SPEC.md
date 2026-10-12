@@ -562,7 +562,9 @@ be checked against the known original.
 Rows marked * are measured (out-of-context implementation at `NX_MAX` = 512,
 `NZ_MAX` = 256); the others are estimates, replaced as blocks are built. The M4 design
 (PS, DMA, interconnect, registers, front end, compressor) measures 21.3 k LUT, 20.4 k FF,
-21 BRAM36, 40 URAM and 20 DSP in total.
+21 BRAM36, 40 URAM and 20 DSP in total; the M5 design (adding the downlink chain, error
+injector, link layer with two GTH channels, ground receiver and ground DMA) measures
+28.0 k LUT, 32.3 k FF, 32.5 BRAM36, 40 URAM and 20 DSP.
 
 | Block | LUT | FF | DSP | BRAM36 | URAM |
 |---|---|---|---|---|---|

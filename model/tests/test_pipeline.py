@@ -33,6 +33,21 @@ def test_noisy_link_is_corrected():
     assert check(results, corrected) == [0, 1]
 
 
+def test_ground_from_captured_records():
+    # the hardware ground receiver delivers derandomized codeblocks; records may
+    # come with idle frames skipped and a foreign frame mixed in
+    raws, cal = make_raw_scenes(2)
+    stream, corrected, _ = pipeline.satellite(raws, cal, link=pipeline.LinkConfig(idle_frames_between_scenes=1))
+    noisy, _ = channel.inject_bit_errors(stream, 5e-4, seed=8)
+    blocks = [rec.codeblock for rec in channel.frame_sync(noisy)]
+    foreign = pipeline.LinkConfig(scid=0x17)
+    other, _, _ = pipeline.satellite(raws[:1], cal, link=foreign)
+    blocks.insert(1, channel.frame_sync(other)[0].codeblock)
+    results, st = pipeline.ground_records(blocks)
+    assert check(results, corrected) == [0, 1]
+    assert st.foreign_frames == 1 and st.rs_corrected_symbols > 0 and st.idle_frames == 2
+
+
 def test_uncorrectable_burst_is_contained_to_one_scene():
     raws, cal = make_raw_scenes(3)
     stream, corrected, starts = pipeline.satellite(raws, cal)

@@ -22,6 +22,8 @@ set rtl [concat [glob -nocomplain [file join $repo rtl * *.sv]] [glob -nocomplai
 if {[llength $rtl]} { add_files -norecurse $rtl }
 set xdc [glob -nocomplain [file join $repo vivado constraints *.xdc]]
 if {[llength $xdc]} { add_files -fileset constrs_1 -norecurse $xdc }
+# the waivers name cells inside the GTH IP, which is a black box in top-level synthesis
+set_property USED_IN_SYNTHESIS false [get_files waivers.xdc]
 
 # GTH transceivers of the SFP cages (instantiated in hpdp_top)
 source [file join $repo vivado ip gt_link.tcl]
