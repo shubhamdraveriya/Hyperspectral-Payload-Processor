@@ -64,6 +64,7 @@ regfile hpdp_sys {
         field { sw = rw; hw = r; desc = "Overflow"; } error[1:1] = 0;
         field { sw = rw; hw = r; desc = "Link lock lost"; } link_lock_loss[2:2] = 0;
         field { sw = rw; hw = r; desc = "Ground frame sync lost"; } sync_loss[3:3] = 0;
+        field { sw = rw; hw = r; desc = "Uncorrectable memory error"; } ecc_uncorrectable[4:4] = 0;
     } IRQ_EN @ 0x0C;
 
     reg {
@@ -73,6 +74,7 @@ regfile hpdp_sys {
         field { sw = rw; hw = r; onwrite = woclr; hwset; desc = "An overflow counter incremented"; } error[1:1] = 0;
         field { sw = rw; hw = r; onwrite = woclr; hwset; desc = "LNK.LOCK_LOSSES incremented"; } link_lock_loss[2:2] = 0;
         field { sw = rw; hw = r; onwrite = woclr; hwset; desc = "GR.SYNC_LOSSES incremented"; } sync_loss[3:3] = 0;
+        field { sw = rw; hw = r; onwrite = woclr; hwset; desc = "A memory read returned an uncorrectable word (RAD.*_DBE incremented, RAD-06)"; } ecc_uncorrectable[4:4] = 0;
     } IRQ_STATUS @ 0x10;
 
     reg {

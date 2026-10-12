@@ -45,7 +45,7 @@ SYS_PASSES = 2                # tb_hpdp_core PASSES
 # transceiver model loops the transmitted words back on that channel only);
 # fabric: LNK.CTRL.fabric_loopback instead (both channels carry garbage).
 DL_DEFAULT = dict(pkt_data=2048, ei_mode=ch.INJ_OFF, seed=1, threshold=0, burst_len=0, period=1,
-                  asm_bits=0, xfer=1, rx_sel=0, fabric=0)
+                  asm_bits=0, xfer=1, rx_sel=0, fabric=0, ecc_dbe=0)
 APID, SCID, VCID = 0x100, 0x42, 1
 
 DEFAULT = dict(source=sensor.SOURCE_DMA, pattern="hyperspectral", raw="calibrated", dims=(24, 6, 20),
@@ -76,6 +76,10 @@ TESTS = {
     "max_dims":   dict(dims=(NX_MAX, 2, NZ_MAX), scenes=1, slack=0,
                        dl=dict(pkt_data=1000, ei_mode=ch.INJ_BURST, burst_len=40, period=3000,
                                xfer=2, fabric=1)),
+    # (system test: a double-bit error in a calibration table entry that every line
+    # reads; with the correction bypassed the data is intact, but every scene is
+    # flagged in its packets (RAD-06))
+    "ecc_dbe":    dict(bypass=True, dl=dict(ecc_dbe=1)),
     # compressor output starved: the corner turn drops lines and sends fill lines,
     # the compressor stays aligned with the scenes
     "drop":       dict(source=sensor.SOURCE_LFSR, dims=(16, 8, 16), bypass=True, slack=0,
@@ -144,7 +148,8 @@ def ground_vectors(dl, images, ny):
     stream, seq, packets, i = bytearray(), 0, 0, 0
     for _ in range(SYS_PASSES):
         for img in images:
-            pk, seq = framing.packetize_scene(img, APID, i, i * ny, seq_count=seq, max_data=dl["pkt_data"])
+            pk, seq = framing.packetize_scene(img, APID, i, i * ny, seq_count=seq, max_data=dl["pkt_data"],
+                                              flags=framing.FLAG_INTERNAL_ERROR if dl["ecc_dbe"] else 0)
             packets += len(pk)
             for p in pk:
                 framer.push(p)
@@ -223,7 +228,8 @@ def write_test(out, name, spec):
 
     ncadu, packets, flips, nrec, rec = ground_vectors(dl, images, ny)
     dl_fields = [dl[k] for k in ("pkt_data", "ei_mode", "seed", "threshold", "burst_len", "period",
-                                 "asm_bits", "xfer", "rx_sel", "fabric")] + [ncadu, packets, flips, nrec]
+                                 "asm_bits", "xfer", "rx_sel", "fabric")] + [ncadu, packets, flips, nrec,
+                                                                             dl["ecc_dbe"]]
     (d / "dl_cfg.txt").write_text(" ".join(str(v) for v in dl_fields) + "\n")
     (d / "ground.hex").write_text("".join(f"{b:02x}\n" for b in rec))
     return len(raw), len(expected), stats

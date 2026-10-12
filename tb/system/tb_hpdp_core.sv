@@ -207,6 +207,7 @@ module tb_hpdp_core;
     int           exp_clamped, exp_replaced;
     int           pkt_data, ei_mode, ei_seed, ei_threshold, burst_len, ei_period, asm_bits, xfer, rx_sel, fabric;
     int           n_cadus, n_packets, n_flips, n_records;
+    int           ecc_dbe;                  // RAD-06 test: double-bit error in a table entry
     logic [7:0]   expected [$], ground [$];
     logic [127:0] tbl [$], dma [$];
     int           sizes [$];
@@ -247,10 +248,10 @@ module tb_hpdp_core;
         $fclose(fd);
         fd = $fopen({dir, "/dl_cfg.txt"}, "r");
         if (fd == 0) $fatal(1, "cannot open %s/dl_cfg.txt", dir);
-        n = $fscanf(fd, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d", pkt_data, ei_mode, ei_seed,
+        n = $fscanf(fd, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d", pkt_data, ei_mode, ei_seed,
                     ei_threshold, burst_len, ei_period, asm_bits, xfer, rx_sel, fabric,
-                    n_cadus, n_packets, n_flips, n_records);
-        if (n != 14) $fatal(1, "bad dl_cfg.txt (%0d fields)", n);
+                    n_cadus, n_packets, n_flips, n_records, ecc_dbe);
+        if (n != 15) $fatal(1, "bad dl_cfg.txt (%0d fields)", n);
         $fclose(fd);
         fd = $fopen({dir, "/ground.hex"}, "r");
         while ($fscanf(fd, "%h", v) == 1) begin
@@ -520,15 +521,19 @@ module tb_hpdp_core;
             logic [32:0] got;
             expect_reg("RAD.ID", RAD_ID, 32'h000F_0100);
             e = nx * nz / 2;                                // table entry used by every line
-            ecc_inject(0, e, 1'b0);
+            ecc_inject(0, e, ecc_dbe != 0);
             table_access(1'b1, e, tbl_entry(e), got);       // the rewrite stores the error
             expect_reg("RAD.STATUS, table injection done", RAD_STATUS, 0);
-            table_access(1'b0, e, '0, got);                 // corrected, and written back
-            if (got !== tbl_entry(e)) begin
+            table_access(1'b0, e, '0, got);                 // corrected and written back, or detected
+            if (!ecc_dbe && got !== tbl_entry(e)) begin
                 errors++;
                 $display("  table entry %0d with a single-bit error: read %09h, expected %09h", e, got, tbl_entry(e));
             end
-            expect_reg("RAD.CAL_SBE after the read", RAD_CAL_SBE, 1);
+            expect_reg("RAD.CAL_SBE after the read", RAD_CAL_SBE, ecc_dbe ? 0 : 1);
+            expect_reg("RAD.CAL_DBE after the read", RAD_CAL_DBE, ecc_dbe ? 1 : 0);
+            // (RAD-06: no scene in flight yet, so no scene is flagged by this read)
+            expect_reg("SYS.IRQ_STATUS after the read", SYS_IRQ_STATUS, ecc_dbe ? 32'h10 : 32'h0);
+            wr(SYS_IRQ_STATUS, 32'h10);
             ecc_inject(1, 8, 1'b0);                         // corner turn: BIL samples 8 - 11 of the first line
             ecc_inject(2, 2 * nz, 1'b0);                    // line buffer: x = 2 of the first row, read in the second
         end
@@ -553,15 +558,17 @@ module tb_hpdp_core;
             expect_reg("SYS.STATUS", SYS_STATUS, 32'h4);     // locked, not busy, no error
         end
         expect_reg("RAD.STATUS, injections done", RAD_STATUS, 0);
-        expect_reg("RAD.CAL_SBE (written back)", RAD_CAL_SBE, 1);
+        // a double-bit error is not written back: every line reads it again
+        expect_reg("RAD.CAL_SBE (written back)", RAD_CAL_SBE, ecc_dbe ? 0 : 1);
         expect_reg("RAD.CT_SBE (one word, four samples)", RAD_CT_SBE, 4);
         expect_reg("RAD.LB_SBE (one word, four samples)", RAD_LB_SBE, 4);
-        expect_reg("RAD.CAL_DBE", RAD_CAL_DBE, 0);
+        expect_reg("RAD.CAL_DBE", RAD_CAL_DBE, ecc_dbe ? 1 + PASSES * scenes * ny : 0);
         expect_reg("RAD.CT_DBE", RAD_CT_DBE, 0);
         expect_reg("RAD.LB_DBE", RAD_LB_DBE, 0);
         wr(RAD_CNT_CLEAR, 1);
-        poll("RAD counters cleared", RAD_CAL_SBE, 32'hFFFF_FFFF, 0, 5);
-        expect_reg("RAD.CT_SBE after clear", RAD_CT_SBE, 0);
+        poll("RAD counters cleared", RAD_CT_SBE, 32'hFFFF_FFFF, 0, 5);     // (non-zero before)
+        expect_reg("RAD.CAL_SBE after clear", RAD_CAL_SBE, 0);
+        expect_reg("RAD.CAL_DBE after clear", RAD_CAL_DBE, 0);
         rd(CMP_LAST_CYCLES, v);
         if (v < nx * ny * nz || v > 4 * nx * ny * nz * period / (nx * nz) + 10000) begin
             errors++;
@@ -601,10 +608,11 @@ module tb_hpdp_core;
         rd(LNK_RX_WORDS, v);
         if (v < n_cadus * 512) begin errors++; $display("  LNK.RX_WORDS = %0d", v); end
 
-        // interrupt: scene done raised, error not; write 1 to clear
-        expect_reg("SYS.IRQ_STATUS", SYS_IRQ_STATUS, 32'h1);
+        // interrupt: scene done raised (and the uncorrectable error in the RAD-06
+        // test), error not; write 1 to clear
+        expect_reg("SYS.IRQ_STATUS", SYS_IRQ_STATUS, ecc_dbe ? 32'h11 : 32'h1);
         if (irq !== 1'b1) begin errors++; $display("  irq not raised"); end
-        wr(SYS_IRQ_STATUS, 32'h1);
+        wr(SYS_IRQ_STATUS, 32'h11);
         expect_reg("SYS.IRQ_STATUS after clear", SYS_IRQ_STATUS, 32'h0);
         repeat (2) @(posedge clk_ctrl);
         if (irq !== 1'b0) begin errors++; $display("  irq still raised"); end

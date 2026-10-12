@@ -8,7 +8,8 @@ RAD-07 are met and the fault-injection report is written.
 | # | State |
 |---|---|
 | 0 | Scene guard (`rtl/frontend/scene_guard.sv`, `tb_scene_guard`): regression passes; build met timing after pipelining the Nx·Ny·Nz product (WNS +0.175 ns). SYS-09 board re-run pending |
-| 1 | UltraRAM ECC (below): regression passes (63 tests); build and board test pending |
+| 1 | UltraRAM ECC (below): regression passes; build met timing (WNS +0.100 ns; 28.7 k LUT, 33.9 k FF, 32.5 BRAM36, 56 URAM): all 56 URAM288 have ECC on (encode on the write port, decode on the read port). Board test pending (needs the job/result v4 software) |
+| 2 | Uncorrectable errors flag the scenes and raise an interrupt (below): regression passes (65 tests) |
 
 ### Item 1: memory ECC (RAD-02)
 
@@ -33,6 +34,22 @@ RAD-07 are met and the fault-injection report is written.
   outputs stay bit-exact, counters table 1 (written back after the first read; without
   scrubbing it would be 25), corner turn 4, line buffer 4; the front-end tests check that no
   error is ever reported without injection.
+
+### Item 2: uncorrectable errors (RAD-06)
+
+- A read that returns an uncorrectable word (any of the three memories) flags every scene
+  in flight between the front end and the end of its packetization (32 per-scene flags,
+  numbered as the packetizer's scene IDs): the scene the error hit is among them, at most
+  a neighbour is flagged too. The packetizer puts the flag of the scene it is sending into
+  secondary-header flag bit 0 of each packet; the ground ORs the flags over the scene
+  (sw/ground reports "internal error").
+- `SYS.IRQ_STATUS.ecc_uncorrectable` (bit 4, enable `IRQ_EN` bit 4) is set when any
+  `RAD.*_DBE` counter increments.
+- Test `sys_ecc_dbe` (vectors `fe/ecc_dbe`): a double-bit error in a calibration table entry
+  that every line reads, with the correction bypassed so the data is intact: the ground
+  records, with flag bit 0 in every packet, match the model bit-exactly; `RAD.CAL_DBE` =
+  1 + 24 (not written back); the interrupt bit is set. With the flag forced to 0 the test
+  fails (264 ground bytes differ).
 
 ## Facts found so far
 

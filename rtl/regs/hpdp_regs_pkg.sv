@@ -47,10 +47,15 @@ package hpdp_regs_pkg;
     } hpdp_sys__IRQ_STATUS__sync_loss__in_t;
 
     typedef struct {
+        logic hwset;
+    } hpdp_sys__IRQ_STATUS__ecc_uncorrectable__in_t;
+
+    typedef struct {
         hpdp_sys__IRQ_STATUS__scene_done__in_t scene_done;
         hpdp_sys__IRQ_STATUS__error__in_t error;
         hpdp_sys__IRQ_STATUS__link_lock_loss__in_t link_lock_loss;
         hpdp_sys__IRQ_STATUS__sync_loss__in_t sync_loss;
+        hpdp_sys__IRQ_STATUS__ecc_uncorrectable__in_t ecc_uncorrectable;
     } hpdp_sys__IRQ_STATUS__in_t;
 
     typedef struct {
@@ -624,10 +629,15 @@ package hpdp_regs_pkg;
     } hpdp_sys__IRQ_EN__sync_loss__out_t;
 
     typedef struct {
+        logic value;
+    } hpdp_sys__IRQ_EN__ecc_uncorrectable__out_t;
+
+    typedef struct {
         hpdp_sys__IRQ_EN__scene_done__out_t scene_done;
         hpdp_sys__IRQ_EN__error__out_t error;
         hpdp_sys__IRQ_EN__link_lock_loss__out_t link_lock_loss;
         hpdp_sys__IRQ_EN__sync_loss__out_t sync_loss;
+        hpdp_sys__IRQ_EN__ecc_uncorrectable__out_t ecc_uncorrectable;
     } hpdp_sys__IRQ_EN__out_t;
 
     typedef struct {
@@ -647,10 +657,15 @@ package hpdp_regs_pkg;
     } hpdp_sys__IRQ_STATUS__sync_loss__out_t;
 
     typedef struct {
+        logic value;
+    } hpdp_sys__IRQ_STATUS__ecc_uncorrectable__out_t;
+
+    typedef struct {
         hpdp_sys__IRQ_STATUS__scene_done__out_t scene_done;
         hpdp_sys__IRQ_STATUS__error__out_t error;
         hpdp_sys__IRQ_STATUS__link_lock_loss__out_t link_lock_loss;
         hpdp_sys__IRQ_STATUS__sync_loss__out_t sync_loss;
+        hpdp_sys__IRQ_STATUS__ecc_uncorrectable__out_t ecc_uncorrectable;
     } hpdp_sys__IRQ_STATUS__out_t;
 
     typedef struct {

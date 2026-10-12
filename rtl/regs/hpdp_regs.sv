@@ -570,6 +570,10 @@ module hpdp_regs (
                     logic next;
                     logic load_next;
                 } sync_loss;
+                struct {
+                    logic next;
+                    logic load_next;
+                } ecc_uncorrectable;
             } IRQ_EN;
             struct {
                 struct {
@@ -588,6 +592,10 @@ module hpdp_regs (
                     logic next;
                     logic load_next;
                 } sync_loss;
+                struct {
+                    logic next;
+                    logic load_next;
+                } ecc_uncorrectable;
             } IRQ_STATUS;
             struct {
                 struct {
@@ -1029,6 +1037,9 @@ module hpdp_regs (
                 struct {
                     logic value;
                 } sync_loss;
+                struct {
+                    logic value;
+                } ecc_uncorrectable;
             } IRQ_EN;
             struct {
                 struct {
@@ -1043,6 +1054,9 @@ module hpdp_regs (
                 struct {
                     logic value;
                 } sync_loss;
+                struct {
+                    logic value;
+                } ecc_uncorrectable;
             } IRQ_STATUS;
             struct {
                 struct {
@@ -1504,6 +1518,29 @@ module hpdp_regs (
         end
     end
     assign hwif_out.sys.IRQ_EN.sync_loss.value = field_storage.sys.IRQ_EN.sync_loss.value;
+    // Field: hpdp_regs.sys.IRQ_EN.ecc_uncorrectable
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.sys.IRQ_EN.ecc_uncorrectable.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.sys.IRQ_EN && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.sys.IRQ_EN.ecc_uncorrectable.value & ~decoded_wr_biten[4:4]) | (decoded_wr_data[4:4] & decoded_wr_biten[4:4]);
+            load_next_c = '1;
+        end
+        field_combo.sys.IRQ_EN.ecc_uncorrectable.next = next_c;
+        field_combo.sys.IRQ_EN.ecc_uncorrectable.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.sys.IRQ_EN.ecc_uncorrectable.value <= 1'h0;
+        end else begin
+            if(field_combo.sys.IRQ_EN.ecc_uncorrectable.load_next) begin
+                field_storage.sys.IRQ_EN.ecc_uncorrectable.value <= field_combo.sys.IRQ_EN.ecc_uncorrectable.next;
+            end
+        end
+    end
+    assign hwif_out.sys.IRQ_EN.ecc_uncorrectable.value = field_storage.sys.IRQ_EN.ecc_uncorrectable.value;
     // Field: hpdp_regs.sys.IRQ_STATUS.scene_done
     always_comb begin
         automatic logic [0:0] next_c;
@@ -1608,6 +1645,32 @@ module hpdp_regs (
         end
     end
     assign hwif_out.sys.IRQ_STATUS.sync_loss.value = field_storage.sys.IRQ_STATUS.sync_loss.value;
+    // Field: hpdp_regs.sys.IRQ_STATUS.ecc_uncorrectable
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.sys.IRQ_STATUS.ecc_uncorrectable.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.sys.IRQ_STATUS && decoded_req_is_wr) begin // SW write 1 clear
+            next_c = field_storage.sys.IRQ_STATUS.ecc_uncorrectable.value & ~(decoded_wr_data[4:4] & decoded_wr_biten[4:4]);
+            load_next_c = '1;
+        end else if(hwif_in.sys.IRQ_STATUS.ecc_uncorrectable.hwset) begin // HW Set
+            next_c = '1;
+            load_next_c = '1;
+        end
+        field_combo.sys.IRQ_STATUS.ecc_uncorrectable.next = next_c;
+        field_combo.sys.IRQ_STATUS.ecc_uncorrectable.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.sys.IRQ_STATUS.ecc_uncorrectable.value <= 1'h0;
+        end else begin
+            if(field_combo.sys.IRQ_STATUS.ecc_uncorrectable.load_next) begin
+                field_storage.sys.IRQ_STATUS.ecc_uncorrectable.value <= field_combo.sys.IRQ_STATUS.ecc_uncorrectable.next;
+            end
+        end
+    end
+    assign hwif_out.sys.IRQ_STATUS.ecc_uncorrectable.value = field_storage.sys.IRQ_STATUS.ecc_uncorrectable.value;
     // Field: hpdp_regs.sys.MODE.capture
     always_comb begin
         automatic logic [0:0] next_c;
@@ -3414,12 +3477,14 @@ module hpdp_regs (
             readback_data_var[1] = field_storage.sys.IRQ_EN.error.value;
             readback_data_var[2] = field_storage.sys.IRQ_EN.link_lock_loss.value;
             readback_data_var[3] = field_storage.sys.IRQ_EN.sync_loss.value;
+            readback_data_var[4] = field_storage.sys.IRQ_EN.ecc_uncorrectable.value;
         end
         if(rd_mux_addr == 20'h10) begin
             readback_data_var[0] = field_storage.sys.IRQ_STATUS.scene_done.value;
             readback_data_var[1] = field_storage.sys.IRQ_STATUS.error.value;
             readback_data_var[2] = field_storage.sys.IRQ_STATUS.link_lock_loss.value;
             readback_data_var[3] = field_storage.sys.IRQ_STATUS.sync_loss.value;
+            readback_data_var[4] = field_storage.sys.IRQ_STATUS.ecc_uncorrectable.value;
         end
         if(rd_mux_addr == 20'h40) begin
             readback_data_var[31:0] = hwif_in.sys.BUILD_ID.build_id.next;

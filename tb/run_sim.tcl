@@ -60,7 +60,7 @@ set suites {
     gr      tb/ground/gen_vectors.py     tb_ground
 }
 # System tests (hpdp_core through its registers) reuse front-end vectors
-set sys_tests {dma_basic dma_stalls max_dims}
+set sys_tests {dma_basic dma_stalls max_dims ecc_dbe}
 
 proc wanted {prefix} {
     expr {![llength $::selected] || [llength [lsearch -all -glob $::selected ${prefix}_*]]}

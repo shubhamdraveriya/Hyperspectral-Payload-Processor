@@ -34,13 +34,14 @@ module tb_downlink;
 
     space_packetizer #(.PKT_MAX(2048)) u_pkt (
         .clk, .rst,
-        .apid (11'(apid)), .pkt_data (12'(pkt_data)), .raw_mode (1'b0), .lines_dropped (1'b0), .cnt_clr (1'b0),
+        .apid (11'(apid)), .pkt_data (12'(pkt_data)), .raw_mode (1'b0), .lines_dropped (1'b0),
+        .scene_ue (1'b0), .cnt_clr (1'b0),
         .s_axis_tdata (c_tdata), .s_axis_tkeep (c_tkeep), .s_axis_tlast (c_tlast),
         .s_axis_tvalid (c_tvalid), .s_axis_tready (c_tready),
         .s_meta_tdata (meta_tdata), .s_meta_tvalid (meta_tvalid), .s_meta_tready (meta_tready),
         .m_axis_tdata (p_tdata), .m_axis_tuser (p_tuser), .m_axis_tlast (p_tlast),
         .m_axis_tvalid (p_tvalid), .m_axis_tready (p_tready),
-        .packets, .scenes
+        .packets, .scenes, .scene_id ()
     );
 
     aos_framer u_aos (

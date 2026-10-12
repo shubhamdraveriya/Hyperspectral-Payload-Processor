@@ -731,16 +731,41 @@ module hpdp_core
     logic        k_tlast, k_tvalid, k_tready;
     logic        e_tlast, e_tvalid, e_tready;
 
+    // An uncorrectable memory error (RAD-06) flags every scene in flight between
+    // the front end and the end of its packetization: the scene whose data it hit
+    // is among them (with at most a neighbour). Scene numbers count the scenes
+    // queued for the packetizer (meta_push), as its scene_id does; 32 flags
+    // cover the 17 scenes that can be in flight (16 queued, 1 being sent).
+    logic [15:0] fe_scenes, pk_scene;
+    logic [31:0] ue_flag;
+    wire         ue_now   = ecc[0].dbe || ecc[1].dbe || ecc[2].dbe;
+    wire  [5:0]  inflight = 6'(fe_scenes - pk_scene);
+
+    always_ff @(posedge clk_sys) begin
+        if (rst_sys) begin
+            fe_scenes <= '0;
+            ue_flag   <= '0;
+        end else begin
+            if (ue_now)
+                for (int j = 0; j < 32; j++)
+                    if (6'(5'(j) - pk_scene[4:0]) < inflight) ue_flag[j] <= 1'b1;
+            if (meta_push) begin
+                ue_flag[fe_scenes[4:0]] <= ue_now;
+                fe_scenes <= fe_scenes + 16'd1;
+            end
+        end
+    end
+
     space_packetizer #(.PKT_MAX(2048)) u_pkt (
         .clk (clk_sys), .rst (rst_sys),
         .apid (dl.apid), .pkt_data (dl.pkt_data), .raw_mode (sys_cfg.cmp.raw),
-        .lines_dropped (line_dropped), .cnt_clr (pkt_clr),
+        .lines_dropped (line_dropped), .scene_ue (ue_flag[pk_scene[4:0]]), .cnt_clr (pkt_clr),
         .s_axis_tdata (c_tdata), .s_axis_tkeep (c_tkeep), .s_axis_tlast (c_tlast),
         .s_axis_tvalid (v_dl), .s_axis_tready (pk_tready),
         .s_meta_tdata (meta_ts), .s_meta_tvalid (!meta_empty), .s_meta_tready (meta_rd),
         .m_axis_tdata (p_tdata), .m_axis_tuser (p_tuser), .m_axis_tlast (p_tlast),
         .m_axis_tvalid (p_tvalid), .m_axis_tready (p_tready),
-        .packets (dl_src.packets), .scenes (dl_src.scenes)
+        .packets (dl_src.packets), .scenes (dl_src.scenes), .scene_id (pk_scene)
     );
 
     aos_framer u_aos (
@@ -977,6 +1002,9 @@ module hpdp_core
     // Status registers and interrupts (clk_ctrl)
     // ---------------------------------------------------------------------
     logic [31:0] scenes_prev, lock_losses_prev, sync_losses_prev;
+    logic [33:0] dbe_prev;
+    wire  [33:0] dbe_sum = 34'(rad_stat.ecc_count[0][1]) + 34'(rad_stat.ecc_count[1][1]) +
+                           34'(rad_stat.ecc_count[2][1]);
     wire  [31:0] errors_now = se_stat.underrun_samples | se_stat.period_overruns |
                               se_stat.dropped_samples | sys_stat.fe.dropped_lines |
                               dl_stat.ts_overflows | dl_stat.dropped_records | lnk_stat.rx_overflows;
@@ -993,11 +1021,13 @@ module hpdp_core
             error_sum_prev   <= '0;
             lock_losses_prev <= '0;
             sync_losses_prev <= '0;
+            dbe_prev         <= '0;
         end else begin
             scenes_prev      <= sys_stat.scenes_done;
             error_sum_prev   <= error_sum;
             lock_losses_prev <= lnk_stat.lock_losses;
             sync_losses_prev <= dl_stat.sync_losses;
+            dbe_prev         <= dbe_sum;
         end
     end
 
@@ -1012,6 +1042,7 @@ module hpdp_core
         hwif_in.sys.IRQ_STATUS.error.hwset          = error_sum > error_sum_prev;
         hwif_in.sys.IRQ_STATUS.link_lock_loss.hwset = lnk_up && lnk_stat.lock_losses > lock_losses_prev;
         hwif_in.sys.IRQ_STATUS.sync_loss.hwset      = dl_stat.sync_losses > sync_losses_prev;
+        hwif_in.sys.IRQ_STATUS.ecc_uncorrectable.hwset = dbe_sum > dbe_prev;
         hwif_in.sys.BUILD_ID.build_id.next    = BUILD_ID;
 
         hwif_in.se.STATUS.busy.next             = se_stat.busy;
@@ -1098,7 +1129,8 @@ module hpdp_core
                ((hwif_out.sys.IRQ_STATUS.scene_done.value     && hwif_out.sys.IRQ_EN.scene_done.value) ||
                 (hwif_out.sys.IRQ_STATUS.error.value          && hwif_out.sys.IRQ_EN.error.value) ||
                 (hwif_out.sys.IRQ_STATUS.link_lock_loss.value && hwif_out.sys.IRQ_EN.link_lock_loss.value) ||
-                (hwif_out.sys.IRQ_STATUS.sync_loss.value      && hwif_out.sys.IRQ_EN.sync_loss.value));
+                (hwif_out.sys.IRQ_STATUS.sync_loss.value      && hwif_out.sys.IRQ_EN.sync_loss.value) ||
+                (hwif_out.sys.IRQ_STATUS.ecc_uncorrectable.value && hwif_out.sys.IRQ_EN.ecc_uncorrectable.value));
         gt_reset_all  <= rst_ctrl || hwif_out.lnk.CTRL.gt_reset.value;
         gt_reset_rx   <= hwif_out.lnk.CTRL.rx_reset.value;
         sfp_tx_enable <= {2{hwif_out.lnk.CTRL.tx_enable.value && !rst_ctrl}};

@@ -10,8 +10,10 @@
 // timestamps arrive on s_meta, one per scene in scene order (taken when the
 // scene entered the front end).
 //
-// Flags: bit 1 = a line was dropped (lines_dropped pulse) since the scene's
-// first packet header; bit 2 = RAW mode. The ground ORs them over the scene.
+// Flags: bit 0 = uncorrectable memory error in the scene (scene_ue, the flag
+// of the scene being packetized, scene_id; RAD-06); bit 1 = a line was dropped
+// (lines_dropped pulse) since the scene's first packet header; bit 2 = RAW
+// mode. The ground ORs them over the scene.
 //
 // Output: m_axis_tuser[0] first byte of a packet, tuser[1] packet is the last
 // of its scene (every byte), tlast last byte of a packet.
@@ -24,6 +26,7 @@ module space_packetizer import downlink_pkg::*; #(
     input  logic [$clog2(PKT_MAX):0] pkt_data,  // user bytes per packet, 1..PKT_MAX
     input  logic        raw_mode,
     input  logic        lines_dropped,
+    input  logic        scene_ue,               // uncorrectable error in scene scene_id
     input  logic        cnt_clr,                // clear packets / scenes
 
     input  logic [63:0] s_axis_tdata,           // first byte in [7:0]
@@ -43,7 +46,8 @@ module space_packetizer import downlink_pkg::*; #(
     input  logic        m_axis_tready,
 
     output logic [31:0] packets,
-    output logic [31:0] scenes
+    output logic [31:0] scenes,
+    output logic [15:0] scene_id                // scene being packetized (counts from reset)
 );
     localparam int LB = $clog2(PKT_MAX) + 1;    // packet length bits
 
@@ -144,7 +148,7 @@ module space_packetizer import downlink_pkg::*; #(
     logic [LB-1:0] left;                        // payload bytes still to send
     logic [7:0]    hdr [14];
     logic [13:0]   seq_count;
-    logic [15:0]   scene_id, pkt_index;
+    logic [15:0]   pkt_index;
     logic [23:0]   ts;
     logic          drop_flag;
 
@@ -198,7 +202,7 @@ module space_packetizer import downlink_pkg::*; #(
                 hdr[10] <= t[23:16];
                 hdr[11] <= t[15:8];
                 hdr[12] <= t[7:0];
-                hdr[13] <= {5'b00000, raw_mode, d, 1'b0};
+                hdr[13] <= {5'b00000, raw_mode, d, scene_ue};
                 busy   <= 1'b1;
                 in_hdr <= 1'b1;
                 hi     <= '0;
