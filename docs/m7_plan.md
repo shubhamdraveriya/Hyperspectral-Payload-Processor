@@ -7,9 +7,9 @@ RAD-07 are met and the fault-injection report is written.
 
 | # | State |
 |---|---|
-| 0 | Scene guard (`rtl/frontend/scene_guard.sv`, `tb_scene_guard`): regression passes; build met timing after pipelining the Nx·Ny·Nz product (WNS +0.175 ns). SYS-09 board re-run pending |
-| 1 | UltraRAM ECC (below): regression passes; build met timing (WNS +0.100 ns; 28.7 k LUT, 33.9 k FF, 32.5 BRAM36, 56 URAM): all 56 URAM288 have ECC on (encode on the write port, decode on the read port). Board test pending (needs the job/result v4 software) |
-| 2 | Uncorrectable errors flag the scenes and raise an interrupt (below): regression passes (65 tests) |
+| 0 | Scene guard (`rtl/frontend/scene_guard.sv`, `tb_scene_guard`): regression passes; build met timing after pipelining the Nx·Ny·Nz product (WNS +0.175 ns). SYS-09 board re-run 1 (below) found scene starts lost with unfilled lines: fixed in the corner turn (`tb_corner_turn`); re-run 2 pending |
+| 1 | UltraRAM ECC (below): regression passes; build met timing (WNS +0.100 ns; 28.7 k LUT, 33.9 k FF, 32.5 BRAM36, 56 URAM): all 56 URAM288 have ECC on (encode on the write port, decode on the read port). Board (build m7c, job/result v4, `run_m5.py --ecc`): single-bit errors in all three memories, 4 scenes 128×64×64: counts 1 / 4 / 4 as in simulation, capture and ground bit-exact |
+| 2 | Uncorrectable errors flag the scenes and raise an interrupt (below): regression passes. Board (m7c): double-bit error in table entry 4100, correction bypassed: `CAL_DBE` 256 (4 scenes × 64 lines, not written back), data bit-exact, all 4 scenes flagged "internal error" by the ground station (`hpdp_gs.py decode`) |
 
 ### Item 1: memory ECC (RAD-02)
 
@@ -34,6 +34,28 @@ RAD-07 are met and the fault-injection report is written.
   outputs stay bit-exact, counters table 1 (written back after the first read; without
   scrubbing it would be 25), corner turn 4, line buffer 4; the front-end tests check that no
   error is ever reported without injection.
+
+### Item 0: SYS-09 re-run 1 (scene guard build m7a)
+
+RAW mode, 234 scenes 512×256×150 at 76.8 Msamples/s: the link and the ground kept up
+(0 sync losses, 0 code errors), 55 927 of 59 904 lines dropped (SYS-09 shows drops), but
+28 852 of them were lost without a fill line, and when such a line was a scene's first
+line, the scene's first-of-scene marker was lost with it. The scene guard then counted
+the next scene's lines into the short scene: 217 compressor scenes for 234 sensor
+scenes, one timestamp queue overflow (the queue gained one entry per merge), and
+`hpdp_run` timed out waiting for scenes that no longer existed.
+
+Fix (commit e522551): the corner turn passes a lost line's first-of-scene marker to the
+next line it sends, so a scene start is only lost with a whole scene. `tb_corner_turn`
+checks it under sustained overload (471 of 900 lines lost, 155 of them first of a
+scene) and fails without the fix.
+
+Why so many lines are dropped (93 %, the link carries 93 % of the raw rate): in RAW
+mode a fill line or scene-guard padding costs as much downlink time as a real line, so
+the overload never clears; fill descriptors queue ahead of real lines and hold the two
+buffers, so most real lines find no free buffer. The requirement (lines dropped, counted)
+is met; making RAW mode keep more real lines (no fill lines when the compressor is
+bypassed) is left as a possible improvement.
 
 ### Item 2: uncorrectable errors (RAD-06)
 
