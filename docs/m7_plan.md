@@ -7,7 +7,7 @@ RAD-07 are met and the fault-injection report is written.
 
 | # | State |
 |---|---|
-| 0 | Scene guard (`rtl/frontend/scene_guard.sv`, `tb_scene_guard`): regression passes; build met timing after pipelining the Nx·Ny·Nz product (WNS +0.175 ns). SYS-09 board re-run 1 (below) found scene starts lost with unfilled lines: fixed in the corner turn (`tb_corner_turn`); re-run 2 pending |
+| 0 | Scene guard (`rtl/frontend/scene_guard.sv`, `tb_scene_guard`): regression passes; build met timing after pipelining the Nx·Ny·Nz product (WNS +0.175 ns). SYS-09 board re-run 1 (below) found scene starts lost with unfilled lines: fixed in the corner turn (`tb_corner_turn`); re-run 2 (m7d) keeps scene starts but loses whole scenes: RAW overload handling needs a decision (below) |
 | 1 | UltraRAM ECC (below): regression passes; build met timing (WNS +0.100 ns; 28.7 k LUT, 33.9 k FF, 32.5 BRAM36, 56 URAM): all 56 URAM288 have ECC on (encode on the write port, decode on the read port). Board (build m7c, job/result v4, `run_m5.py --ecc`): single-bit errors in all three memories, 4 scenes 128×64×64: counts 1 / 4 / 4 as in simulation, capture and ground bit-exact |
 | 2 | Uncorrectable errors flag the scenes and raise an interrupt (below): regression passes. Board (m7c): double-bit error in table entry 4100, correction bypassed: `CAL_DBE` 256 (4 scenes × 64 lines, not written back), data bit-exact, all 4 scenes flagged "internal error" by the ground station (`hpdp_gs.py decode`) |
 
@@ -56,6 +56,32 @@ the overload never clears; fill descriptors queue ahead of real lines and hold t
 buffers, so most real lines find no free buffer. The requirement (lines dropped, counted)
 is met; making RAW mode keep more real lines (no fill lines when the compressor is
 bypassed) is left as a possible improvement.
+
+### Item 0: SYS-09 re-run 2 (build m7d, marker fix) and the RAW overload decision
+
+Same run: the link and the ground clean again (0 sync losses, 0 code errors), the
+downlink busy with science data for the first ~60 s, then idle frames while
+`hpdp_run` waited. But 59 353 of 59 904 lines dropped (99.1 %), 55 814 of them without
+fill: 16 of the 234 scenes kept no line at all, so their starts merged into the next
+scene's; 218 scenes packetized, one timestamp queue overflow, and the run timed out.
+
+The cause is the cost model of RAW mode: a fill line, or the scene guard's padding of a
+short scene, costs as much downlink time as a real line (in compressed mode zeros cost
+almost nothing). With the input 7.5 % above the link, the queue never drains and the
+fill / padding traffic crowds out the real lines: now that every scene start is kept,
+every short scene is padded, which made it worse (99.1 % instead of 93 %).
+
+SYS-09 itself ("RAW mode shows line drops") is met; the questions are what RAW mode
+should deliver under overload and what `run_m5.py` should check:
+- (a) Accept: RAW mode is a demonstration that raw data exceeds the link. Change the
+  check to "lines dropped, link and ground clean, every scene that reaches the
+  compressor is complete"; let `hpdp_run` end a RAW run on inactivity instead of the
+  scene count.
+- (b) Drop whole scenes in RAW mode: once a line of a scene is dropped, drop the rest of
+  that scene (no fill lines, no padding); scenes that get through are complete and real,
+  and about 93 % of them would get through instead of < 1 % of the lines. Needs the
+  corner turn to cancel a partly sent scene, so the compressor side must be able to
+  abandon an image (or the decision is taken at the scene start from the queue state).
 
 ### Item 2: uncorrectable errors (RAD-06)
 
