@@ -14,6 +14,7 @@
 set tests {
     skid_buffer  tb_axis_skid_buffer  {}
     link         tb_link              {}
+    scene_guard  tb_scene_guard       {}
 }
 
 set repo  [file normalize [file join [file dirname [info script]] ..]]

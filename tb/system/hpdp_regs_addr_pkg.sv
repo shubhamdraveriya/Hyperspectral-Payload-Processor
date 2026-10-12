@@ -45,6 +45,8 @@ package hpdp_regs_addr_pkg;
     localparam logic [31:0] CT_LINES_OUT                     = 32'h30080;
     localparam logic [31:0] CT_DROPPED_LINES                 = 32'h30084;
     localparam logic [31:0] CT_UNFILLED_LINES                = 32'h30088;
+    localparam logic [31:0] CT_SCENES_PADDED                 = 32'h3008C;
+    localparam logic [31:0] CT_SAMPLES_PADDED                = 32'h30090;
     localparam logic [31:0] CMP_ID                           = 32'h40000;
     localparam logic [31:0] CMP_STATUS                       = 32'h40008;
     localparam logic [31:0] CMP_PRED                         = 32'h40040;

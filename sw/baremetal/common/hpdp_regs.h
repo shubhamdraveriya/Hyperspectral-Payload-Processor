@@ -356,6 +356,16 @@ typedef struct __attribute__ ((__packed__)) {
 #define COUNTER_DESC_27C8486F__COUNT_bp 0
 #define COUNTER_DESC_27C8486F__COUNT_bw 32
 
+// reg - counter_desc_87e40836
+#define COUNTER_DESC_87E40836__COUNT_bm 0xffffffff
+#define COUNTER_DESC_87E40836__COUNT_bp 0
+#define COUNTER_DESC_87E40836__COUNT_bw 32
+
+// reg - counter_desc_a84505df
+#define COUNTER_DESC_A84505DF__COUNT_bm 0xffffffff
+#define COUNTER_DESC_A84505DF__COUNT_bp 0
+#define COUNTER_DESC_A84505DF__COUNT_bw 32
+
 // regfile - hpdp_ct
 typedef struct __attribute__ ((__packed__)) {
     uint32_t ID;
@@ -364,6 +374,8 @@ typedef struct __attribute__ ((__packed__)) {
     uint32_t LINES_OUT;
     uint32_t DROPPED_LINES;
     uint32_t UNFILLED_LINES;
+    uint32_t SCENES_PADDED;
+    uint32_t SAMPLES_PADDED;
 } hpdp_ct_t;
 
 // reg - block_id_BLOCK_4
@@ -906,7 +918,7 @@ typedef struct __attribute__ ((__packed__)) {
     hpdp_rc_t rc;
     uint8_t RESERVED_20068_2ffff[0xff98];
     hpdp_ct_t ct;
-    uint8_t RESERVED_3008c_3ffff[0xff74];
+    uint8_t RESERVED_30094_3ffff[0xff6c];
     hpdp_cmp_t cmp;
     uint8_t RESERVED_40098_4ffff[0xff68];
     hpdp_pkt_t pkt;

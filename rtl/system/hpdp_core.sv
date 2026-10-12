@@ -2,7 +2,7 @@
 
 // HPDP programmable-logic core:
 //
-//   s_axis_dma (MM2S) --+--> sensor_frontend --> c123_core --+--> m_axis_cmp (S2MM, CAPTURE_CMP)
+//   s_axis_dma (MM2S) --+--> sensor_frontend --> scene_guard --> c123_core --+--> m_axis_cmp (S2MM, CAPTURE_CMP)
 //                       '--> calibration table                |
 //                                                             '--> space_packetizer --> aos_framer
 //       --> rs_encoder --> cadu_framer --> error_injector --> link_layer TX --> GTH (gt_tx*)
@@ -187,6 +187,7 @@ module hpdp_core
         logic [7:0]  tbl_done_seq;              // count of the last completed table command
         logic        cmp_busy, cmp_cfg_error;
         logic [31:0] scenes_done, samples_in, bytes_out, last_bytes, last_cycles, out_stalls;
+        logic [31:0] scenes_padded, samples_padded;
         dl_stat_t    dl;
     } sys_stat_t;
 
@@ -507,6 +508,25 @@ module hpdp_core
     );
 
     // ---------------------------------------------------------------------
+    // Scene guard: a scene cut short by unfilled lines is completed with
+    // zero samples, so the compressor ends it and the framing recovers
+    // ---------------------------------------------------------------------
+    logic [15:0] sg_tdata;
+    logic [1:0]  sg_tuser;
+    logic        sg_tlast, sg_tvalid, sg_tready;
+    logic [31:0] scenes_padded, samples_padded;
+
+    scene_guard u_guard (
+        .clk (clk_sys), .rst (rst_sys),
+        .nx (sys_cfg.fe.nx), .ny (sys_cfg.fe.ny), .nz (sys_cfg.fe.nz), .cnt_clr (ct_clr),
+        .s_tdata (fe_tdata), .s_tuser (fe_tuser), .s_tlast (fe_tlast),
+        .s_tvalid (fe_tvalid), .s_tready (fe_tready),
+        .m_tdata (sg_tdata), .m_tuser (sg_tuser), .m_tlast (sg_tlast),
+        .m_tvalid (sg_tvalid), .m_tready (sg_tready),
+        .padded_scenes (scenes_padded), .padded_samples (samples_padded)
+    );
+
+    // ---------------------------------------------------------------------
     // Compressor and its statistics (CMP-09)
     // ---------------------------------------------------------------------
     logic [63:0] c_tdata;
@@ -517,10 +537,10 @@ module hpdp_core
         .clk           (clk_sys),
         .rst           (rst_sys),
         .cfg           (sys_cfg.cmp),
-        .s_axis_tdata  (fe_tdata),
-        .s_axis_tuser  (fe_tuser[0]),
-        .s_axis_tvalid (fe_tvalid),
-        .s_axis_tready (fe_tready),
+        .s_axis_tdata  (sg_tdata),
+        .s_axis_tuser  (sg_tuser[0]),
+        .s_axis_tvalid (sg_tvalid),
+        .s_axis_tready (sg_tready),
         .m_axis_tdata  (c_tdata),
         .m_axis_tkeep  (c_tkeep),
         .m_axis_tlast  (c_tlast),
@@ -554,7 +574,7 @@ module hpdp_core
     assign m_axis_cmp_tlast  = c_tlast;
     assign m_axis_cmp_tvalid = v_cap;
 
-    wire in_fire  = fe_tvalid && fe_tready;
+    wire in_fire  = sg_tvalid && sg_tready;
     wire out_fire = c_tvalid && c_tready;
 
     logic [31:0] cycle;                     // free-running
@@ -580,7 +600,7 @@ module hpdp_core
             cycle <= cycle + 32'd1;
             if (in_fire) begin
                 samples_in <= sat_inc(samples_in);
-                if (fe_tuser[0]) begin
+                if (sg_tuser[0]) begin
                     start[in_idx] <= cycle;
                     in_idx        <= !in_idx;
                     cmp_busy      <= 1'b1;
@@ -594,7 +614,7 @@ module hpdp_core
                     last_cycles <= cycle - start[out_idx] + 32'd1;
                     out_idx     <= !out_idx;
                     scene_bytes <= '0;
-                    if (!(in_fire && fe_tuser[0]) && in_idx == !out_idx) cmp_busy <= 1'b0;
+                    if (!(in_fire && sg_tuser[0]) && in_idx == !out_idx) cmp_busy <= 1'b0;
                 end else begin
                     scene_bytes <= scene_bytes + 32'(keep_bytes);
                 end
@@ -887,6 +907,8 @@ module hpdp_core
         sys_stat_src.last_bytes      = last_bytes;
         sys_stat_src.last_cycles     = last_cycles;
         sys_stat_src.out_stalls      = out_stalls;
+        sys_stat_src.scenes_padded   = scenes_padded;
+        sys_stat_src.samples_padded  = samples_padded;
         sys_stat_src.dl              = dl_src;
     end
 
@@ -952,6 +974,8 @@ module hpdp_core
         hwif_in.ct.LINES_OUT.count.next         = sys_stat.fe.lines_out;
         hwif_in.ct.DROPPED_LINES.count.next     = sys_stat.fe.dropped_lines;
         hwif_in.ct.UNFILLED_LINES.count.next    = sys_stat.fe.unfilled_lines;
+        hwif_in.ct.SCENES_PADDED.count.next     = sys_stat.scenes_padded;
+        hwif_in.ct.SAMPLES_PADDED.count.next    = sys_stat.samples_padded;
 
         hwif_in.cmp.STATUS.busy.next            = sys_stat.cmp_busy;
         hwif_in.cmp.STATUS.cfg_error.next       = sys_stat.cmp_cfg_error;

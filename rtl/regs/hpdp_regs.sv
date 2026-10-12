@@ -300,6 +300,8 @@ module hpdp_regs (
             logic LINES_OUT;
             logic DROPPED_LINES;
             logic UNFILLED_LINES;
+            logic SCENES_PADDED;
+            logic SAMPLES_PADDED;
         } ct;
         struct {
             logic ID;
@@ -437,6 +439,8 @@ module hpdp_regs (
         decoded_reg_strb.ct.LINES_OUT = cpuif_req_masked & (cpuif_addr == 20'h30080) & !cpuif_req_is_wr;
         decoded_reg_strb.ct.DROPPED_LINES = cpuif_req_masked & (cpuif_addr == 20'h30084) & !cpuif_req_is_wr;
         decoded_reg_strb.ct.UNFILLED_LINES = cpuif_req_masked & (cpuif_addr == 20'h30088) & !cpuif_req_is_wr;
+        decoded_reg_strb.ct.SCENES_PADDED = cpuif_req_masked & (cpuif_addr == 20'h3008c) & !cpuif_req_is_wr;
+        decoded_reg_strb.ct.SAMPLES_PADDED = cpuif_req_masked & (cpuif_addr == 20'h30090) & !cpuif_req_is_wr;
         decoded_reg_strb.cmp.ID = cpuif_req_masked & (cpuif_addr == 20'h40000) & !cpuif_req_is_wr;
         decoded_reg_strb.cmp.STATUS = cpuif_req_masked & (cpuif_addr == 20'h40008) & !cpuif_req_is_wr;
         decoded_reg_strb.cmp.PRED = cpuif_req_masked & (cpuif_addr == 20'h40040);
@@ -3342,6 +3346,12 @@ module hpdp_regs (
         end
         if(rd_mux_addr == 20'h30088) begin
             readback_data_var[31:0] = hwif_in.ct.UNFILLED_LINES.count.next;
+        end
+        if(rd_mux_addr == 20'h3008c) begin
+            readback_data_var[31:0] = hwif_in.ct.SCENES_PADDED.count.next;
+        end
+        if(rd_mux_addr == 20'h30090) begin
+            readback_data_var[31:0] = hwif_in.ct.SAMPLES_PADDED.count.next;
         end
         if(rd_mux_addr == 20'h40000) begin
             readback_data_var[15:0] = 16'h100;

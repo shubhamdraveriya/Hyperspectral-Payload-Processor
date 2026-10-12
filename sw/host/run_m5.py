@@ -179,7 +179,7 @@ def write_xsdb(work, job, a, seconds):
         loads, reads, timeout = [], "", int(a.prbs + 120)
     else:
         loads = [("cal.bin", CAL_ADDR), ("raw.bin", RAW_ADDR)]
-        timeout = int(seconds * 3 + 60)
+        timeout = int(seconds * 2 + 120)        # hpdp_run gives up at 2 x seconds + 2 s
         reads = ""
         if job["mode"] & MODE_CAPTURE:
             reads += f"mrd -force -bin -file {{{w}/out.bin}} 0x{OUT_ADDR:08X} {job['out_capacity'] // 4}\n"
@@ -501,7 +501,11 @@ def main():
         packets, frames = downlink_model(expect, ny, a)
         print(f"downlink: {packets} packets in {len(frames)} science frames")
     job = downlink_job(work, raws, cal, dims, a, cfg, ctx, expect, len(frames))
-    seconds = len(raws) * a.repeat * ny * job["line_period"] / 100e6 + len(frames) * 1024 / 100e6
+    # as hpdp_run's own deadline (sensor time + the data at >= 50 MB/s), so a run that
+    # times out on the board still returns its result before XSDB gives up
+    total = len(raws) * a.repeat
+    seconds = total * ny * job["line_period"] / 100e6 + nx * ny * nz * total * 2 / 50e6 \
+        + len(frames) * 1024 / 100e6
 
     if a.fake_board:
         if long_run:

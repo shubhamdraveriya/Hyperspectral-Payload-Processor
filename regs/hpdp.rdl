@@ -250,6 +250,10 @@ regfile hpdp_ct {
     DROPPED_LINES -> desc = "Lines dropped (both buffers full) and sent as fill lines";
     counter UNFILLED_LINES @ 0x88;
     UNFILLED_LINES -> desc = "Dropped lines that could not be replaced by a fill line";
+    counter SCENES_PADDED @ 0x8C;
+    SCENES_PADDED -> desc = "Scenes cut short (by unfilled lines) and completed with zero samples before the compressor (scene guard)";
+    counter SAMPLES_PADDED @ 0x90;
+    SAMPLES_PADDED -> desc = "Zero samples added by the scene guard";
 };
 
 // ---------------------------------------------------------------------------

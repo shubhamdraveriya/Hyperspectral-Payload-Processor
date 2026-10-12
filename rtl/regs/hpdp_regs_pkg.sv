@@ -218,9 +218,27 @@ package hpdp_regs_pkg;
     } counter_desc_27c8486f__in_t;
 
     typedef struct {
+        logic [31:0] next;
+    } counter_desc_87e40836__count__in_t;
+
+    typedef struct {
+        counter_desc_87e40836__count__in_t count;
+    } counter_desc_87e40836__in_t;
+
+    typedef struct {
+        logic [31:0] next;
+    } counter_desc_a84505df__count__in_t;
+
+    typedef struct {
+        counter_desc_a84505df__count__in_t count;
+    } counter_desc_a84505df__in_t;
+
+    typedef struct {
         counter__in_t LINES_OUT;
         counter_desc_577bab39__in_t DROPPED_LINES;
         counter_desc_27c8486f__in_t UNFILLED_LINES;
+        counter_desc_87e40836__in_t SCENES_PADDED;
+        counter_desc_a84505df__in_t SAMPLES_PADDED;
     } hpdp_ct__in_t;
 
     typedef struct {

@@ -604,9 +604,10 @@ static void print_summary(const run_t *r, volatile result_t *o, u64 ticks)
                    total ? (int)(samples * r->depth / (8u * total)) : 0,
                    total ? (int)(samples * r->depth * 100u / (8u * total) % 100u) : 0);
     }
-    xil_printf("  emulator: %d lines, %d underruns, %d overruns, %d dropped; corner turn: %d lines, %d dropped\r\n",
+    xil_printf("  emulator: %d lines, %d underruns, %d overruns, %d dropped; corner turn: %d lines, %d dropped, "
+               "%d unfilled; scene guard: %d scenes padded\r\n",
                (int)o->se_lines, (int)o->se_underrun, (int)o->se_overruns, (int)o->se_dropped,
-               (int)o->ct_lines, (int)o->ct_dropped);
+               (int)o->ct_lines, (int)o->ct_dropped, (int)o->ct_unfilled, (int)rd(REG(ct.SCENES_PADDED)));
     xil_printf("  correction: %d clamped, %d replaced (last scene); compressor: %d cycles last scene, %d output stalls\r\n",
                (int)o->rc_clamped, (int)o->rc_replaced, (int)o->cmp_last_cycles, (int)o->cmp_stalls);
     if (r->mode & MODE_DOWNLINK) {
