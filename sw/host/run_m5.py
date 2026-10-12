@@ -369,6 +369,10 @@ def main():
     print(f"{len(raws)} scenes {nx}x{ny}x{nz} D={depth}, source {a.source}, "
           f"correction {'off' if a.no_correction else 'on'}: computing the expected output ...")
     expect = m4.expected_output(raws, cal, cfg, not a.no_correction)
+    # the corrected scenes, as references for the ground station (sw/ground/hpdp_gs.py --ref)
+    work.mkdir(parents=True, exist_ok=True)
+    for k, (fixed, _, _) in enumerate(expect):
+        f.write_scene(work / f"ref_{k:04d}.hpdp", fixed)
     packets, frames = downlink_model(expect, ny, a)
     print(f"downlink: {packets} packets in {len(frames)} science frames")
     job = downlink_job(work, raws, cal, dims, a, cfg, ctx, expect, len(frames))
