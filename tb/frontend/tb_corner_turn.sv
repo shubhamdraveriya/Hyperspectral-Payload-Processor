@@ -6,9 +6,13 @@
 // the input lines that were sent (in order): BIL -> BIP order of real lines,
 // zeros for fill lines, first-of-line / last markers, and the first-of-scene
 // marker on the first line sent of every scene (also when the scene's first
-// line was lost: the marker moves to the next line sent). Counters too.
+// line was lost: the marker moves to the next line sent), the scene timestamp of
+// every sample, the error mark (any input sample of the line marked, or a
+// double-bit error injected into a buffer word: the samples of that word), the
+// fill mark. Counters too.
 module tb_corner_turn;
     import frontend_pkg::*;
+    import ecc_pkg::*;
 
     localparam int NX = 4, NZ = 4, NY = 3, LINE = NX * NZ, PERIOD = LINE + 6, LINES = 900;
 
@@ -23,21 +27,26 @@ module tb_corner_turn;
         cfg.nz = 16'(NZ);
     end
 
-    logic        s_valid = 1'b0, s_last = 1'b0;
+    logic        s_valid = 1'b0, s_last = 1'b0, s_ue = 1'b0;
     logic [15:0] s_data = '0;
     logic [1:0]  s_user = '0;
     logic [15:0] m_tdata;
     logic [1:0]  m_tuser;
+    logic [23:0] m_ts;
+    logic        m_ue, m_fill;
     logic        m_tlast, m_tvalid, m_tready = 1'b0;
     logic [31:0] lines_out, dropped_lines, unfilled_lines;
+    ecc_inj_t    inj = '0;
+    ecc_evt_t    ecc;
 
     corner_turn #(.NX_MAX(8), .NZ_MAX(8)) dut (
         .clk, .rst, .cfg,
-        .s_valid, .s_data, .s_user, .s_last,
-        .m_axis_tdata (m_tdata), .m_axis_tuser (m_tuser), .m_axis_tlast (m_tlast),
+        .s_valid, .s_data, .s_user, .s_last, .s_ue,
+        .m_axis_tdata (m_tdata), .m_axis_tuser (m_tuser), .m_axis_scene_ts (m_ts),
+        .m_axis_ue (m_ue), .m_axis_fill (m_fill), .m_axis_tlast (m_tlast),
         .m_axis_tvalid (m_tvalid), .m_axis_tready (m_tready),
         .cnt_clr (1'b0), .lines_out, .dropped_lines, .unfilled_lines,
-        .inj ('0), .ecc ()
+        .inj, .ecc
     );
 
     // sample i of input line n (never 0, so fill lines are told apart)
@@ -57,6 +66,7 @@ module tb_corner_turn;
             s_data  <= value(n_in, c);
             s_user  <= {c == 0, c == 0 && n_in % NY == 0};
             s_last  <= (c == LINE - 1);
+            s_ue    <= (c < LINE) && n_in > 0 && ($urandom_range(0, 999) < 4);   // (line 0: buffer error only)
             if (pos_in == PERIOD - 1) begin
                 pos_in <= 0;
                 n_in   <= n_in + 1;
@@ -67,10 +77,14 @@ module tb_corner_turn;
     end
 
     // which input lines were sent (the corner turn's decision at their last sample)
-    typedef struct { int n; logic fill; logic mark; } line_t;
+    typedef struct { int n; logic fill; logic mark; logic ue; logic dbe; } line_t;
     line_t sent [$];
     int    last_marked = -1, n_lines = 0, n_fill = 0, n_lost = 0, n_lost_first = 0;
+    int    n_ue_lines = 0;
+    logic  in_ue = 1'b0, dbe_pending = 1'b1;      // the first line written takes the injected error
     always @(posedge clk) begin
+        if (!rst && s_valid)
+            in_ue = s_user[1] ? s_ue : (in_ue || s_ue);
         if (!rst && s_valid && s_last) begin
             int n;
             n = n_lines;
@@ -78,6 +92,10 @@ module tb_corner_turn;
                 line_t l;
                 l.n    = n;
                 l.fill = dut.dq_din.fill;
+                l.ue   = !l.fill && in_ue;
+                l.dbe  = !l.fill && dbe_pending;
+                if (l.dbe) dbe_pending = 1'b0;
+                if (l.ue) n_ue_lines++;
                 l.mark = (n / NY != last_marked);       // first line sent of its scene
                 if (l.mark) last_marked = n / NY;
                 if (l.fill) n_fill++;
@@ -97,11 +115,12 @@ module tb_corner_turn;
         m_tready <= ((cyc / 4000) % 2 == 0) ? ($urandom_range(0, 99) < 3) : ($urandom_range(0, 99) < 90);
     end
 
-    int got = 0, k = 0, errors = 0;
+    int got = 0, k = 0, errors = 0, n_dbe_samples = 0;
     always @(posedge clk) begin
         if (!rst && m_tvalid && m_tready) begin
             line_t l;
             logic [15:0] e;
+            logic ue;
             int x, z;
             if (got >= sent.size()) begin
                 errors++;
@@ -111,13 +130,18 @@ module tb_corner_turn;
                 x = k / NZ;
                 z = k % NZ;
                 e = l.fill ? 16'd0 : value(l.n, z * NX + x);
-                if (m_tdata !== e || m_tuser[1] !== (k == 0) || m_tlast !== (k == LINE - 1) ||
-                    m_tuser[0] !== (k == 0 && l.mark)) begin
+                // the injected double-bit error sits in buffer 0, word 0: BIL samples 0..3
+                ue = l.ue || (l.dbe && z * NX + x < 4);
+                // (data of the double-bit error word is corrupt: not compared)
+                if ((m_tdata !== e && !(l.dbe && z * NX + x < 4)) || m_tuser[1] !== (k == 0) || m_tlast !== (k == LINE - 1) ||
+                    m_tuser[0] !== (k == 0 && l.mark) || m_ts !== 24'(l.n / NY * NY) ||
+                    m_ue !== ue || m_fill !== l.fill) begin
                     errors++;
                     if (errors < 10)
-                        $display("  output line %0d (input %0d, fill %b, mark %b) sample %0d: data %04h user %b last %b, expected %04h",
-                                 got, l.n, l.fill, l.mark, k, m_tdata, m_tuser, m_tlast, e);
+                        $display("  output line %0d (input %0d, fill %b, mark %b) sample %0d: data %04h user %b last %b ts %0d ue %b fill %b, expected %04h ue %b",
+                                 got, l.n, l.fill, l.mark, k, m_tdata, m_tuser, m_tlast, m_ts, m_ue, m_fill, e, ue);
                 end
+                if (m_ue && !l.ue) n_dbe_samples++;
             end
             if (k == LINE - 1) begin
                 k = 0;
@@ -131,6 +155,11 @@ module tb_corner_turn;
     initial begin
         repeat (10) @(posedge clk);
         rst <= 1'b0;
+        // a double-bit error into buffer 0, word 0 (at the first line written)
+        @(posedge clk);
+        inj <= '{arm: 1'b1, dbe: 1'b1, addr: 18'd0};
+        @(posedge clk);
+        inj <= '0;
         while (!(n_lines == LINES && got == sent.size())) @(posedge clk);
         repeat (20) @(posedge clk);
         if (lines_out != sent.size() || dropped_lines != n_fill + n_lost || unfilled_lines != n_lost) begin
@@ -138,13 +167,14 @@ module tb_corner_turn;
             $display("  counters: lines_out %0d dropped %0d unfilled %0d, expected %0d %0d %0d",
                      lines_out, dropped_lines, unfilled_lines, sent.size(), n_fill + n_lost, n_lost);
         end
-        if (n_fill == 0 || n_lost_first == 0) begin
+        if (n_fill == 0 || n_lost_first == 0 || n_ue_lines == 0 || n_dbe_samples != 4) begin
             errors++;
-            $display("  scenario not covered: %0d fill lines, %0d lost first lines", n_fill, n_lost_first);
+            $display("  scenario not covered: %0d fill lines, %0d lost first lines, %0d marked lines, %0d buffer error samples",
+                     n_fill, n_lost_first, n_ue_lines, n_dbe_samples);
         end
         if (errors == 0)
-            $display("PASS: tb_corner_turn, %0d lines in, %0d sent (%0d fill), %0d lost (%0d of them first of a scene)",
-                     LINES, sent.size(), n_fill, n_lost, n_lost_first);
+            $display("PASS: tb_corner_turn, %0d lines in, %0d sent (%0d fill, %0d marked), %0d lost (%0d of them first of a scene), buffer error on %0d samples",
+                     LINES, sent.size(), n_fill, n_ue_lines, n_lost, n_lost_first, n_dbe_samples);
         else
             $display("FAIL: tb_corner_turn: %0d errors", errors);
         $finish;

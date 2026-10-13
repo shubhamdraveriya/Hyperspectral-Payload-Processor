@@ -42,6 +42,8 @@ module tb_frontend;
     logic [15:0] se_data, rc_data, ct_tdata;
     logic [1:0]  se_user, rc_user, ct_tuser;
     logic        ct_tlast, ct_tvalid, ct_tready;
+    logic [23:0] ct_scene_ts;
+    logic        ct_ue, ct_fill;
     logic [23:0] line_ts, scene_ts;
     logic [31:0] lines_emitted, scenes_started, underruns, overruns, se_dropped;
     logic [31:0] clamped, replaced, ct_lines, ct_dropped, ct_unfilled;
@@ -85,6 +87,9 @@ module tb_frontend;
         .s_tbl_tready  (tbl_tready),
         .m_axis_tdata  (ct_tdata),
         .m_axis_tuser  (ct_tuser),
+        .m_axis_scene_ts (ct_scene_ts),
+        .m_axis_ue     (ct_ue),
+        .m_axis_fill   (ct_fill),
         .m_axis_tlast  (ct_tlast),
         .m_axis_tvalid (ct_tvalid),
         .m_axis_tready (ct_tready),
@@ -268,6 +273,15 @@ module tb_frontend;
                 ct_err++;
                 if (ct_err <= 5)
                     $display("  CT sample %0d: tags %03b, expected %03b", ct_i, {ct_tlast, ct_tuser}, tags(ct_i));
+            end
+            // the sample's scene timestamp (lines before its scene); no error mark; fill
+            // marks only on the zeros of fill lines
+            if (ct_scene_ts !== 24'(ct_i / scene_len * fe.ny) || ct_ue !== 1'b0 ||
+                ct_fill === 1'bx || (ct_fill && (!drop_test || ct_tdata !== 16'd0))) begin
+                ct_err++;
+                if (ct_err <= 5)
+                    $display("  CT sample %0d: scene timestamp %0d (expected %0d), ue %b, fill %b",
+                             ct_i, ct_scene_ts, ct_i / scene_len * fe.ny, ct_ue, ct_fill);
             end
             if (ct_i % line_len == line_len - 1) begin
                 if (!m && zr && drop_test) begin

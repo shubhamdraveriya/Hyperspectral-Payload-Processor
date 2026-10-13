@@ -19,8 +19,8 @@ module tb_scene_guard;
 
     scene_guard dut (
         .clk, .rst, .nx (16'(NX)), .ny (16'(NY)), .nz (16'(NZ)), .cnt_clr (1'b0),
-        .s_tdata, .s_tuser, .s_tlast, .s_tvalid, .s_tready,
-        .m_tdata, .m_tuser, .m_tlast, .m_tvalid, .m_tready,
+        .s_tdata, .s_tuser, .s_scene_ts ('0), .s_ue (1'b0), .s_fill (1'b0), .s_tlast, .s_tvalid, .s_tready,
+        .m_tdata, .m_tuser, .m_scene_ts (), .m_ue (), .m_fill (), .m_tlast, .m_tvalid, .m_tready,
         .padded_scenes, .padded_samples
     );
 

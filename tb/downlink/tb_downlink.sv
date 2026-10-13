@@ -34,7 +34,7 @@ module tb_downlink;
 
     space_packetizer #(.PKT_MAX(2048)) u_pkt (
         .clk, .rst,
-        .apid (11'(apid)), .pkt_data (12'(pkt_data)), .raw_mode (1'b0), .lines_dropped (1'b0),
+        .apid (11'(apid)), .pkt_data (12'(pkt_data)), .raw_mode (1'b0), .scene_ld (1'b0),
         .scene_ue (1'b0), .cnt_clr (1'b0),
         .s_axis_tdata (c_tdata), .s_axis_tkeep (c_tkeep), .s_axis_tlast (c_tlast),
         .s_axis_tvalid (c_tvalid), .s_axis_tready (c_tready),

@@ -10,10 +10,10 @@
 // timestamps arrive on s_meta, one per scene in scene order (taken when the
 // scene entered the front end).
 //
-// Flags: bit 0 = uncorrectable memory error in the scene (scene_ue, the flag
-// of the scene being packetized, scene_id; RAD-06); bit 1 = a line was dropped
-// (lines_dropped pulse) since the scene's first packet header; bit 2 = RAW
-// mode. The ground ORs them over the scene.
+// Flags: bit 0 = uncorrectable memory error in the scene (scene_ue; RAD-06),
+// bit 1 = lines dropped in the scene (scene_ld), both the flags of the scene
+// being packetized (scene_id), which may still be set while it is sent; bit 2 =
+// RAW mode. The ground ORs them over the scene.
 //
 // Output: m_axis_tuser[0] first byte of a packet, tuser[1] packet is the last
 // of its scene (every byte), tlast last byte of a packet.
@@ -25,7 +25,7 @@ module space_packetizer import downlink_pkg::*; #(
     input  logic [10:0] apid,
     input  logic [$clog2(PKT_MAX):0] pkt_data,  // user bytes per packet, 1..PKT_MAX
     input  logic        raw_mode,
-    input  logic        lines_dropped,
+    input  logic        scene_ld,               // lines dropped in scene scene_id
     input  logic        scene_ue,               // uncorrectable error in scene scene_id
     input  logic        cnt_clr,                // clear packets / scenes
 
@@ -150,7 +150,6 @@ module space_packetizer import downlink_pkg::*; #(
     logic [13:0]   seq_count;
     logic [15:0]   pkt_index;
     logic [23:0]   ts;
-    logic          drop_flag;
 
     wire first_pkt = (pkt_index == 16'd0);
     wire start     = !busy && !dq_empty && (!first_pkt || s_meta_tvalid);
@@ -169,26 +168,19 @@ module space_packetizer import downlink_pkg::*; #(
             seq_count     <= '0;
             scene_id      <= '0;
             pkt_index     <= '0;
-            drop_flag     <= 1'b0;
             packets       <= '0;
             scenes        <= '0;
         end else begin
-            if (lines_dropped) drop_flag <= 1'b1;
             if (advance) m_axis_tvalid <= 1'b0;
 
             if (start) begin
                 logic [LB-1:0] len;
                 logic [15:0]   dlen;
                 logic [23:0]   t;
-                logic          d;
                 len  = dq_dout[LB-1:0];
                 dlen = 16'(len) + 16'(SECONDARY_HDR - 1);
                 t    = first_pkt ? s_meta_tdata : ts;
-                d    = first_pkt ? lines_dropped : (drop_flag || lines_dropped);
-                if (first_pkt) begin
-                    ts        <= s_meta_tdata;
-                    drop_flag <= lines_dropped;
-                end
+                if (first_pkt) ts <= s_meta_tdata;
                 hdr[0]  <= {3'b000, 1'b0, 1'b1, apid[10:8]};
                 hdr[1]  <= apid[7:0];
                 hdr[2]  <= {dq_dout[LB], first_pkt, seq_count[13:8]};
@@ -202,7 +194,7 @@ module space_packetizer import downlink_pkg::*; #(
                 hdr[10] <= t[23:16];
                 hdr[11] <= t[15:8];
                 hdr[12] <= t[7:0];
-                hdr[13] <= {5'b00000, raw_mode, d, scene_ue};
+                hdr[13] <= {5'b00000, raw_mode, scene_ld, scene_ue};
                 busy   <= 1'b1;
                 in_hdr <= 1'b1;
                 hi     <= '0;

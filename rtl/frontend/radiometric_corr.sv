@@ -53,6 +53,8 @@ module radiometric_corr import frontend_pkg::*, ecc_pkg::*; #(
     output logic [15:0]  m_data,
     output logic [1:0]   m_user,
     output logic         m_last,
+    output logic         m_ue,              // the sample (or a neighbour it was replaced
+                                            // from) had an uncorrectable table entry (RAD-06)
 
     input  tbl_cmd_t     tbl_cmd,
     output logic [32:0]  tbl_rdata,         // {bad, gain, dark}
@@ -207,6 +209,7 @@ module radiometric_corr import frontend_pkg::*, ecc_pkg::*; #(
         logic [1:0]  user;
         logic        last;
         logic        first_x, last_x;
+        logic        ue;                // uncorrectable table entry
     } tag_t;
 
     // delay line alongside the table read; stage TL-1 meets the table data
@@ -233,7 +236,7 @@ module radiometric_corr import frontend_pkg::*, ecc_pkg::*; #(
             end
             tbl_done <= dbg_wr_go || dr[TL - 1];
         end
-        tr[0] <= '{raw: s_data, user: s_user, last: s_last, first_x: x0 == 16'd0, last_x: last_x};
+        tr[0] <= '{raw: s_data, user: s_user, last: s_last, first_x: x0 == 16'd0, last_x: last_x, ue: 1'b0};
         lr[0] <= tbl_raddr[0];
         ar[0] <= tbl_raddr[EB-1:1];
         for (int i = 1; i < TL; i++) begin
@@ -301,6 +304,7 @@ module radiometric_corr import frontend_pkg::*, ecc_pkg::*; #(
 
         // S3
         t3    <= t2;
+        t3.ue <= v2 && |bank_dbe;       // the read of this sample's entry
         diff3 <= $signed({1'b0, t2.raw}) - $signed({1'b0, entry[15:0]});
         gain3 <= entry[31:16];
         good3 <= !entry[32];
@@ -357,6 +361,7 @@ module radiometric_corr import frontend_pkg::*, ecc_pkg::*; #(
             if (out_fire) begin
                 m_user <= h.user;
                 m_last <= h.last;
+                m_ue   <= h.ue || (!h.last_x && v6 && t6.ue);
                 m_data <= hg       ? hc :
                           lg && rg ? avg[15:0] :
                           lg       ? pc :

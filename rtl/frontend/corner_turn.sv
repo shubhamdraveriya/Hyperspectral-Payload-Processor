@@ -15,11 +15,19 @@
 // (SYS-05). If the descriptor queue is full too, the line is lost without fill
 // (counted separately; the scene guard after the corner turn pads the scene).
 // A lost line that started a scene passes its first-of-scene marker on to the
-// next line sent, so no scene start is lost (unless a whole scene is): the
-// compressor sees every scene, and scene IDs and timestamps stay aligned.
+// next line sent, so no scene start is lost unless a whole scene is.
+//
+// Every line carries, through its descriptor, its scene's timestamp (the number
+// of lines that came in before the scene's first line, as the sensor emulator's
+// scene timestamp) and an uncorrectable-memory-error mark (RAD-06): set if any
+// sample of the line came with s_ue (calibration table), or per sample if its
+// buffer word read back uncorrectable. A whole scene lost thus takes its
+// timestamp with it, and errors stay with the scene they hit.
 //
 // Output: tuser[0] first sample of a scene, tuser[1] first sample of a line,
-// tlast last sample of a line. cfg must be static while lines flow.
+// tlast last sample of a line; m_axis_scene_ts, m_axis_ue and m_axis_fill (a
+// sample of a fill line) with every sample.
+// cfg must be static while lines flow.
 module corner_turn import frontend_pkg::*, ecc_pkg::*; #(
     parameter int NX_MAX = 512,
     parameter int NZ_MAX = 256
@@ -32,9 +40,13 @@ module corner_turn import frontend_pkg::*, ecc_pkg::*; #(
     input  logic [15:0] s_data,
     input  logic [1:0]  s_user,         // [0] first sample of a scene, [1] first of a line
     input  logic        s_last,
+    input  logic        s_ue,           // uncorrectable table error on this sample
 
     output logic [15:0] m_axis_tdata,
     output logic [1:0]  m_axis_tuser,
+    output logic [23:0] m_axis_scene_ts,
+    output logic        m_axis_ue,
+    output logic        m_axis_fill,
     output logic        m_axis_tlast,
     output logic        m_axis_tvalid,
     input  logic        m_axis_tready,
@@ -53,9 +65,11 @@ module corner_turn import frontend_pkg::*, ecc_pkg::*; #(
     localparam int RL = 4;              // buffer read latency (UltraRAM cascade pipelining)
 
     typedef struct packed {
-        logic fill;                     // dropped line: send zeros
-        logic buffer;
-        logic scene;                    // first line of a scene
+        logic        fill;              // dropped line: send zeros
+        logic        buffer;
+        logic        scene;             // first line of a scene
+        logic        ue;                // uncorrectable table error in the line
+        logic [23:0] ts;                // the line's scene timestamp
     } desc_t;
 
     logic [1:0] full;                   // buffer holds a line not yet read out
@@ -67,12 +81,16 @@ module corner_turn import frontend_pkg::*, ecc_pkg::*; #(
     logic          wr_on, wr_drop, wr_scene;
     logic          scene_lost;          // a lost line started a scene: mark the next one sent
     logic [EB-1:0] wcnt;
+    logic [23:0]   lines_in, cur_ts;    // lines come in; timestamp of the current scene
+    logic          line_ue;             // table error seen in the line so far
 
     wire           line_start = s_valid && s_user[1];
     wire           wr_now     = s_valid && (line_start ? !full[wb] : wr_on);
     wire           drop_now   = s_valid && (line_start ?  full[wb] : wr_drop);
     wire [EB-1:0]  widx       = line_start ? '0 : wcnt;
     wire           scene_now  = line_start ? s_user[0] : wr_scene;
+    wire [23:0]    ts_now     = (line_start && s_user[0]) ? lines_in : cur_ts;
+    wire           ue_now     = s_ue || (!line_start && line_ue);
 
     logic  dq_push, dq_pop, dq_empty;
     desc_t dq_din, dq_dout;
@@ -80,13 +98,14 @@ module corner_turn import frontend_pkg::*, ecc_pkg::*; #(
 
     always_comb begin
         dq_push = 1'b0;
-        dq_din  = '{fill: 1'b0, buffer: wb, scene: scene_now || scene_lost};
+        dq_din  = '{fill: 1'b0, buffer: wb, scene: scene_now || scene_lost, ue: ue_now, ts: ts_now};
         if (wr_now && s_last) begin
             dq_push = 1'b1;
         end else if (drop_now && s_last && dq_count <= DQ - 3) begin
             // keep room for the two buffers' descriptors
             dq_push     = 1'b1;
             dq_din.fill = 1'b1;
+            dq_din.ue   = 1'b0;             // zeros, not the corrupted data
         end
     end
 
@@ -94,14 +113,19 @@ module corner_turn import frontend_pkg::*, ecc_pkg::*; #(
         if (rst) begin
             wb <= 1'b0;
             {wr_on, wr_drop, scene_lost} <= '0;
+            lines_in <= '0;
+            cur_ts   <= '0;
             dropped_lines  <= '0;
             unfilled_lines <= '0;
         end else if (s_valid) begin
-            wcnt <= widx + 1'b1;
+            wcnt    <= widx + 1'b1;
+            line_ue <= ue_now;
             if (line_start) begin
                 wr_on    <= !full[wb];
                 wr_drop  <=  full[wb];
                 wr_scene <= s_user[0];
+                lines_in <= lines_in + 24'd1;
+                cur_ts   <= ts_now;
             end
             if (s_last) begin
                 wr_on      <= 1'b0;
@@ -207,7 +231,7 @@ module corner_turn import frontend_pkg::*, ecc_pkg::*; #(
         .wlast (s_last),
         .waddr ({wb, widx}),
         .wdata (s_data),
-        .re    (issue),
+        .re    (issue && !rd.fill),
         .raddr ({rd.buffer, ra}),
         .rdata (rdata),
         .inj   (inj),
@@ -215,9 +239,11 @@ module corner_turn import frontend_pkg::*, ecc_pkg::*; #(
     );
 
     typedef struct packed {
-        logic       fill;
-        logic [1:0] user;
-        logic       last;
+        logic        fill;
+        logic [1:0]  user;
+        logic        last;
+        logic        ue;
+        logic [23:0] ts;
     } rtag_t;
 
     logic  vp [RL];
@@ -236,18 +262,20 @@ module corner_turn import frontend_pkg::*, ecc_pkg::*; #(
             for (int i = 1; i < RL; i++) vp[i] <= vp[i - 1];
             inflight <= inflight + issue - v_out;
         end
-        gp[0] <= '{fill: rd.fill, user: {first, first && rd.scene}, last: rd_end};
+        gp[0] <= '{fill: rd.fill, user: {first, first && rd.scene}, last: rd_end, ue: rd.ue, ts: rd.ts};
         for (int i = 1; i < RL; i++) gp[i] <= gp[i - 1];
     end
 
-    // Output FIFO (credit-based: never written when full) and register slice
+    // Output FIFO (credit-based: never written when full) and register slice;
+    // a sample is marked uncorrectable by its line (table) or its own word (buffer)
     logic        oq_empty, oq_rd, sk_ready;
-    logic [18:0] oq_dout;
+    logic [44:0] oq_dout;
+    wire         ue_out = !g_out.fill && (g_out.ue || ecc.dbe);
 
-    sync_fifo #(.WIDTH(19), .DEPTH(OQ)) u_out (
+    sync_fifo #(.WIDTH(45), .DEPTH(OQ)) u_out (
         .clk   (clk),
         .rst   (rst),
-        .din   ({g_out.last, g_out.user, g_out.fill ? 16'd0 : rdata}),
+        .din   ({g_out.ts, g_out.fill, ue_out, g_out.last, g_out.user, g_out.fill ? 16'd0 : rdata}),
         .wr_en (v_out),
         .rd_en (oq_rd),
         .dout  (oq_dout),
@@ -258,16 +286,16 @@ module corner_turn import frontend_pkg::*, ecc_pkg::*; #(
 
     assign oq_rd = !oq_empty && sk_ready;
 
-    axis_skid_buffer #(.DATA_W(16), .USER_W(2)) u_skid (
+    axis_skid_buffer #(.DATA_W(16), .USER_W(28)) u_skid (
         .clk      (clk),
         .rst      (rst),
         .s_tdata  (oq_dout[15:0]),
-        .s_tuser  (oq_dout[17:16]),
+        .s_tuser  ({oq_dout[44:19], oq_dout[17:16]}),
         .s_tlast  (oq_dout[18]),
         .s_tvalid (!oq_empty),
         .s_tready (sk_ready),
         .m_tdata  (m_axis_tdata),
-        .m_tuser  (m_axis_tuser),
+        .m_tuser  ({m_axis_scene_ts, m_axis_fill, m_axis_ue, m_axis_tuser}),
         .m_tlast  (m_axis_tlast),
         .m_tvalid (m_axis_tvalid),
         .m_tready (m_axis_tready)

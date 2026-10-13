@@ -509,8 +509,8 @@ module hpdp_core
     logic [1:0]  fe_tuser;
     logic        fe_tlast, fe_tvalid, fe_tready;
     fe_status_t  fe_stat;
-    logic        fe_scene_start;
     logic [23:0] fe_scene_ts;
+    logic        fe_ue, fe_fill;
     ecc_evt_t    ecc [3];                   // ECC events: table, corner turn, line buffer
 
     assign s_axis_dma_tready = to_table ? 1'b1 : se_dma_tready;
@@ -543,8 +543,9 @@ module hpdp_core
         .m_axis_tready  (fe_tready),
         .se_status      (sen_stat_src.se),
         .fe_status      (fe_stat),
-        .scene_start    (fe_scene_start),
-        .scene_ts       (fe_scene_ts)
+        .m_axis_scene_ts (fe_scene_ts),
+        .m_axis_ue      (fe_ue),
+        .m_axis_fill    (fe_fill)
     );
 
     // ---------------------------------------------------------------------
@@ -553,15 +554,18 @@ module hpdp_core
     // ---------------------------------------------------------------------
     logic [15:0] sg_tdata;
     logic [1:0]  sg_tuser;
+    logic [23:0] sg_scene_ts;
+    logic        sg_ue, sg_fill;
     logic        sg_tlast, sg_tvalid, sg_tready;
     logic [31:0] scenes_padded, samples_padded;
 
     scene_guard u_guard (
         .clk (clk_sys), .rst (rst_sys),
         .nx (sys_cfg.fe.nx), .ny (sys_cfg.fe.ny), .nz (sys_cfg.fe.nz), .cnt_clr (ct_clr),
-        .s_tdata (fe_tdata), .s_tuser (fe_tuser), .s_tlast (fe_tlast),
-        .s_tvalid (fe_tvalid), .s_tready (fe_tready),
-        .m_tdata (sg_tdata), .m_tuser (sg_tuser), .m_tlast (sg_tlast),
+        .s_tdata (fe_tdata), .s_tuser (fe_tuser), .s_scene_ts (fe_scene_ts), .s_ue (fe_ue),
+        .s_fill (fe_fill), .s_tlast (fe_tlast), .s_tvalid (fe_tvalid), .s_tready (fe_tready),
+        .m_tdata (sg_tdata), .m_tuser (sg_tuser), .m_scene_ts (sg_scene_ts), .m_ue (sg_ue),
+        .m_fill (sg_fill), .m_tlast (sg_tlast),
         .m_tvalid (sg_tvalid), .m_tready (sg_tready),
         .padded_scenes (scenes_padded), .padded_samples (samples_padded)
     );
@@ -693,32 +697,27 @@ module hpdp_core
     dl_stat_t dl_src;                       // downlink and ground counters (clk_sys)
     assign dl = sys_cfg.dl;
 
-    // scene start timestamps, queued at the front end for the packetizer
+    // Scene start timestamps for the packetizer, queued as each scene enters the
+    // compressor (each line brings its scene's timestamp through the corner turn,
+    // so a scene lost whole takes its timestamp with it). Scenes are numbered
+    // here as the packetizer's scene IDs (counted while the downlink is on).
+    wire         sg_first  = in_fire && sg_tuser[0] && dl.downlink;
+    wire         meta_push = sg_first;
     logic [23:0] meta_ts;
     logic        meta_empty, meta_full, meta_rd;
     logic [31:0] ts_overflows;
-    wire         meta_push = fe_scene_start && dl.downlink;
 
     sync_fifo #(.WIDTH(24), .DEPTH(16)) u_meta (
         .clk (clk_sys), .rst (rst_sys),
-        .din (fe_scene_ts), .wr_en (meta_push && !meta_full),
+        .din (sg_scene_ts), .wr_en (meta_push && !meta_full),
         .rd_en (meta_rd), .dout (meta_ts), .empty (meta_empty), .full (meta_full), .count ()
     );
 
-    // a line dropped by the corner turn (packet flag, SPEC 6.5)
-    logic [31:0] dropped_prev;
-    logic        line_dropped;
     always_ff @(posedge clk_sys) begin
-        if (rst_sys) begin
-            dropped_prev <= '0;
-            line_dropped <= 1'b0;
+        if (rst_sys || pkt_clr)
             ts_overflows <= '0;
-        end else begin
-            dropped_prev <= fe_stat.dropped_lines;
-            line_dropped <= fe_stat.dropped_lines > dropped_prev;
-            if (meta_push && meta_full) ts_overflows <= sat_inc(ts_overflows);
-            if (pkt_clr) ts_overflows <= '0;
-        end
+        else if (meta_push && meta_full)
+            ts_overflows <= sat_inc(ts_overflows);
     end
     assign dl_src.ts_overflows = ts_overflows;
 
@@ -731,27 +730,33 @@ module hpdp_core
     logic        k_tlast, k_tvalid, k_tready;
     logic        e_tlast, e_tvalid, e_tready;
 
-    // An uncorrectable memory error (RAD-06) flags every scene in flight between
-    // the front end and the end of its packetization: the scene whose data it hit
-    // is among them (with at most a neighbour). Scene numbers count the scenes
-    // queued for the packetizer (meta_push), as its scene_id does; 32 flags
-    // cover the 17 scenes that can be in flight (16 queued, 1 being sent).
-    logic [15:0] fe_scenes, pk_scene;
-    logic [31:0] ue_flag;
-    wire         ue_now   = ecc[0].dbe || ecc[1].dbe || ecc[2].dbe;
-    wire  [5:0]  inflight = 6'(fe_scenes - pk_scene);
+    // Scene flags for the packet headers (SPEC 6.5), per scene from the
+    // compressor input to the end of its packetization: uncorrectable memory
+    // error (RAD-06) and lines dropped. Calibration table and corner-turn errors
+    // come marked on the samples they hit, fill lines and scene-guard padding as
+    // fill; line-buffer errors happen inside the compressor and flag every scene
+    // between its input and the packetizer. 32 flags cover the scenes in flight.
+    logic [15:0] cmp_scenes, pk_scene;      // scenes into the compressor; being packetized
+    logic [31:0] ue_flag, ld_flag;
+    wire  [4:0]  cur      = sg_first ? cmp_scenes[4:0] : cmp_scenes[4:0] - 5'd1;
+    wire  [5:0]  inflight = 6'(cmp_scenes - pk_scene);
 
     always_ff @(posedge clk_sys) begin
         if (rst_sys) begin
-            fe_scenes <= '0;
-            ue_flag   <= '0;
+            cmp_scenes <= '0;
+            ue_flag    <= '0;
+            ld_flag    <= '0;
         end else begin
-            if (ue_now)
+            if (ecc[2].dbe)
                 for (int j = 0; j < 32; j++)
                     if (6'(5'(j) - pk_scene[4:0]) < inflight) ue_flag[j] <= 1'b1;
-            if (meta_push) begin
-                ue_flag[fe_scenes[4:0]] <= ue_now;
-                fe_scenes <= fe_scenes + 16'd1;
+            if (sg_first) begin
+                ue_flag[cur] <= sg_ue;
+                ld_flag[cur] <= sg_fill;
+                cmp_scenes   <= cmp_scenes + 16'd1;
+            end else if (in_fire) begin
+                if (sg_ue)   ue_flag[cur] <= 1'b1;
+                if (sg_fill) ld_flag[cur] <= 1'b1;
             end
         end
     end
@@ -759,7 +764,7 @@ module hpdp_core
     space_packetizer #(.PKT_MAX(2048)) u_pkt (
         .clk (clk_sys), .rst (rst_sys),
         .apid (dl.apid), .pkt_data (dl.pkt_data), .raw_mode (sys_cfg.cmp.raw),
-        .lines_dropped (line_dropped), .scene_ue (ue_flag[pk_scene[4:0]]), .cnt_clr (pkt_clr),
+        .scene_ld (ld_flag[pk_scene[4:0]]), .scene_ue (ue_flag[pk_scene[4:0]]), .cnt_clr (pkt_clr),
         .s_axis_tdata (c_tdata), .s_axis_tkeep (c_tkeep), .s_axis_tlast (c_tlast),
         .s_axis_tvalid (v_dl), .s_axis_tready (pk_tready),
         .s_meta_tdata (meta_ts), .s_meta_tvalid (!meta_empty), .s_meta_tready (meta_rd),

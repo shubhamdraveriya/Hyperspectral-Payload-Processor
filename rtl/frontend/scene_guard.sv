@@ -15,8 +15,9 @@
 // it sends, so a scene start is only missed when a whole scene is lost (its
 // samples are then counted into the scene before, as the compressor does).
 //
-// Stream: tdata[15:0], tuser[0] first sample of a scene; tuser[1] and tlast pass
-// through (zero on padding samples: the compressor does not use them).
+// Stream: tdata[15:0], tuser[0] first sample of a scene; tuser[1], tlast, the
+// scene timestamp, the uncorrectable-error mark and the fill mark pass through
+// (padding samples: zero, and marked as fill: lines were dropped).
 module scene_guard (
     input  logic        clk,
     input  logic        rst,
@@ -25,12 +26,18 @@ module scene_guard (
 
     input  logic [15:0] s_tdata,
     input  logic [1:0]  s_tuser,
+    input  logic [23:0] s_scene_ts,
+    input  logic        s_ue,
+    input  logic        s_fill,
     input  logic        s_tlast,
     input  logic        s_tvalid,
     output logic        s_tready,
 
     output logic [15:0] m_tdata,
     output logic [1:0]  m_tuser,
+    output logic [23:0] m_scene_ts,
+    output logic        m_ue,
+    output logic        m_fill,
     output logic        m_tlast,
     output logic        m_tvalid,
     input  logic        m_tready,
@@ -58,6 +65,9 @@ module scene_guard (
     assign m_tdata  = pad ? 16'd0 : s_tdata;
     assign m_tuser  = pad ? 2'b00 : s_tuser;
     assign m_tlast  = pad ? 1'b0  : s_tlast;
+    assign m_ue     = pad ? 1'b0  : s_ue;
+    assign m_fill   = pad ? 1'b1  : s_fill;
+    assign m_scene_ts = s_scene_ts;
 
     wire fire = m_tvalid && m_tready;
     wire done = (n + 40'd1 >= total);   // this sample completes the scene
