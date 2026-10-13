@@ -367,12 +367,16 @@ def verify_long_run(work, job, a, dims, n_scenes):
           f"link: {r['lnk_code_errors']} code errors, {r['lnk_lock_losses']} lock losses, "
           f"{r['lnk_rx_overflows']} RX overflows")
     check_ecc(r, a, problems)
+    # RAW mode (SYS-09) overloads the link on purpose: lines are dropped, and under
+    # heavy loss whole scenes (no line left); every scene that reached the
+    # compressor must still go down complete, with the right timestamps
+    delivered = r["scenes_done"] if a.raw else total
     checks = [("emulator lines", r["se_lines"], lines), ("underruns", r["se_underrun"], 0),
               ("line period overruns", r["se_overruns"], 0), ("emulator drops", r["se_dropped"], 0),
               # lines lost without a fill line (RAW overload) leave the corner turn short;
               # the scene guard still completes every scene
               ("corner turn lines (+ unfilled)", r["ct_lines"] + (r["ct_unfilled"] if a.raw else 0), lines),
-              ("packetized scenes", r["pkt_scenes"], total),
+              ("packetized scenes", r["pkt_scenes"], delivered),
               ("timestamp overflows", r["pkt_ts_overflows"], 0), ("ground sync losses", r["gr_sync_losses"], 0),
               ("ground records dropped", r["gr_dropped"], 0), ("link lock losses", r["lnk_lock_losses"], 0),
               ("link RX overflows", r["lnk_rx_overflows"], 0)]
@@ -388,8 +392,12 @@ def verify_long_run(work, job, a, dims, n_scenes):
         print(f"RAW mode (SYS-09): {r['ct_dropped']} of {lines} lines dropped ({100 * frac:.1f} %): "
               f"raw data ({nx * nz * depth * 1000 * 100e3 / job['line_period'] / 1e6:.0f} Mbit/s) "
               f"{'exceeds' if r['ct_dropped'] else 'did NOT exceed'} the link")
+        print(f"RAW mode: {r['scenes_done']} of {total} scenes reached the compressor (the others lost "
+              f"whole), {lines - r['ct_dropped']} real lines of {lines} delivered")
         if r["ct_dropped"] == 0:
             problems.append("RAW mode dropped no lines")
+        if r["scenes_done"] == 0:
+            problems.append("RAW mode delivered no scene")
     for p in problems:
         print(f"  problem: {p}")
     what = "RAW mode drops (SYS-09)" if a.raw else "no line dropped (VER-08)"

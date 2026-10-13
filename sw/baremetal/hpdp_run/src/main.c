@@ -352,9 +352,9 @@ static int acquire(const run_t *r, u32 *offset, u32 *bytes, u64 *ticks, u32 *gr_
 {
     const int capture = (r->mode & MODE_CAPTURE) != 0, downlink = (r->mode & MODE_DOWNLINK) != 0;
     u32 mm2s_done = 0, scene = 0, out_off = 0, armed_len = 0, gr_off = 0, gr_armed = 0;
-    u32 sci_prev = 0, cadus_mark = 0, pass = 0;
-    int mm2s_busy = 0, s2mm_busy = 0, gr_busy = 0, gr_full = 0, drain = 0;
-    u64 t0 = now(), deadline = ~0ull, run_us, quiet = 0, t_mark = 0;
+    u32 sci_prev = 0, cadus_mark = 0, pass = 0, want = r->total, prog, prog_prev = ~0u;
+    int mm2s_busy = 0, s2mm_busy = 0, gr_busy = 0, gr_full = 0, drain = 0, stalled = 0;
+    u64 t0 = now(), deadline = ~0ull, run_us, quiet = 0, t_mark = 0, t_prog = 0;
     u64 settle = us_to_ticks(200u + r->aos_frame_gap / 250u);  /* frame_gap: clk_sys (250 MHz) cycles */
 
     run_us = (u64)r->total * r->ny * r->line_period / 100u;     /* clk_sensor = 100 MHz */
@@ -450,7 +450,23 @@ static int acquire(const run_t *r, u32 *offset, u32 *bytes, u64 *ticks, u32 *gr_
             deadline = t0 + us_to_ticks(2 * run_us + 2000000u);
         }
 
-        cmp_done = capture ? scene == r->scenes : rd(REG(cmp.SCENES_DONE)) >= r->total;
+        /* Once the sensor has finished, a second without progress of the
+           compressor or the packetizer means the scenes still missing were lost
+           whole (overload: RAW mode, SYS-09); the run then ends with the scenes
+           the compressor did get, which the result reports (scenes_done) */
+        if (!stalled && deadline != ~0ull && (rd(REG(se.STATUS)) & HPDP_SE__STATUS__DONE_bm)) {
+            prog = rd(REG(cmp.SCENES_DONE)) + rd(REG(cmp.SAMPLES_IN)) + rd(REG(pkt.PACKETS));
+            if (prog != prog_prev) {
+                prog_prev = prog;
+                t_prog = now();
+            } else if (now() - t_prog > us_to_ticks(1000000u)) {
+                stalled = 1;
+                want = rd(REG(cmp.SCENES_DONE));
+                xil_printf("  %d of %d scenes reached the compressor; the others were lost whole\r\n",
+                           (int)want, (int)r->total);
+            }
+        }
+        cmp_done = capture ? scene >= (stalled ? want : r->scenes) : rd(REG(cmp.SCENES_DONE)) >= want;
         if (cmp_done && !capture && !*ticks)
             *ticks = now() - t0;
         if (cmp_done && !downlink)
@@ -461,7 +477,7 @@ static int acquire(const run_t *r, u32 *offset, u32 *bytes, u64 *ticks, u32 *gr_
                 return ST_GR_OVERFLOW;
             switch (drain) {
             case 0:
-                if (rd(REG(pkt.SCENES)) >= r->total) {
+                if (rd(REG(pkt.SCENES)) >= want) {
                     sci_prev = rd(REG(aos.SCIENCE_FRAMES));
                     t_mark = now();
                     drain = 1;
