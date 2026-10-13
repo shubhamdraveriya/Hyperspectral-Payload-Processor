@@ -38,7 +38,11 @@ foreach {tx rx name} {X0Y10 X0Y11 sfp0_to_sfp1  X0Y11 X0Y10 sfp1_to_sfp0} {
     if {$txo eq "" || $rxo eq ""} { puts "$name: TX or RX not found"; continue }
     set link [create_hw_sio_link -description "HPDP $name" $txo $rxo]
     refresh_hw_sio $link
-    puts "$name: link status [get_property STATUS $link], RX [get_property RX_PATTERN $link]"
+    set st {}
+    foreach p [list_property $link] {
+        if {[regexp -nocase {STATUS|PATTERN|LINK} $p]} { lappend st "$p=[get_property $p $link]" }
+    }
+    puts "$name: [join $st {, }]"
     set scan [create_hw_sio_scan -description "HPDP $name 2/4 1e-6" 2d_full_eye $link]
     set_property HORIZONTAL_INCREMENT 2 $scan
     set_property VERTICAL_INCREMENT 4 $scan
@@ -47,6 +51,10 @@ foreach {tx rx name} {X0Y10 X0Y11 sfp0_to_sfp1  X0Y11 X0Y10 sfp1_to_sfp0} {
     wait_on_hw_sio_scan $scan
     set csv [file join $out "hpdp_eye_${name}_${stamp}.csv"]
     write_hw_sio_scan -force $csv $scan
-    puts "$name: open area [get_property Open_Area $scan], saved $csv"
+    set st {}
+    foreach p [list_property $scan] {
+        if {[regexp -nocase {STATUS|OPEN} $p]} { lappend st "$p=[get_property $p $scan]" }
+    }
+    puts "$name: [join $st {, }], saved $csv"
 }
 close_hw_target $t

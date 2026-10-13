@@ -685,14 +685,14 @@ Total about 31 weeks at 15–20 hours per week.
 
 | # | Item | Needed by |
 |---|---|---|
-| O-1 | Is the OM3 cable duplex (2 fibers) or simplex (1 fiber)? Only the return-channel stretch goal depends on it | M5 |
+| O-1 | ~~Is the OM3 cable duplex (2 fibers) or simplex (1 fiber)?~~ Closed (2026-10-13): duplex. Both directions carry the link: SFP1 -> SFP0 locks with 0 code errors and its eye scan is open (docs/lnk10/) | M5 |
 | O-2 | ~~Which oscillator feeds the SFP quad, and must it be programmed over I2C at boot?~~ Closed: 156.25 MHz from the Si570 (through an SI53340) on MGTREFCLK1 of quad 226, no I2C setup; measured 156,250,064 Hz on this board. The Si5328 on MGTREFCLK1 of quad 225 would need I2C programming | M5 |
 | O-3 | ~~How SFP `TX_DISABLE`, `LOS` and `TX_FAULT` are wired~~ Closed (UG1244 table 3-32): `TX_DISABLE_B` on PL pins AE22 / AF20 (LVCMOS12); `LOS` and `TX_FAULT` are not wired to the PL | M5 |
 | O-4 | Vivado licence covering XCZU7EV (ZCU106 kit voucher) | M0 |
 | O-5 | Access to ESA WhiteDwarf 2.0 / CNES CCSDS 123.0-B-2 tools | M1 |
 | O-6 | `NZ_MIN` from the final compressor pipeline depth | M2 |
 | O-7 | Default scene length (256 lines) and packet size (2048 bytes), to revisit after compression experiments | M4 |
-| O-8 | SEM IP availability and licence for ZU7EV in Vivado 2025.2 | M7 |
+| O-8 | ~~SEM IP availability and licence for ZU7EV in Vivado 2025.2~~ Closed: `sem_ultra` 3.1 supports the XCZU7EV in Vivado 2025.2 with no licence key; running on the board since build m7f (docs/m7_plan.md) | M7 |
 
 ---
 

@@ -188,6 +188,9 @@ def write_xsdb(work, job, a, seconds):
     else:
         loads = [("cal.bin", CAL_ADDR), ("raw.bin", RAW_ADDR)]
         timeout = int(seconds * 2 + 120)        # hpdp_run gives up at 2 x seconds + 2 s
+        # SEM injections before the scenes: up to 5 s each to the correction
+        # (10 s when one is not seen and undone)
+        timeout += 10 * job.get("sem_count", 0) + (10 if job.get("sem_inject") else 0)
         reads = ""
         if job["mode"] & MODE_CAPTURE:
             reads += f"mrd -force -bin -file {{{w}/out.bin}} 0x{OUT_ADDR:08X} {job['out_capacity'] // 4}\n"
