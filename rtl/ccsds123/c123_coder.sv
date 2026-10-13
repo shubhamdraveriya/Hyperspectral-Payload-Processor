@@ -20,20 +20,34 @@ module c123_coder import c123_pkg::*; #(
     input  pr_t     i,
 
     output logic    o_valid,
-    output cw_t     o
+    output cw_t     o,
+    output logic    tmr_mismatch        // the copies of the state disagreed on a read (RAD-03)
 );
     localparam int ZB = $clog2(NZ_MAX);
 
-    // per band: {accumulator, counter}
-    (* ram_style = "distributed" *) logic [42:0] state [NZ_MAX];
+    // per band: {accumulator, counter}, in three voted copies (RAD-03)
+    logic [42:0] st_rd, st_next;
+    logic        v1, t0_1;
+    logic [15:0] z1;
+    logic        st_mm;
+
+    tmr_ram #(.WIDTH (43), .DEPTH (NZ_MAX)) u_state (
+        .clk      (clk),
+        .we       (ce && v1 && !t0_1),
+        .waddr    (z1[ZB-1:0]),
+        .wdata    (st_next),
+        .raddr    (i.z[ZB-1:0]),
+        .rdata    (st_rd),
+        .mismatch (st_mm)
+    );
+    assign tmr_mismatch = st_mm && ce && i_valid && !i.t1;
 
     // C0
-    wire  [42:0] st_rd = state[i.z[ZB-1:0]];
     wire  [31:0] acc0  = i.t1 ? k.acc_init   : st_rd[42:11];
     wire  [10:0] cnt0  = i.t1 ? k.count_init : st_rd[10:0];
 
-    logic        v1, t0_1, sos1, eos1;
-    logic [15:0] d1, s1, z1;
+    logic        sos1, eos1;
+    logic [15:0] d1, s1;
     logic [31:0] acc1;
     logic [10:0] cnt1;
 
@@ -49,15 +63,12 @@ module c123_coder import c123_pkg::*; #(
 
     // C1: threshold and state update
     wire [31:0] thr1 = acc1 + ((32'(cnt1) * 32'd49) >> 7);
-    logic [42:0] st_next;
     always_comb begin
         if (cnt1 < k.count_limit) st_next = {acc1 + 32'(d1), cnt1 + 11'd1};
         else                      st_next = {(acc1 + 32'(d1) + 32'd1) >> 1, (cnt1 + 11'd1) >> 1};
     end
 
-    always_ff @(posedge clk) begin
-        if (ce && v1 && !t0_1) state[z1[ZB-1:0]] <= st_next;
-    end
+
 
     logic        v2, t0_2, sos2, eos2;
     logic [15:0] d2, s2;

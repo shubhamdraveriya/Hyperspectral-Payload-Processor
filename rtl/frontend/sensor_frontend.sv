@@ -38,6 +38,7 @@ module sensor_frontend import frontend_pkg::*, ecc_pkg::*; #(
     output ecc_evt_t     tbl_ecc,           //   calibration table
     input  ecc_inj_t     ct_inj,            //   corner-turn buffers
     output ecc_evt_t     ct_ecc,
+    output logic         ct_tmr_mismatch,   // corner turn: voted control state copies disagree (RAD-04)
 
     output logic [15:0]  m_axis_tdata,
     output logic [1:0]   m_axis_tuser,      // [0] first sample of a scene, [1] first of a line
@@ -107,6 +108,7 @@ module sensor_frontend import frontend_pkg::*, ecc_pkg::*; #(
         .dropped_lines  (fe_status.dropped_lines),
         .unfilled_lines (fe_status.unfilled_lines),
         .inj            (ct_inj),
-        .ecc            (ct_ecc)
+        .ecc            (ct_ecc),
+        .tmr_mismatch   (ct_tmr_mismatch)
     );
 endmodule

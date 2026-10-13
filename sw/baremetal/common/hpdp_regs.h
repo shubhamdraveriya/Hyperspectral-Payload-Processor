@@ -1091,6 +1091,31 @@ typedef struct __attribute__ ((__packed__)) {
 #define COUNTER_DESC_88141411__COUNT_bp 0
 #define COUNTER_DESC_88141411__COUNT_bw 32
 
+// reg - counter_desc_af595849
+#define COUNTER_DESC_AF595849__COUNT_bm 0xffffffff
+#define COUNTER_DESC_AF595849__COUNT_bp 0
+#define COUNTER_DESC_AF595849__COUNT_bw 32
+
+// reg - counter_desc_3b590e05
+#define COUNTER_DESC_3B590E05__COUNT_bm 0xffffffff
+#define COUNTER_DESC_3B590E05__COUNT_bp 0
+#define COUNTER_DESC_3B590E05__COUNT_bw 32
+
+// reg - counter_desc_f88eab7c
+#define COUNTER_DESC_F88EAB7C__COUNT_bm 0xffffffff
+#define COUNTER_DESC_F88EAB7C__COUNT_bp 0
+#define COUNTER_DESC_F88EAB7C__COUNT_bw 32
+
+// reg - counter_desc_9309f888
+#define COUNTER_DESC_9309F888__COUNT_bm 0xffffffff
+#define COUNTER_DESC_9309F888__COUNT_bp 0
+#define COUNTER_DESC_9309F888__COUNT_bw 32
+
+// reg - counter_desc_601ead19
+#define COUNTER_DESC_601EAD19__COUNT_bm 0xffffffff
+#define COUNTER_DESC_601EAD19__COUNT_bp 0
+#define COUNTER_DESC_601EAD19__COUNT_bw 32
+
 // regfile - hpdp_rad
 typedef struct __attribute__ ((__packed__)) {
     uint32_t ID;
@@ -1120,6 +1145,11 @@ typedef struct __attribute__ ((__packed__)) {
     uint32_t SEM_UNCORRECTABLE;
     uint32_t SEM_HEARTBEATS;
     uint32_t SEM_MON_DROPPED;
+    uint32_t W_SBE;
+    uint32_t W_DBE;
+    uint32_t TMR_CMP;
+    uint32_t TMR_REGS;
+    uint32_t TMR_FSM;
 } hpdp_rad_t;
 
 // addrmap - hpdp_regs
@@ -1148,7 +1178,7 @@ typedef struct __attribute__ ((__packed__)) {
 } hpdp_regs_t;
 
 
-static_assert(sizeof(hpdp_regs_t) == 0xf00b4, "Packing error");
+static_assert(sizeof(hpdp_regs_t) == 0xf00c8, "Packing error");
 
 #ifdef __cplusplus
 }

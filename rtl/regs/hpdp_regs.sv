@@ -407,6 +407,11 @@ module hpdp_regs (
             logic SEM_UNCORRECTABLE;
             logic SEM_HEARTBEATS;
             logic SEM_MON_DROPPED;
+            logic W_SBE;
+            logic W_DBE;
+            logic TMR_CMP;
+            logic TMR_REGS;
+            logic TMR_FSM;
         } rad;
     } decoded_reg_strb_t;
     decoded_reg_strb_t decoded_reg_strb;
@@ -558,6 +563,11 @@ module hpdp_regs (
         decoded_reg_strb.rad.SEM_UNCORRECTABLE = cpuif_req_masked & (cpuif_addr == 20'hf00a8) & !cpuif_req_is_wr;
         decoded_reg_strb.rad.SEM_HEARTBEATS = cpuif_req_masked & (cpuif_addr == 20'hf00ac) & !cpuif_req_is_wr;
         decoded_reg_strb.rad.SEM_MON_DROPPED = cpuif_req_masked & (cpuif_addr == 20'hf00b0) & !cpuif_req_is_wr;
+        decoded_reg_strb.rad.W_SBE = cpuif_req_masked & (cpuif_addr == 20'hf00b4) & !cpuif_req_is_wr;
+        decoded_reg_strb.rad.W_DBE = cpuif_req_masked & (cpuif_addr == 20'hf00b8) & !cpuif_req_is_wr;
+        decoded_reg_strb.rad.TMR_CMP = cpuif_req_masked & (cpuif_addr == 20'hf00bc) & !cpuif_req_is_wr;
+        decoded_reg_strb.rad.TMR_REGS = cpuif_req_masked & (cpuif_addr == 20'hf00c0) & !cpuif_req_is_wr;
+        decoded_reg_strb.rad.TMR_FSM = cpuif_req_masked & (cpuif_addr == 20'hf00c4) & !cpuif_req_is_wr;
         decoded_err = '0;
     end
 
@@ -4317,6 +4327,21 @@ module hpdp_regs (
         end
         if(rd_mux_addr == 20'hf00b0) begin
             readback_data_var[31:0] = hwif_in.rad.SEM_MON_DROPPED.count.next;
+        end
+        if(rd_mux_addr == 20'hf00b4) begin
+            readback_data_var[31:0] = hwif_in.rad.W_SBE.count.next;
+        end
+        if(rd_mux_addr == 20'hf00b8) begin
+            readback_data_var[31:0] = hwif_in.rad.W_DBE.count.next;
+        end
+        if(rd_mux_addr == 20'hf00bc) begin
+            readback_data_var[31:0] = hwif_in.rad.TMR_CMP.count.next;
+        end
+        if(rd_mux_addr == 20'hf00c0) begin
+            readback_data_var[31:0] = hwif_in.rad.TMR_REGS.count.next;
+        end
+        if(rd_mux_addr == 20'hf00c4) begin
+            readback_data_var[31:0] = hwif_in.rad.TMR_FSM.count.next;
         end
         readback_data = readback_data_var;
         readback_done = decoded_req & ~decoded_req_is_wr;

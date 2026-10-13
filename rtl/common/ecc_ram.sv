@@ -1,8 +1,9 @@
 `timescale 1ns / 1ps
 
-// Simple dual-port RAM of 64-bit words with the memory primitive's built-in
-// ECC (SPEC RAD-02): single-bit errors are corrected on read, double-bit
-// errors detected. Words are written whole (no byte writes with ECC).
+// Simple dual-port RAM of WIDTH-bit words (a multiple of 64) with the memory
+// primitive's built-in ECC (SPEC RAD-02, RAD-03): single-bit errors are
+// corrected on read, double-bit errors detected (per 64-bit slice; the flags
+// cover the whole word). Words are written whole (no byte writes with ECC).
 //
 // Reads take LATENCY cycles. With LATENCY 2, ce advances the read pipeline
 // (memory latch and output register) and holds it otherwise; with a longer
@@ -12,6 +13,7 @@
 // uncorrectable. inj_sbe / inj_dbe make the write in the same cycle store a
 // single / double-bit error.
 module ecc_ram #(
+    parameter int WIDTH   = 64,         // a multiple of 64
     parameter int DEPTH   = 1024,       // words
     parameter     STYLE   = "ultra",    // "ultra" or "block"
     parameter int LATENCY = 2           // >= 2
@@ -21,12 +23,12 @@ module ecc_ram #(
     input  logic                     ce,
     input  logic                     we,
     input  logic [$clog2(DEPTH)-1:0] waddr,
-    input  logic [63:0]              wdata,
+    input  logic [WIDTH-1:0]         wdata,
     input  logic                     inj_sbe,
     input  logic                     inj_dbe,
     input  logic                     re,
     input  logic [$clog2(DEPTH)-1:0] raddr,
-    output logic [63:0]              rdata,
+    output logic [WIDTH-1:0]         rdata,
     output logic                     sbe,
     output logic                     dbe
 );
@@ -35,7 +37,7 @@ module ecc_ram #(
     logic sbiterr, dbiterr;
 
     xpm_memory_sdpram #(
-        .MEMORY_SIZE        (DEPTH * 64),
+        .MEMORY_SIZE        (DEPTH * WIDTH),
         .MEMORY_PRIMITIVE   (STYLE),
         .CLOCKING_MODE      ("common_clock"),
         .ECC_MODE           ("both_encode_and_decode"),
@@ -44,10 +46,10 @@ module ecc_ram #(
         .USE_MEM_INIT       (0),
         .WAKEUP_TIME        ("disable_sleep"),
         .MESSAGE_CONTROL    (0),
-        .WRITE_DATA_WIDTH_A (64),
-        .BYTE_WRITE_WIDTH_A (64),
+        .WRITE_DATA_WIDTH_A (WIDTH),
+        .BYTE_WRITE_WIDTH_A (WIDTH),
         .ADDR_WIDTH_A       (AB),
-        .READ_DATA_WIDTH_B  (64),
+        .READ_DATA_WIDTH_B  (WIDTH),
         .ADDR_WIDTH_B       (AB),
         .READ_LATENCY_B     (LATENCY),
         .WRITE_MODE_B       ("read_first")

@@ -36,7 +36,8 @@ module aos_framer import downlink_pkg::*; (
     input  logic        m_axis_tready,
 
     output logic [31:0] science_frames,
-    output logic [31:0] idle_frames
+    output logic [31:0] idle_frames,
+    output logic        tmr_mismatch    // the voted state copies disagree (RAD-04)
 );
     localparam int OQ = 8;                      // output FIFO
     localparam int RL = 2;                      // zone RAM read latency
@@ -133,7 +134,10 @@ module aos_framer import downlink_pkg::*; (
     // Output side: one byte per cycle into a small FIFO (credit-based)
     // ---------------------------------------------------------------------
     typedef enum logic [1:0] {O_WAIT, O_SCI, O_IDLE} ostate_t;
-    ostate_t     os;
+    // output state: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic [$bits(ostate_t)-1:0] os_0, os_1, os_2;
+    ostate_t os;
+    assign os = ostate_t'((os_0 & os_1) | (os_0 & os_2) | (os_1 & os_2));
     logic [9:0]  oi;                            // byte in frame, 0..891
     logic [23:0] idle_count;
     logic [31:0] gap_cnt;
@@ -172,8 +176,9 @@ module aos_framer import downlink_pkg::*; (
     assign rd_free = issue && f_end && (os == O_SCI);
 
     always_ff @(posedge clk) begin
+        {os_0, os_1, os_2} <= {3{os}};   // refresh (RAD-04)
         if (rst) begin
-            os             <= O_WAIT;
+            {os_0, os_1, os_2} <= {3{O_WAIT}};
             rd_buf         <= 1'b0;
             oi             <= '0;
             idle_count     <= '0;
@@ -185,15 +190,15 @@ module aos_framer import downlink_pkg::*; (
             if (os == O_WAIT) begin
                 oi <= '0;
                 if (sci_ok) begin
-                    os      <= O_SCI;
+                    {os_0, os_1, os_2} <= {3{O_SCI}};
                     gap_cnt <= frame_gap;
                 end else if (idle_en) begin
-                    os <= O_IDLE;
+                    {os_0, os_1, os_2} <= {3{O_IDLE}};
                 end
             end else if (issue) begin
                 oi <= f_end ? 10'd0 : oi + 10'd1;
                 if (f_end) begin
-                    os <= O_WAIT;
+                    {os_0, os_1, os_2} <= {3{O_WAIT}};
                     if (os == O_SCI) begin
                         rd_buf         <= !rd_buf;
                         science_frames <= science_frames + 32'd1;
@@ -270,4 +275,6 @@ module aos_framer import downlink_pkg::*; (
         .m_tvalid (m_axis_tvalid),
         .m_tready (m_axis_tready)
     );
+
+    assign tmr_mismatch = (os_0 != os_1) || (os_0 != os_2);
 endmodule

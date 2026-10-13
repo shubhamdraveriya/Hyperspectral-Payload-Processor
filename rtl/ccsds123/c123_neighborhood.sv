@@ -32,7 +32,8 @@ module c123_neighborhood import c123_pkg::*, ecc_pkg::*; #(
     output nb_t         o,
 
     input  ecc_inj_t    lb_inj,         // line buffer ECC
-    output ecc_evt_t    lb_ecc
+    output ecc_evt_t    lb_ecc,
+    output logic        tmr_mismatch    // per-band memories: copies disagreed on a read (RAD-03)
 );
     localparam int ZB = $clog2(NZ_MAX);
     localparam int AB = $clog2(NX_MAX * NZ_MAX);
@@ -99,31 +100,34 @@ module c123_neighborhood import c123_pkg::*, ecc_pkg::*; #(
         end
     end
 
-    // Per-band memories (asynchronous read, written by valid samples)
-    (* ram_style = "distributed" *) logic [15:0] mem_w  [NZ_MAX];
-    (* ram_style = "distributed" *) logic [15:0] mem_n  [NZ_MAX];
-    (* ram_style = "distributed" *) logic [15:0] mem_nw [NZ_MAX];
-    (* ram_style = "distributed" *) logic [15:0] mem_rs [NZ_MAX];
+    // Per-band memories (asynchronous read, written by valid samples), each in
+    // three voted copies (RAD-03)
+    wire [ZB-1:0] za1 = z1[ZB-1:0];
+    logic [15:0]  w_rd, n_mem, rs_rd, nw_rd, n_rd, ne_rd;
+    logic [3:0]   mm;
 
-    wire [ZB-1:0] za1   = z1[ZB-1:0];
-    wire [15:0]   w_rd  = mem_w[za1];
-    wire [15:0]   n_rd  = fc1 ? mem_rs[za1] : mem_n[za1];
-    wire [15:0]   nw_rd = mem_nw[za1];
+    tmr_ram #(.WIDTH (16), .DEPTH (NZ_MAX)) u_mem_w (
+        .clk, .we (ce && v1), .waddr (za1), .wdata (s1), .raddr (za1), .rdata (w_rd), .mismatch (mm[0]));
+    tmr_ram #(.WIDTH (16), .DEPTH (NZ_MAX)) u_mem_nw (
+        .clk, .we (ce && v1), .waddr (za1), .wdata (n_rd), .raddr (za1), .rdata (nw_rd), .mismatch (mm[1]));
+    tmr_ram #(.WIDTH (16), .DEPTH (NZ_MAX)) u_mem_rs (
+        .clk, .we (ce && v1 && fc1), .waddr (za1), .wdata (s1), .raddr (za1), .rdata (rs_rd), .mismatch (mm[2]));
+    // (u_mem_n, written from S3, is at the end)
+
+    assign n_rd         = fc1 ? rs_rd : n_mem;
+    assign tmr_mismatch = ce && v1 && (mm[0] || mm[1] || (fc1 ? mm[2] : mm[3]));
 
     logic [15:0] last_w, last_s;        // previous valid sample: W and s
 
     always_ff @(posedge clk) begin
         if (ce && v1) begin
-            mem_w[za1]  <= s1;
-            mem_nw[za1] <= n_rd;
-            if (fc1) mem_rs[za1] <= s1;
             last_w <= w_rd;
             last_s <= s1;
         end
     end
 
-    // Previous-row line buffer: write s at x*Nz+z, read NE at x*Nz+z+Nz
-    logic [15:0] ne_rd;                 // valid in S3
+    // Previous-row line buffer: write s at x*Nz+z, read NE at x*Nz+z+Nz (ne_rd
+    // valid in S3)
 
     sample_ram #(
         .DEPTH (NX_MAX * NZ_MAX),
@@ -192,7 +196,7 @@ module c123_neighborhood import c123_pkg::*, ecc_pkg::*; #(
     end
 
     // N of the next row's pixel x+1 is this sample's NE
-    always_ff @(posedge clk) begin
-        if (ce && o_valid) mem_n[r3.z[ZB-1:0]] <= ne_rd;
-    end
+    tmr_ram #(.WIDTH (16), .DEPTH (NZ_MAX)) u_mem_n (
+        .clk, .we (ce && o_valid), .waddr (r3.z[ZB-1:0]), .wdata (ne_rd), .raddr (za1), .rdata (n_mem),
+        .mismatch (mm[3]));
 endmodule

@@ -9,7 +9,9 @@
 // line was lost: the marker moves to the next line sent), the scene timestamp of
 // every sample, the error mark (any input sample of the line marked, or a
 // double-bit error injected into a buffer word: the samples of that word), the
-// fill mark. Counters too.
+// fill mark. Counters too. Upsets are forced into one copy of the triplicated
+// control state (wb, full, rd_on: RAD-04) during the run: the outputs must stay
+// exact, the mismatch must show, and be gone at the next clock.
 module tb_corner_turn;
     import frontend_pkg::*;
     import ecc_pkg::*;
@@ -38,6 +40,7 @@ module tb_corner_turn;
     logic [31:0] lines_out, dropped_lines, unfilled_lines;
     ecc_inj_t    inj = '0;
     ecc_evt_t    ecc;
+    logic        tmr_mismatch;
 
     corner_turn #(.NX_MAX(8), .NZ_MAX(8)) dut (
         .clk, .rst, .cfg,
@@ -46,8 +49,34 @@ module tb_corner_turn;
         .m_axis_ue (m_ue), .m_axis_fill (m_fill), .m_axis_tlast (m_tlast),
         .m_axis_tvalid (m_tvalid), .m_axis_tready (m_tready),
         .cnt_clr (1'b0), .lines_out, .dropped_lines, .unfilled_lines,
-        .inj, .ecc
+        .inj, .ecc, .tmr_mismatch
     );
+
+    // upsets in one copy of the control state, at random times
+    int n_upsets = 0, mm_cycles = 0, mm_stuck = 0;
+    logic mm_d = 1'b0;
+    initial begin
+        @(negedge rst);
+        repeat (200) @(posedge clk);
+        repeat (30) begin                       // all early in the run
+            repeat ($urandom_range(300, 700)) @(posedge clk);
+            @(negedge clk);
+            case ($urandom_range(0, 5))
+                0: dut.wb_0    = !dut.wb_0;
+                1: dut.wb_2    = !dut.wb_2;
+                2: dut.full_1  = dut.full_1 ^ 2'(1 << $urandom_range(0, 1));
+                3: dut.full_2  = dut.full_2 ^ 2'b11;
+                4: dut.rd_on_0 = !dut.rd_on_0;
+                default: dut.rd_on_1 = !dut.rd_on_1;
+            endcase
+            n_upsets++;
+        end
+    end
+    always @(posedge clk) begin
+        if (tmr_mismatch) mm_cycles++;
+        if (tmr_mismatch && mm_d) mm_stuck++;          // still there a clock later
+        mm_d <= tmr_mismatch;
+    end
 
     // sample i of input line n (never 0, so fill lines are told apart)
     function automatic logic [15:0] value(int n, int i);
@@ -167,14 +196,19 @@ module tb_corner_turn;
             $display("  counters: lines_out %0d dropped %0d unfilled %0d, expected %0d %0d %0d",
                      lines_out, dropped_lines, unfilled_lines, sent.size(), n_fill + n_lost, n_lost);
         end
+        if (n_upsets == 0 || mm_cycles != n_upsets || mm_stuck != 0) begin
+            errors++;
+            $display("  TMR: %0d upsets, %0d mismatch cycles, %0d not healed at the next clock",
+                     n_upsets, mm_cycles, mm_stuck);
+        end
         if (n_fill == 0 || n_lost_first == 0 || n_ue_lines == 0 || n_dbe_samples != 4) begin
             errors++;
             $display("  scenario not covered: %0d fill lines, %0d lost first lines, %0d marked lines, %0d buffer error samples",
                      n_fill, n_lost_first, n_ue_lines, n_dbe_samples);
         end
         if (errors == 0)
-            $display("PASS: tb_corner_turn, %0d lines in, %0d sent (%0d fill, %0d marked), %0d lost (%0d of them first of a scene), buffer error on %0d samples",
-                     LINES, sent.size(), n_fill, n_ue_lines, n_lost, n_lost_first, n_dbe_samples);
+            $display("PASS: tb_corner_turn, %0d lines in, %0d sent (%0d fill, %0d marked), %0d lost (%0d of them first of a scene), buffer error on %0d samples, %0d control state upsets masked",
+                     LINES, sent.size(), n_fill, n_ue_lines, n_lost, n_lost_first, n_dbe_samples, n_upsets);
         else
             $display("FAIL: tb_corner_turn: %0d errors", errors);
         $finish;

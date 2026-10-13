@@ -5,7 +5,7 @@ package hpdp_regs_pkg;
 
     localparam HPDP_REGS_DATA_WIDTH = 32;
     localparam HPDP_REGS_MIN_ADDR_WIDTH = 20;
-    localparam HPDP_REGS_SIZE = 'hf00b4;
+    localparam HPDP_REGS_SIZE = 'hf00c8;
 
     typedef struct {
         logic next;
@@ -683,6 +683,46 @@ package hpdp_regs_pkg;
     } counter_desc_88141411__in_t;
 
     typedef struct {
+        logic [31:0] next;
+    } counter_desc_af595849__count__in_t;
+
+    typedef struct {
+        counter_desc_af595849__count__in_t count;
+    } counter_desc_af595849__in_t;
+
+    typedef struct {
+        logic [31:0] next;
+    } counter_desc_3b590e05__count__in_t;
+
+    typedef struct {
+        counter_desc_3b590e05__count__in_t count;
+    } counter_desc_3b590e05__in_t;
+
+    typedef struct {
+        logic [31:0] next;
+    } counter_desc_f88eab7c__count__in_t;
+
+    typedef struct {
+        counter_desc_f88eab7c__count__in_t count;
+    } counter_desc_f88eab7c__in_t;
+
+    typedef struct {
+        logic [31:0] next;
+    } counter_desc_9309f888__count__in_t;
+
+    typedef struct {
+        counter_desc_9309f888__count__in_t count;
+    } counter_desc_9309f888__in_t;
+
+    typedef struct {
+        logic [31:0] next;
+    } counter_desc_601ead19__count__in_t;
+
+    typedef struct {
+        counter_desc_601ead19__count__in_t count;
+    } counter_desc_601ead19__in_t;
+
+    typedef struct {
         hpdp_rad__STATUS__in_t STATUS;
         hpdp_rad__SEM_STATUS__in_t SEM_STATUS;
         hpdp_rad__SEM_MON__in_t SEM_MON;
@@ -699,6 +739,11 @@ package hpdp_regs_pkg;
         counter_desc_f532f54f__in_t SEM_UNCORRECTABLE;
         counter_desc_105b6eaa__in_t SEM_HEARTBEATS;
         counter_desc_88141411__in_t SEM_MON_DROPPED;
+        counter_desc_af595849__in_t W_SBE;
+        counter_desc_3b590e05__in_t W_DBE;
+        counter_desc_f88eab7c__in_t TMR_CMP;
+        counter_desc_9309f888__in_t TMR_REGS;
+        counter_desc_601ead19__in_t TMR_FSM;
     } hpdp_rad__in_t;
 
     typedef struct {

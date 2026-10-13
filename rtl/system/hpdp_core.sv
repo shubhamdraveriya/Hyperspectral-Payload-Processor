@@ -216,6 +216,8 @@ module hpdp_core
         logic [2:0][1:0][31:0] ecc_count;       // [memory][sbe, dbe]
         logic [2:0]  wd_stalled;                // compressor, downlink, ground capture
         logic [2:0][31:0] wd_count;
+        logic [31:0] w_sbe, w_dbe, tmr_cmp;      // compressor state (RAD-03)
+        logic [31:0] tmr_fsm;                    // control state machines (RAD-04)
     } rad_stat_t;
 
     typedef struct packed {
@@ -234,7 +236,11 @@ module hpdp_core
     hpdp_regs_pkg::hpdp_regs__in_t  hwif_in;
     hpdp_regs_pkg::hpdp_regs__out_t hwif_out;
 
-    hpdp_regs u_regs (
+    // three voted copies (RAD-03); regs_mm while they disagree
+    logic        regs_mm, regs_mm_d;
+    logic [31:0] tmr_regs_count;
+
+    hpdp_regs_tmr u_regs (
         .clk (clk_ctrl),
         .rst (rst_ctrl),
         .s_axil_awready, .s_axil_awvalid, .s_axil_awaddr, .s_axil_awprot,
@@ -242,8 +248,19 @@ module hpdp_core
         .s_axil_bready, .s_axil_bvalid, .s_axil_bresp,
         .s_axil_arready, .s_axil_arvalid, .s_axil_araddr, .s_axil_arprot,
         .s_axil_rready, .s_axil_rvalid, .s_axil_rdata, .s_axil_rresp,
-        .hwif_in, .hwif_out
+        .hwif_in, .hwif_out,
+        .mismatch (regs_mm)
     );
+
+    always_ff @(posedge clk_ctrl) begin
+        if (rst_ctrl || hwif_out.rad.CNT_CLEAR.clear.value) begin
+            regs_mm_d      <= 1'b0;
+            tmr_regs_count <= '0;
+        end else begin
+            regs_mm_d <= regs_mm;
+            if (regs_mm && !regs_mm_d) tmr_regs_count <= sat_inc(tmr_regs_count);
+        end
+    end
 
     // Event counts (clk_ctrl)
     logic [7:0] wr_seq, se_clr_seq, ct_clr_seq, cmp_clr_seq, tbl_seq;
@@ -530,6 +547,7 @@ module hpdp_core
     logic [23:0] fe_scene_ts;
     logic        fe_ue, fe_fill;
     ecc_evt_t    ecc [3];                   // ECC events: table, corner turn, line buffer
+    logic [4:0]  fsm_mm;                    // RAD-04: corner turn, scene guard, packer, packetizer, AOS
 
     assign s_axis_dma_tready = to_table ? 1'b1 : se_dma_tready;
 
@@ -554,6 +572,7 @@ module hpdp_core
         .tbl_ecc        (ecc[0]),
         .ct_inj         (inj[1]),
         .ct_ecc         (ecc[1]),
+        .ct_tmr_mismatch (fsm_mm[0]),
         .m_axis_tdata   (fe_tdata),
         .m_axis_tuser   (fe_tuser),
         .m_axis_tlast   (fe_tlast),
@@ -585,7 +604,8 @@ module hpdp_core
         .m_tdata (sg_tdata), .m_tuser (sg_tuser), .m_scene_ts (sg_scene_ts), .m_ue (sg_ue),
         .m_fill (sg_fill), .m_tlast (sg_tlast),
         .m_tvalid (sg_tvalid), .m_tready (sg_tready),
-        .padded_scenes (scenes_padded), .padded_samples (samples_padded)
+        .padded_scenes (scenes_padded), .padded_samples (samples_padded),
+        .tmr_mismatch (fsm_mm[1])
     );
 
     // ---------------------------------------------------------------------
@@ -594,6 +614,8 @@ module hpdp_core
     logic [63:0] c_tdata;
     logic [7:0]  c_tkeep;
     logic        c_tlast, c_tvalid, c_tready, cfg_error;
+
+    logic w_sbe, w_dbe, cmp_tmr_mm;         // compressor state events (RAD-03)
 
     c123_core #(.NX_MAX(NX_MAX), .NZ_MAX(NZ_MAX)) u_cmp (
         .clk           (clk_sys),
@@ -610,7 +632,11 @@ module hpdp_core
         .m_axis_tready (c_tready),
         .cfg_error     (cfg_error),
         .lb_inj        (inj[2]),
-        .lb_ecc        (ecc[2])
+        .lb_ecc        (ecc[2]),
+        .w_sbe         (w_sbe),
+        .w_dbe         (w_dbe),
+        .tmr_mismatch  (cmp_tmr_mm),
+        .fsm_mismatch  (fsm_mm[2])
     );
 
     // ---------------------------------------------------------------------
@@ -618,6 +644,28 @@ module hpdp_core
     // reads that returned an uncorrectable word
     // ---------------------------------------------------------------------
     logic [2:0][1:0][31:0] ecc_count;
+    logic [31:0] w_sbe_count, w_dbe_count, tmr_cmp_count;      // compressor state (RAD-03)
+    logic [31:0] tmr_fsm_count;                                // control state machines (RAD-04)
+    logic        fsm_mm_d;
+
+    always_ff @(posedge clk_sys) begin
+        if (rst_sys || rad_clr) begin
+            {tmr_fsm_count, fsm_mm_d} <= '0;
+        end else begin
+            fsm_mm_d <= |fsm_mm;
+            if (|fsm_mm && !fsm_mm_d) tmr_fsm_count <= sat_inc(tmr_fsm_count);
+        end
+    end
+
+    always_ff @(posedge clk_sys) begin
+        if (rst_sys || rad_clr) begin
+            {w_sbe_count, w_dbe_count, tmr_cmp_count} <= '0;
+        end else begin
+            if (w_sbe)      w_sbe_count   <= sat_inc(w_sbe_count);
+            if (w_dbe)      w_dbe_count   <= sat_inc(w_dbe_count);
+            if (cmp_tmr_mm) tmr_cmp_count <= sat_inc(tmr_cmp_count);
+        end
+    end
 
     always_ff @(posedge clk_sys) begin
         if (rst_sys || rad_clr) begin
@@ -752,8 +800,9 @@ module hpdp_core
     // compressor input to the end of its packetization: uncorrectable memory
     // error (RAD-06) and lines dropped. Calibration table and corner-turn errors
     // come marked on the samples they hit, fill lines and scene-guard padding as
-    // fill; line-buffer errors happen inside the compressor and flag every scene
-    // between its input and the packetizer. 32 flags cover the scenes in flight.
+    // fill; line-buffer and weight errors happen inside the compressor and flag
+    // every scene between its input and the packetizer. 32 flags cover the
+    // scenes in flight.
     logic [15:0] cmp_scenes, pk_scene;      // scenes into the compressor; being packetized
     logic [31:0] ue_flag, ld_flag;
     wire  [4:0]  cur      = sg_first ? cmp_scenes[4:0] : cmp_scenes[4:0] - 5'd1;
@@ -765,7 +814,7 @@ module hpdp_core
             ue_flag    <= '0;
             ld_flag    <= '0;
         end else begin
-            if (ecc[2].dbe)
+            if (ecc[2].dbe || w_dbe)
                 for (int j = 0; j < 32; j++)
                     if (6'(5'(j) - pk_scene[4:0]) < inflight) ue_flag[j] <= 1'b1;
             if (sg_first) begin
@@ -788,7 +837,8 @@ module hpdp_core
         .s_meta_tdata (meta_ts), .s_meta_tvalid (!meta_empty), .s_meta_tready (meta_rd),
         .m_axis_tdata (p_tdata), .m_axis_tuser (p_tuser), .m_axis_tlast (p_tlast),
         .m_axis_tvalid (p_tvalid), .m_axis_tready (p_tready),
-        .packets (dl_src.packets), .scenes (dl_src.scenes), .scene_id (pk_scene)
+        .packets (dl_src.packets), .scenes (dl_src.scenes), .scene_id (pk_scene),
+        .tmr_mismatch (fsm_mm[3])
     );
 
     aos_framer u_aos (
@@ -799,7 +849,8 @@ module hpdp_core
         .s_axis_tvalid (p_tvalid), .s_axis_tready (p_tready),
         .m_axis_tdata (a_tdata), .m_axis_tlast (a_tlast), .m_axis_tvalid (a_tvalid),
         .m_axis_tready (a_tready),
-        .science_frames (dl_src.science_frames), .idle_frames (dl_src.idle_frames)
+        .science_frames (dl_src.science_frames), .idle_frames (dl_src.idle_frames),
+        .tmr_mismatch (fsm_mm[4])
     );
 
     rs_encoder u_rs (
@@ -1050,6 +1101,10 @@ module hpdp_core
         rad_stat_src.ecc_count       = ecc_count;
         rad_stat_src.wd_stalled      = wd_stalled;
         rad_stat_src.wd_count        = wd_count;
+        rad_stat_src.w_sbe           = w_sbe_count;
+        rad_stat_src.w_dbe           = w_dbe_count;
+        rad_stat_src.tmr_cmp         = tmr_cmp_count;
+        rad_stat_src.tmr_fsm         = tmr_fsm_count;
         sys_stat_src.dl              = dl_src;
     end
 
@@ -1189,7 +1244,7 @@ module hpdp_core
     logic [31:0] sem_unc_prev;
     wire  [33:0] wd_sum  = 34'(rad_stat.wd_count[0]) + 34'(rad_stat.wd_count[1]) + 34'(rad_stat.wd_count[2]);
     wire  [33:0] dbe_sum = 34'(rad_stat.ecc_count[0][1]) + 34'(rad_stat.ecc_count[1][1]) +
-                           34'(rad_stat.ecc_count[2][1]);
+                           34'(rad_stat.ecc_count[2][1]) + 34'(rad_stat.w_dbe);
     wire  [31:0] errors_now = se_stat.underrun_samples | se_stat.period_overruns |
                               se_stat.dropped_samples | sys_stat.fe.dropped_lines |
                               dl_stat.ts_overflows | dl_stat.dropped_records | lnk_stat.rx_overflows;
@@ -1265,6 +1320,11 @@ module hpdp_core
         hwif_in.rad.WD_CMP.count.next           = rad_stat.wd_count[0];
         hwif_in.rad.WD_DL.count.next            = rad_stat.wd_count[1];
         hwif_in.rad.WD_GR.count.next            = rad_stat.wd_count[2];
+        hwif_in.rad.W_SBE.count.next            = rad_stat.w_sbe;
+        hwif_in.rad.W_DBE.count.next            = rad_stat.w_dbe;
+        hwif_in.rad.TMR_CMP.count.next          = rad_stat.tmr_cmp;
+        hwif_in.rad.TMR_REGS.count.next         = tmr_regs_count;
+        hwif_in.rad.TMR_FSM.count.next          = rad_stat.tmr_fsm;
         hwif_in.rad.SEM_STATUS.state.next       = sem_stat.status;
         hwif_in.rad.SEM_STATUS.busy.next        = sem_stat.busy || sem_stat.cmd_done != sem_cmd_seq;
         hwif_in.rad.SEM_STATUS.icap_avail.next  = sem_stat.avail;

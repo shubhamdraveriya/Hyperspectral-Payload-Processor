@@ -143,6 +143,11 @@ REGS = {
     "rad.SEM_UNCORRECTABLE": 0xF00A8,
     "rad.SEM_HEARTBEATS": 0xF00AC,
     "rad.SEM_MON_DROPPED": 0xF00B0,
+    "rad.W_SBE": 0xF00B4,
+    "rad.W_DBE": 0xF00B8,
+    "rad.TMR_CMP": 0xF00BC,
+    "rad.TMR_REGS": 0xF00C0,
+    "rad.TMR_FSM": 0xF00C4,
 }
 
 FIELDS = {
@@ -351,4 +356,9 @@ FIELDS = {
     "rad.SEM_UNCORRECTABLE.count": (0xF00A8, 0, 32),
     "rad.SEM_HEARTBEATS.count": (0xF00AC, 0, 32),
     "rad.SEM_MON_DROPPED.count": (0xF00B0, 0, 32),
+    "rad.W_SBE.count": (0xF00B4, 0, 32),
+    "rad.W_DBE.count": (0xF00B8, 0, 32),
+    "rad.TMR_CMP.count": (0xF00BC, 0, 32),
+    "rad.TMR_REGS.count": (0xF00C0, 0, 32),
+    "rad.TMR_FSM.count": (0xF00C4, 0, 32),
 }

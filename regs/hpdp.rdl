@@ -76,7 +76,7 @@ regfile hpdp_sys {
         field { sw = rw; hw = r; onwrite = woclr; hwset; desc = "An overflow counter incremented"; } error[1:1] = 0;
         field { sw = rw; hw = r; onwrite = woclr; hwset; desc = "LNK.LOCK_LOSSES incremented"; } link_lock_loss[2:2] = 0;
         field { sw = rw; hw = r; onwrite = woclr; hwset; desc = "GR.SYNC_LOSSES incremented"; } sync_loss[3:3] = 0;
-        field { sw = rw; hw = r; onwrite = woclr; hwset; desc = "A memory read returned an uncorrectable word (RAD.*_DBE incremented, RAD-06)"; } ecc_uncorrectable[4:4] = 0;
+        field { sw = rw; hw = r; onwrite = woclr; hwset; desc = "A memory read returned an uncorrectable word (RAD.*_DBE or RAD.W_DBE incremented, RAD-06)"; } ecc_uncorrectable[4:4] = 0;
         field { sw = rw; hw = r; onwrite = woclr; hwset; desc = "A pipeline watchdog found a stage stalled (RAD.WD_* incremented, RAD-05)"; } stall[5:5] = 0;
         field { sw = rw; hw = r; onwrite = woclr; hwset; desc = "The SEM controller found an uncorrectable configuration memory error (RAD.SEM_UNCORRECTABLE incremented, RAD-01)"; } sem_uncorrectable[6:6] = 0;
     } IRQ_STATUS @ 0x10;
@@ -629,6 +629,16 @@ regfile hpdp_rad {
     SEM_HEARTBEATS -> desc = "SEM heartbeat pulses (the controller is scanning)";
     counter SEM_MON_DROPPED @ 0xB0;
     SEM_MON_DROPPED -> desc = "SEM monitor bytes lost because SEM_MON was not read in time";
+    counter W_SBE @ 0xB4;
+    W_SBE -> desc = "Compressor weight RAM reads that returned a corrected word (block RAM ECC, RAD-03)";
+    counter W_DBE @ 0xB8;
+    W_DBE -> desc = "Compressor weight RAM reads that returned an uncorrectable word (the scenes in the compressor are flagged)";
+    counter TMR_REGS @ 0xC0;
+    TMR_REGS -> desc = "Times the three copies of the register block started to disagree (an upset in one copy, masked by the vote; healed when the register is written again, RAD-03)";
+    counter TMR_FSM @ 0xC4;
+    TMR_FSM -> desc = "Times the three copies of a control state machine's state (corner turn, scene guard, compressor packer, packetizer, AOS framer) started to disagree; the vote masked it and the copy healed at the next clock (RAD-04)";
+    counter TMR_CMP @ 0xBC;
+    TMR_CMP -> desc = "Reads of the compressor's per-band state (coder accumulators, neighbourhood memories: three voted copies) where the copies disagreed; the vote masked it (RAD-03)";
 };
 
 // ---------------------------------------------------------------------------

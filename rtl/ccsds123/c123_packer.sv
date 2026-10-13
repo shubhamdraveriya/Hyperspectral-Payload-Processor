@@ -19,10 +19,14 @@ module c123_packer import c123_pkg::*; (
     output logic [7:0]   m_tkeep,
     output logic         m_tlast,
     output logic         m_tvalid,
-    input  logic         m_tready
+    input  logic         m_tready,
+    output logic        tmr_mismatch    // the voted state copies disagree (RAD-04)
 );
     typedef enum logic [2:0] {RUN, HDR, PAD, FLUSH_HOLD, FLUSH_LAST} state_t;
+    // state: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic [$bits(state_t)-1:0] state_0, state_1, state_2;
     state_t state;
+    assign state = state_t'((state_0 & state_1) | (state_0 & state_2) | (state_1 & state_2));
 
     logic [127:0] acc;                  // pending bits, left aligned
     logic [6:0]   n;                    // number of pending bits (< 64 between steps)
@@ -129,8 +133,9 @@ module c123_packer import c123_pkg::*; (
     end
 
     always_ff @(posedge clk) begin
+        {state_0, state_1, state_2} <= {3{state}};   // refresh (RAD-04)
         if (rst) begin
-            state     <= RUN;
+            {state_0, state_1, state_2} <= {3{RUN}};
             acc       <= '0;
             n         <= '0;
             hdr_idx   <= '0;
@@ -166,19 +171,19 @@ module c123_packer import c123_pkg::*; (
             case (state)
                 RUN: if (cw_pop) begin
                          hdr_done <= 1'b0;
-                         if (cw.eos) state <= PAD;
+                         if (cw.eos) {state_0, state_1, state_2} <= {3{PAD}};
                      end else if (cw_valid && room && cw.sos && !cfg.raw && !hdr_done) begin
-                         state   <= HDR;
+                         {state_0, state_1, state_2} <= {3{HDR}};
                          hdr_idx <= '0;
                      end
                 HDR: if (room) begin
                          hdr_idx <= hdr_idx + 2'd1;
                          if (hdr_idx == 2'd3) begin
-                             state    <= RUN;
+                             {state_0, state_1, state_2} <= {3{RUN}};
                              hdr_done <= 1'b1;
                          end
                      end
-                PAD: if (room) state <= FLUSH_HOLD;
+                PAD: if (room) {state_0, state_1, state_2} <= {3{FLUSH_HOLD}};
                 FLUSH_HOLD: if (room) begin
                     // n is a whole number of bytes now
                     if (n != 7'd0) begin
@@ -188,12 +193,12 @@ module c123_packer import c123_pkg::*; (
                         end
                         hold   <= acc[127:64];
                         hold_v <= 1'b1;
-                        state  <= FLUSH_LAST;
+                        {state_0, state_1, state_2} <= {3{FLUSH_LAST}};
                     end else begin
                         of_din <= {1'b1, 8'hFF, byte_swap(hold)};
                         of_wr  <= 1'b1;
                         hold_v <= 1'b0;
-                        state  <= RUN;
+                        {state_0, state_1, state_2} <= {3{RUN}};
                         acc    <= '0;
                         bits_mod8 <= '0;
                         phase     <= '0;
@@ -207,10 +212,12 @@ module c123_packer import c123_pkg::*; (
                     n         <= '0;
                     bits_mod8 <= '0;
                     phase     <= '0;
-                    state     <= RUN;
+                    {state_0, state_1, state_2} <= {3{RUN}};
                 end
-                default: state <= RUN;
+                default: {state_0, state_1, state_2} <= {3{RUN}};
             endcase
         end
     end
+
+    assign tmr_mismatch = (state_0 != state_1) || (state_0 != state_2);
 endmodule

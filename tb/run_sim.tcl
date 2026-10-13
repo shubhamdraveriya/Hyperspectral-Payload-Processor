@@ -18,6 +18,8 @@ set tests {
     sample_ram   tb_sample_ram        {}
     corner_turn  tb_corner_turn       {}
     watchdog     tb_stall_watchdog    {}
+    tmr_ram      tb_tmr_ram           {}
+    regs_tmr     tb_regs_tmr          {}
 }
 
 set repo  [file normalize [file join [file dirname [info script]] ..]]

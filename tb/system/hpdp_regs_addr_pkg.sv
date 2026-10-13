@@ -138,5 +138,10 @@ package hpdp_regs_addr_pkg;
     localparam logic [31:0] RAD_SEM_UNCORRECTABLE            = 32'hF00A8;
     localparam logic [31:0] RAD_SEM_HEARTBEATS               = 32'hF00AC;
     localparam logic [31:0] RAD_SEM_MON_DROPPED              = 32'hF00B0;
+    localparam logic [31:0] RAD_W_SBE                        = 32'hF00B4;
+    localparam logic [31:0] RAD_W_DBE                        = 32'hF00B8;
+    localparam logic [31:0] RAD_TMR_CMP                      = 32'hF00BC;
+    localparam logic [31:0] RAD_TMR_REGS                     = 32'hF00C0;
+    localparam logic [31:0] RAD_TMR_FSM                      = 32'hF00C4;
 
 endpackage

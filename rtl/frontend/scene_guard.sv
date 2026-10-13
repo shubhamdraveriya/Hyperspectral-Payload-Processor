@@ -43,10 +43,14 @@ module scene_guard (
     input  logic        m_tready,
 
     output logic [31:0] padded_scenes,
-    output logic [31:0] padded_samples
+    output logic [31:0] padded_samples,
+    output logic        tmr_mismatch    // the voted state copies disagree (RAD-04)
 );
     logic [39:0] total, n;              // samples per scene, samples of this scene so far
-    logic        pad;
+    // padding a short scene: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic pad_0, pad_1, pad_2;
+    logic pad;
+    assign pad = (pad_0 & pad_1) | (pad_0 & pad_2) | (pad_1 & pad_2);
 
     // Nx*Ny*Nz, pipelined (3 cycles; the geometry is static while scenes flow)
     logic [31:0] nxy;
@@ -73,19 +77,20 @@ module scene_guard (
     wire done = (n + 40'd1 >= total);   // this sample completes the scene
 
     always_ff @(posedge clk) begin
+        {pad_0, pad_1, pad_2} <= {3{pad}};   // refresh (RAD-04)
         if (rst) begin
             n              <= '0;
-            pad            <= 1'b0;
+            {pad_0, pad_1, pad_2} <= {3{1'b0}};
             padded_scenes  <= '0;
             padded_samples <= '0;
         end else begin
             if (early) begin
-                pad <= 1'b1;
+                {pad_0, pad_1, pad_2} <= {3{1'b1}};
                 if (padded_scenes != 32'hFFFF_FFFF) padded_scenes <= padded_scenes + 32'd1;
             end
             if (fire) begin
                 n <= done ? 40'd0 : n + 40'd1;
-                if (pad && done) pad <= 1'b0;
+                if (pad && done) {pad_0, pad_1, pad_2} <= {3{1'b0}};
                 if (pad && padded_samples != 32'hFFFF_FFFF) padded_samples <= padded_samples + 32'd1;
             end
             if (cnt_clr) begin
@@ -94,4 +99,6 @@ module scene_guard (
             end
         end
     end
+
+    assign tmr_mismatch = (pad_0 != pad_1) || (pad_0 != pad_2);
 endmodule

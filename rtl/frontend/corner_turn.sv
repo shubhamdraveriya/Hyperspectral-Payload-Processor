@@ -57,7 +57,8 @@ module corner_turn import frontend_pkg::*, ecc_pkg::*; #(
     output logic [31:0] unfilled_lines,
 
     input  ecc_inj_t    inj,            // buffer ECC (SPEC RAD-02)
-    output ecc_evt_t    ecc
+    output ecc_evt_t    ecc,
+    output logic        tmr_mismatch    // the voted state copies disagree (RAD-04)
 );
     localparam int EB = $clog2(NX_MAX * NZ_MAX);
     localparam int DQ = 16;             // line descriptors
@@ -72,12 +73,18 @@ module corner_turn import frontend_pkg::*, ecc_pkg::*; #(
         logic [23:0] ts;                // the line's scene timestamp
     } desc_t;
 
-    logic [1:0] full;                   // buffer holds a line not yet read out
+    // buffers holding a line not yet read out: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic [2-1:0] full_0, full_1, full_2;
+    logic [2-1:0] full;
+    assign full = (full_0 & full_1) | (full_0 & full_2) | (full_1 & full_2);
 
     // ---------------------------------------------------------------------
     // Write side
     // ---------------------------------------------------------------------
-    logic          wb;                  // buffer the next line goes to
+    // buffer the next line goes to: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic wb_0, wb_1, wb_2;
+    logic wb;
+    assign wb = (wb_0 & wb_1) | (wb_0 & wb_2) | (wb_1 & wb_2);
     logic          wr_on, wr_drop, wr_scene;
     logic          scene_lost;          // a lost line started a scene: mark the next one sent
     logic [EB-1:0] wcnt;
@@ -110,8 +117,9 @@ module corner_turn import frontend_pkg::*, ecc_pkg::*; #(
     end
 
     always_ff @(posedge clk) begin
+        {wb_0, wb_1, wb_2} <= {3{wb}};   // refresh (RAD-04)
         if (rst) begin
-            wb <= 1'b0;
+            {wb_0, wb_1, wb_2} <= {3{1'b0}};
             {wr_on, wr_drop, scene_lost} <= '0;
             lines_in <= '0;
             cur_ts   <= '0;
@@ -131,7 +139,7 @@ module corner_turn import frontend_pkg::*, ecc_pkg::*; #(
                 wr_on      <= 1'b0;
                 wr_drop    <= 1'b0;
                 scene_lost <= dq_push ? 1'b0 : (scene_lost || (drop_now && scene_now));
-                if (wr_now) wb <= !wb;
+                if (wr_now) {wb_0, wb_1, wb_2} <= {3{!wb}};
                 if (drop_now) begin
                     dropped_lines <= sat_inc(dropped_lines);
                     if (!dq_push) unfilled_lines <= sat_inc(unfilled_lines);
@@ -159,7 +167,10 @@ module corner_turn import frontend_pkg::*, ecc_pkg::*; #(
     // ---------------------------------------------------------------------
     // Read side
     // ---------------------------------------------------------------------
-    logic          rd_on;
+    // reading a line: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic rd_on_0, rd_on_1, rd_on_2;
+    logic rd_on;
+    assign rd_on = (rd_on_0 & rd_on_1) | (rd_on_0 & rd_on_2) | (rd_on_1 & rd_on_2);
     desc_t         rd;
     logic [15:0]   xr, zr;
     logic [EB-1:0] ra;
@@ -176,17 +187,19 @@ module corner_turn import frontend_pkg::*, ecc_pkg::*; #(
     // full[]: set by the writer at the end of a line, cleared by the reader
     // after the line's last read (never the same buffer in the same cycle)
     always_ff @(posedge clk) begin
+        {full_0, full_1, full_2} <= {3{full}};   // refresh (RAD-04)
         if (rst) begin
-            full <= '0;
+            {full_0, full_1, full_2} <= {3{2'b00}};
         end else begin
-            if (wr_now && s_last)               full[wb]        <= 1'b1;
-            if (issue && rd_end && !rd.fill)    full[rd.buffer] <= 1'b0;
+            if (wr_now && s_last)               {full_0[wb], full_1[wb], full_2[wb]} <= {3{1'b1}};
+            if (issue && rd_end && !rd.fill)    {full_0[rd.buffer], full_1[rd.buffer], full_2[rd.buffer]} <= {3{1'b0}};
         end
     end
 
     always_ff @(posedge clk) begin
+        {rd_on_0, rd_on_1, rd_on_2} <= {3{rd_on}};   // refresh (RAD-04)
         if (rst) begin
-            rd_on     <= 1'b0;
+            {rd_on_0, rd_on_1, rd_on_2} <= {3{1'b0}};
             lines_out <= '0;
         end else begin
             if (issue) begin
@@ -199,13 +212,13 @@ module corner_turn import frontend_pkg::*, ecc_pkg::*; #(
                     ra <= EB'(xr + 16'd1);
                 end
                 if (rd_end) begin
-                    rd_on     <= 1'b0;
+                    {rd_on_0, rd_on_1, rd_on_2} <= {3{1'b0}};
                     lines_out <= sat_inc(lines_out);
                 end
             end
             if (cnt_clr) lines_out <= '0;
             if (dq_pop) begin
-                rd_on <= 1'b1;
+                {rd_on_0, rd_on_1, rd_on_2} <= {3{1'b1}};
                 rd    <= dq_dout;
                 xr    <= '0;
                 zr    <= '0;
@@ -300,4 +313,6 @@ module corner_turn import frontend_pkg::*, ecc_pkg::*; #(
         .m_tvalid (m_axis_tvalid),
         .m_tready (m_axis_tready)
     );
+
+    assign tmr_mismatch = (wb_0 != wb_1) || (wb_0 != wb_2) || (full_0 != full_1) || (full_0 != full_2) || (rd_on_0 != rd_on_1) || (rd_on_0 != rd_on_2);
 endmodule

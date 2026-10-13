@@ -24,6 +24,9 @@ module tb_c123_core;
     logic        m_tlast, m_tvalid, m_tready = 1'b0;
     logic        cfg_error;
 
+    logic w_sbe, w_dbe, tmr_mismatch;          // ECC / TMR events of the compressor state (RAD-03)
+    int   rad_events = 0;
+
     c123_core #(.NX_MAX(NX_MAX), .NZ_MAX(NZ_MAX)) dut (
         .clk, .rst, .cfg,
         .s_axis_tdata  (s_tdata),
@@ -37,8 +40,16 @@ module tb_c123_core;
         .m_axis_tready (m_tready),
         .cfg_error     (cfg_error),
         .lb_inj        ('0),
-        .lb_ecc        ()
+        .lb_ecc        (),
+        .w_sbe, .w_dbe, .tmr_mismatch
     );
+
+    // no ECC or TMR event without injected faults
+    always @(posedge clk)
+        if (!rst && (w_sbe || w_dbe || tmr_mismatch)) begin
+            if (rad_events == 0) $display("  ECC / TMR event without a fault: sbe %b dbe %b mismatch %b", w_sbe, w_dbe, tmr_mismatch);
+            rad_events++;
+        end
 
     string       dir;
     int          scenes, in_pct, out_pct, scene_size;
@@ -190,7 +201,7 @@ module tb_c123_core;
         repeat (200) @(posedge clk);       // anything extra would show up here
 
         if (byte_errors == 0 && delta_errors == 0 && last_errors == 0 && pos == expected.size() &&
-            lasts == scenes && di == samples.size() && !cfg_error)
+            lasts == scenes && di == samples.size() && !cfg_error && rad_events == 0)
             $display("PASS: tb_c123_core %s, %0d bytes, %0d samples", dir, pos, di);
         else
             $display("FAIL: tb_c123_core %s: %0d byte errors, %0d delta errors, %0d tlast errors, %0d/%0d bytes, %0d/%0d tlast, %0d/%0d samples",

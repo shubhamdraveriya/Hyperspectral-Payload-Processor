@@ -30,7 +30,9 @@ module c123_predictor import c123_pkg::*; #(
     input  ld_t     i,
 
     output logic    o_valid,
-    output pr_t     o
+    output pr_t     o,
+    output logic    w_sbe,              // weight RAM read corrected / uncorrectable (RAD-03)
+    output logic    w_dbe
 );
     localparam int ZB = $clog2(NZ_MAX);
 
@@ -55,23 +57,37 @@ module c123_predictor import c123_pkg::*; #(
     endfunction
 
     // ---------------------------------------------------------------------
-    // Weight RAM
+    // Weight RAM: block RAM with ECC (RAD-03), the weights padded to a
+    // multiple of 64 bits. Each band's weights are rewritten after every use,
+    // so a corrected word goes back corrected.
     // ---------------------------------------------------------------------
-    wvec_t w_rd, w_new15;
+    localparam int WBITS = NWS * WW;
+    localparam int WPAD  = (WBITS + 63) / 64 * 64;
 
-    sdp_ram #(
-        .WIDTH (NWS * WW),
-        .DEPTH (NZ_MAX),
-        .STYLE ("block")
+    wvec_t w_rd, w_new15;
+    logic [WPAD-1:0] w_q;
+
+    ecc_ram #(
+        .WIDTH   (WPAD),
+        .DEPTH   (NZ_MAX),
+        .STYLE   ("block"),
+        .LATENCY (2)
     ) u_weights (
-        .clk   (clk),
-        .ce    (ce),
-        .we    (ce && c15.v && !c15.t0),
-        .waddr (c15.z[ZB-1:0]),
-        .wdata (w_new15),
-        .raddr (i.z[ZB-1:0]),
-        .rdata (w_rd)
+        .clk     (clk),
+        .rst     (rst),
+        .ce      (ce),
+        .we      (ce && c15.v && !c15.t0),
+        .waddr   (c15.z[ZB-1:0]),
+        .wdata   (WPAD'(w_new15)),
+        .inj_sbe (1'b0),
+        .inj_dbe (1'b0),
+        .re      (i_valid),
+        .raddr   (i.z[ZB-1:0]),
+        .rdata   (w_q),
+        .sbe     (w_sbe),
+        .dbe     (w_dbe)
     );
+    assign w_rd = w_q[WBITS-1:0];
 
     // Default initialization (4.6.3.2): directional 0, first band 7/8 2^omega,
     // each further band 1/8 of the previous. Slots beyond min(z, P) are unused:

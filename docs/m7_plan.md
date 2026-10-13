@@ -13,6 +13,7 @@ RAD-07 are met and the fault-injection report is written.
 | 3 | Watchdogs (RAD-05, below): PL pipeline watchdogs (regression passes; mutation-checked; commit 1a0397f) and the PS watchdog in `hpdp_run` (written; board test pending: `run_m5.py --wdt-test`) |
 | LNK-10 | In-System IBERT on both channels, optional (`HPDP_IBERT=1`), after the user's JSB MARK 1 setup; build and eye scans pending (board: `sw/host/ibert_scan.tcl`) |
 | 4 | SEM controller (RAD-01, below): `sem_ultra` with ICAPE3 / FRAME_ECCE4 in `hpdp_top` on clk_fr; RAD registers, monitor FIFO, counters, interrupt; `hpdp_run` hands the configuration logic to the ICAP and grants it. Register path tested with a controller stand-in (regression 67 tests). Build and board test pending (`run_m5.py --sem-inject`) |
+| 5 | SECDED / TMR (RAD-03) and triplicated state machines (RAD-04), below: regression passes (tests of every mechanism with forced upsets, mutation-checked); build pending |
 
 ### Item 1: memory ECC (RAD-02)
 
@@ -107,6 +108,37 @@ should deliver under overload and what `run_m5.py` should check:
   waits for Observation; a job can inject a bit error before the scenes (Idle, injection,
   Observation, wait up to 5 s for the correction) and echoes the controller's reports on the UART.
   An injection into a masked frame is ignored by the controller (no correction): try another frame.
+
+### Item 5: SECDED / TMR (RAD-03) and triplicated state machines (RAD-04)
+
+- **Compressor weights** (396 bits per band, block RAM): `ecc_ram` with `WIDTH` 448 (padded to a
+  multiple of 64), block RAM ECC (SECDED); every band's weights are rewritten after each use, so a
+  corrected word goes back corrected. Counters `RAD.W_SBE` / `W_DBE`; an uncorrectable read flags
+  the scenes in the compressor (RAD-06), as line-buffer errors do. One BRAM36 more than before.
+- **Coder accumulators and neighbourhood memories** (LUT RAM, read asynchronously):
+  `tmr_ram`, three copies (separate instances with `DONT_TOUCH`) and a bitwise vote on read. A
+  Hamming decoder in these paths (syndrome, error position, correction) would add five or six
+  logic levels at 250 MHz; the vote adds one. Each band's entries are rewritten with every
+  sample of the band, so a bad copy heals itself. Reads where the copies disagreed:
+  `RAD.TMR_CMP`.
+- **Configuration registers**: the register block in three copies (`hpdp_regs_tmr`), every
+  AXI4-Lite transaction to all three, every output voted (configuration, read data, handshake),
+  so an upset is masked on reads too; `RAD.TMR_REGS` counts disagreements; a copy heals when the
+  register is written again (`hpdp_run` rewrites the configuration for every job). The clock
+  domain copies of the configuration (`cdc_bus`) are resent continuously and need nothing more.
+- **Control state machines** (RAD-04) of the flight path: corner turn (`wb`, `full`, `rd_on`),
+  scene guard (`pad`), compressor packer (`state`), packetizer (`busy`, `in_hdr`), AOS framer
+  (`os`). Three copies with `DONT_TOUCH`, logic reads the vote, every assignment goes to all
+  three, and every cycle each copy reloads the voted value (an upset copy heals at the next
+  clock). `RAD.TMR_FSM` counts disagreements. The ground-side state machines (link receiver,
+  frame sync, ground capture) and the sensor emulator are test equipment, not payload, and stay
+  as they are; the transmit chain (RS encoder, CADU framer, link TX) is driven by counters.
+- Tests: `tb_tmr_ram` (random upsets in any copy: masked, flagged, healed by the next write);
+  `tb_regs_tmr` (an upset in each copy: configuration output and register reads unchanged,
+  flagged, healed by a rewrite); `tb_corner_turn` forces 30 upsets into one copy of `wb`, `full`
+  or `rd_on` during the overload run (every output exact, each healed at the next clock; without
+  the refresh, 6 375 mismatch cycles stay and the test fails); the compressor tests check that
+  no ECC or TMR event appears without a fault.
 
 ### Item 2: uncorrectable errors (RAD-06)
 

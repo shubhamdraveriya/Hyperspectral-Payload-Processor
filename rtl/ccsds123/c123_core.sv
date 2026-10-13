@@ -32,7 +32,11 @@ module c123_core import c123_pkg::*, ecc_pkg::*; #(
     output logic        cfg_error,      // configuration outside what the core supports
 
     input  ecc_inj_t    lb_inj,         // line buffer ECC (SPEC RAD-02)
-    output ecc_evt_t    lb_ecc
+    output ecc_evt_t    lb_ecc,
+    output logic        w_sbe,          // weight RAM ECC (RAD-03): corrected / uncorrectable read
+    output logic        w_dbe,
+    output logic        tmr_mismatch,   // per-band TMR memories: copies disagreed (RAD-03)
+    output logic        fsm_mismatch    // the packer's voted state copies disagree (RAD-04)
 );
     localparam int CW_DEPTH = 32;
 
@@ -82,6 +86,7 @@ module c123_core import c123_pkg::*, ecc_pkg::*; #(
     // Pipeline
     // ---------------------------------------------------------------------
     logic ce;
+    logic nb_mm, cd_mm;
     logic nb_valid, ld_valid, pr_valid, cw_valid_c;
     nb_t  nb;
     ld_t  ld;
@@ -96,7 +101,8 @@ module c123_core import c123_pkg::*, ecc_pkg::*; #(
         .s_tready (s_axis_tready),
         .o_valid  (nb_valid),
         .o        (nb),
-        .lb_inj, .lb_ecc
+        .lb_inj, .lb_ecc,
+        .tmr_mismatch (nb_mm)
     );
 
     c123_localdiff u_ld (
@@ -113,7 +119,8 @@ module c123_core import c123_pkg::*, ecc_pkg::*; #(
         .i_valid (ld_valid),
         .i       (ld),
         .o_valid (pr_valid),
-        .o       (pr)
+        .o       (pr),
+        .w_sbe, .w_dbe
     );
 
     c123_coder #(.NZ_MAX(NZ_MAX)) u_coder (
@@ -121,8 +128,10 @@ module c123_core import c123_pkg::*, ecc_pkg::*; #(
         .i_valid (pr_valid),
         .i       (pr),
         .o_valid (cw_valid_c),
-        .o       (cw_c)
+        .o       (cw_c),
+        .tmr_mismatch (cd_mm)
     );
+    assign tmr_mismatch = nb_mm || cd_mm;
 
     // ---------------------------------------------------------------------
     // Codeword FIFO and pipeline enable
@@ -159,6 +168,7 @@ module c123_core import c123_pkg::*, ecc_pkg::*; #(
         .m_tkeep  (m_axis_tkeep),
         .m_tlast  (m_axis_tlast),
         .m_tvalid (m_axis_tvalid),
-        .m_tready (m_axis_tready)
+        .m_tready (m_axis_tready),
+        .tmr_mismatch (fsm_mismatch)
     );
 endmodule
