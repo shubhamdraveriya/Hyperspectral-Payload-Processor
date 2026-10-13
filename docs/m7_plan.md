@@ -10,6 +10,9 @@ RAD-07 are met and the fault-injection report is written.
 | 0 | Scene guard (`rtl/frontend/scene_guard.sv`, `tb_scene_guard`): regression passes; build met timing after pipelining the Nx·Ny·Nz product (WNS +0.175 ns). SYS-09 board re-run 1 (below) found scene starts lost with unfilled lines: fixed in the corner turn (`tb_corner_turn`); re-run 2 (m7d) keeps scene starts but loses whole scenes. Decision (a) taken (below); scene timestamps and packet flags now travel with the samples; SYS-09 re-run 3 pending (board) |
 | 1 | UltraRAM ECC (below): regression passes; build met timing (WNS +0.100 ns; 28.7 k LUT, 33.9 k FF, 32.5 BRAM36, 56 URAM): all 56 URAM288 have ECC on (encode on the write port, decode on the read port). Board (build m7c, job/result v4, `run_m5.py --ecc`): single-bit errors in all three memories, 4 scenes 128×64×64: counts 1 / 4 / 4 as in simulation, capture and ground bit-exact |
 | 2 | Uncorrectable errors flag the scenes and raise an interrupt (below): regression passes; since 2026-10-13 table and corner-turn errors are attributed exactly (marks on the samples). Board (m7c): double-bit error in table entry 4100, correction bypassed: `CAL_DBE` 256 (4 scenes × 64 lines, not written back), data bit-exact, all 4 scenes flagged "internal error" by the ground station (`hpdp_gs.py decode`) |
+| 3 | Watchdogs (RAD-05, below): PL pipeline watchdogs (regression passes; mutation-checked; commit 1a0397f) and the PS watchdog in `hpdp_run` (written; board test pending: `run_m5.py --wdt-test`) |
+| LNK-10 | In-System IBERT on both channels, optional (`HPDP_IBERT=1`), after the user's JSB MARK 1 setup; build and eye scans pending (board: `sw/host/ibert_scan.tcl`) |
+| 4 | SEM controller (RAD-01, below): `sem_ultra` with ICAPE3 / FRAME_ECCE4 in `hpdp_top` on clk_fr; RAD registers, monitor FIFO, counters, interrupt; `hpdp_run` hands the configuration logic to the ICAP and grants it. Register path tested with a controller stand-in (regression 67 tests). Build and board test pending (`run_m5.py --sem-inject`) |
 
 ### Item 1: memory ECC (RAD-02)
 
@@ -83,6 +86,28 @@ should deliver under overload and what `run_m5.py` should check:
   corner turn to cancel a partly sent scene, so the compressor side must be able to
   abandon an image (or the decision is taken at the scene start from the queue state).
 
+### Item 4: SEM controller (RAD-01)
+
+- `rtl/rad/sem_support.sv`: `sem_ip` (sem_ultra 3.1, mitigation and testing, no classification) with
+  ICAPE3 and FRAME_ECCE4, in `hpdp_top` on clk_fr (31.25 MHz from the board oscillator, so scrubbing
+  does not depend on the PS clocks). Nothing else uses the ICAP: `cap_gnt` is the software grant,
+  `cap_rel` low. The monitor interface is passed on byte by byte and never back-pressures the
+  controller; its receive side is unused (commands go through the command port).
+- `hpdp_core`: the controller's signals arrive through block design ports (`clk_sem`, `sem_*`) and
+  cross to clk_ctrl: configuration and commands as a snapshot with a sequence count (one
+  `command_strobe` per new count, when not busy), status and counters back as a snapshot, monitor
+  bytes through an asynchronous FIFO (2 KB; bytes that find it full are counted).
+- Registers (RAD block): `SEM_CTRL.grant`; `SEM_CMD` (PG187 codes: 0xE Idle, 0xA Observation, 0xF
+  Detect only, 0xD Diagnostic scan, 0xB reset, 0xC injection at `SEM_INJ_ADDR` = frame, word, bit);
+  `SEM_STATUS` (the ten status outputs, busy, ICAP available); `SEM_MON` (one report byte per read);
+  counters `SEM_CORRECTIONS`, `SEM_UNCORRECTABLE`, `SEM_HEARTBEATS`, `SEM_MON_DROPPED`; interrupt
+  `SYS.IRQ_STATUS.sem_uncorrectable`.
+- `hpdp_run` (job/result v6): at start-up clears CSU `pcap_ctrl.PCAP_PR` (the configuration logic
+  goes from the PCAP to the ICAP, PG187 "Zynq UltraScale+ MPSoC Considerations"), grants the ICAP and
+  waits for Observation; a job can inject a bit error before the scenes (Idle, injection,
+  Observation, wait up to 5 s for the correction) and echoes the controller's reports on the UART.
+  An injection into a masked frame is ignored by the controller (no correction): try another frame.
+
 ### Item 2: uncorrectable errors (RAD-06)
 
 - A read that returns an uncorrectable word (any of the three memories) flags every scene
@@ -99,8 +124,6 @@ should deliver under overload and what `run_m5.py` should check:
   1 + 24 (not written back); the interrupt bit is set. With the flag forced to 0 the test
   fails (264 ground bytes differ).
 
-| 3 | Watchdogs (RAD-05, below): PL pipeline watchdogs (regression passes; mutation-checked) and the PS watchdog in `hpdp_run` (written; board test pending: `run_m5.py --wdt-test`) |
-| LNK-10 | In-System IBERT on both channels, optional (`HPDP_IBERT=1`), after the user's JSB MARK 1 setup; build and eye scans pending (board: `sw/host/ibert_scan.tcl`) |
 
 ## Decisions of 2026-10-13 (taken on the user's behalf)
 
