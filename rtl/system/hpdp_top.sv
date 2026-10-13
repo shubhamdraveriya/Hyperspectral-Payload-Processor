@@ -19,6 +19,7 @@
 //   inverts it to TX_DISABLE). LOS and TX_FAULT are not wired to the PL on this
 //   board (UG1244 table 3-32).
 module hpdp_top #(
+    parameter bit IBERT      = 1'b0,            // In-System IBERT (HPDP_IBERT=1 builds, LNK-10)
     parameter int POR_CYCLES = 65535            // clk_fr cycles, about 2 ms
 ) (
     input  wire       clk_125mhz_p,             // H9 / G9, LVDS
@@ -83,6 +84,59 @@ module hpdp_top #(
     wire [3:0]  rxclkcorcnt;
     wire [5:0]  rxbufstatus;
 
+    // In-System IBERT (LNK-10 eye scans in Hardware Manager), only in HPDP_IBERT=1
+    // builds: it drives the channels' DRP ports and eye-scan resets, and passes the
+    // design's TX/RX settings through unless they are overridden in Hardware
+    // Manager. Its clock, the DRP clock and the debug hub are clk_fr.
+    logic [19:0] ib_drpaddr;
+    logic [31:0] ib_drpdi, gt_drpdo;
+    logic [1:0]  ib_drpen, ib_drpwe, gt_drprdy, ib_eyescanreset, ib_rxlpmen;
+    logic [5:0]  ib_rxrate;
+    logic [9:0]  ib_txdiff, ib_txpre, ib_txpost;
+
+    if (IBERT) begin : g_ibert
+        isib_link u_isib (
+            .clk            (clk_fr),
+            .drpclk_i       ({2{clk_fr}}),
+            .drpclk_o       (),
+            .gt0_drpen_o    (ib_drpen[0]),
+            .gt0_drpwe_o    (ib_drpwe[0]),
+            .gt0_drpaddr_o  (ib_drpaddr[9:0]),
+            .gt0_drpdi_o    (ib_drpdi[15:0]),
+            .gt0_drprdy_i   (gt_drprdy[0]),
+            .gt0_drpdo_i    (gt_drpdo[15:0]),
+            .gt1_drpen_o    (ib_drpen[1]),
+            .gt1_drpwe_o    (ib_drpwe[1]),
+            .gt1_drpaddr_o  (ib_drpaddr[19:10]),
+            .gt1_drpdi_o    (ib_drpdi[31:16]),
+            .gt1_drprdy_i   (gt_drprdy[1]),
+            .gt1_drpdo_i    (gt_drpdo[31:16]),
+            .eyescanreset_o (ib_eyescanreset),
+            .rxrate_o       (ib_rxrate),
+            .txdiffctrl_o   (ib_txdiff),
+            .txprecursor_o  (ib_txpre),
+            .txpostcursor_o (ib_txpost),
+            .rxlpmen_o      (ib_rxlpmen),
+            .rxrate_i       (6'd0),
+            .txdiffctrl_i   ({2{5'b11000}}),
+            .txprecursor_i  (10'd0),
+            .txpostcursor_i (10'd0),
+            .rxlpmen_i      (2'b00),
+            .rxoutclk_i     ({2{usrclk}})
+        );
+    end else begin : g_no_ibert
+        assign ib_drpaddr      = '0;
+        assign ib_drpdi        = '0;
+        assign ib_drpen        = '0;
+        assign ib_drpwe        = '0;
+        assign ib_eyescanreset = '0;
+        assign ib_rxlpmen      = 2'b00;           // DFE (wizard default)
+        assign ib_rxrate       = '0;
+        assign ib_txdiff       = {2{5'b11000}};   // wizard default swing
+        assign ib_txpre        = '0;
+        assign ib_txpost       = '0;
+    end
+
     gt_link u_gt (
         .gtwiz_userclk_tx_reset_in          (~&txpmaresetdone),
         .gtwiz_userclk_tx_srcclk_out        (),
@@ -101,12 +155,12 @@ module hpdp_top #(
         .gtwiz_reset_rx_done_out            (rx_done),
         .gtwiz_userdata_tx_in               ({2{txdata}}),
         .gtwiz_userdata_rx_out              (rxdata),
-        .drpaddr_in                         (20'd0),
+        .drpaddr_in                         (ib_drpaddr),
         .drpclk_in                          ({2{clk_fr}}),
-        .drpdi_in                           (32'd0),
-        .drpen_in                           (2'b00),
-        .drpwe_in                           (2'b00),
-        .eyescanreset_in                    (2'b00),
+        .drpdi_in                           (ib_drpdi),
+        .drpen_in                           (ib_drpen),
+        .drpwe_in                           (ib_drpwe),
+        .eyescanreset_in                    (ib_eyescanreset),
         .gthrxn_in                          (sfp_rx_n),
         .gthrxp_in                          (sfp_rx_p),
         .gtrefclk0_in                       ({2{gtrefclk}}),
@@ -114,28 +168,28 @@ module hpdp_top #(
         .rx8b10ben_in                       (2'b11),
         .rxbufreset_in                      (rxbufreset),
         .rxcommadeten_in                    (2'b11),
-        .rxlpmen_in                         (2'b00),          // DFE (wizard default)
+        .rxlpmen_in                         (ib_rxlpmen),
         .rxmcommaalignen_in                 (2'b11),
         .rxpcommaalignen_in                 (2'b11),
         .rxpolarity_in                      ({2{rxpol}}),
         .rxprbscntreset_in                  ({2{prbs_cnt_reset}}),
         .rxprbssel_in                       ({2{prbs_sel}}),
-        .rxrate_in                          (6'd0),
+        .rxrate_in                          (ib_rxrate),
         .rxusrclk_in                        ({2{usrclk}}),
         .rxusrclk2_in                       ({2{clk_link}}),
         .tx8b10ben_in                       (2'b11),
         .txctrl0_in                         (32'd0),
         .txctrl1_in                         (32'd0),
         .txctrl2_in                         ({2{6'd0, txcharisk}}),
-        .txdiffctrl_in                      ({2{5'b11000}}),  // wizard default swing
+        .txdiffctrl_in                      (ib_txdiff),
         .txpolarity_in                      ({2{txpol}}),
-        .txpostcursor_in                    (10'd0),
+        .txpostcursor_in                    (ib_txpost),
         .txprbsforceerr_in                  ({2{prbs_force_err}}),
         .txprbssel_in                       ({2{prbs_sel}}),
-        .txprecursor_in                     (10'd0),
+        .txprecursor_in                     (ib_txpre),
         .cplllock_out                       (cplllock),
-        .drpdo_out                          (),
-        .drprdy_out                         (),
+        .drpdo_out                          (gt_drpdo),
+        .drprdy_out                         (gt_drprdy),
         .gthtxn_out                         (sfp_tx_n),
         .gthtxp_out                         (sfp_tx_p),
         .gtpowergood_out                    (powergood),

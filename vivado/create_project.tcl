@@ -28,6 +28,15 @@ set_property USED_IN_SYNTHESIS false [get_files waivers.xdc]
 # GTH transceivers of the SFP cages (instantiated in hpdp_top)
 source [file join $repo vivado ip gt_link.tcl]
 
+# Optional In-System IBERT on both channels for eye scans (LNK-10): HPDP_IBERT=1
+set ibert [expr {[info exists ::env(HPDP_IBERT)] && $::env(HPDP_IBERT) eq "1"}]
+if {$ibert} {
+    source [file join $repo vivado ip isib_link.tcl]
+    add_files -fileset constrs_1 -norecurse [file join $repo vivado ibert ibert_debug.xdc]
+    set_property USED_IN_SYNTHESIS false [get_files ibert_debug.xdc]
+    puts "In-System IBERT included (HPDP_IBERT=1)"
+}
+
 update_compile_order -fileset sources_1
 
 # SYS.BUILD_ID: the commit the project was created from (0 outside git)
@@ -39,6 +48,7 @@ puts "BUILD_ID $build_id"
 source [file join $repo vivado bd system.tcl]
 make_wrapper -files [get_files system.bd] -top -import
 set_property top hpdp_top [current_fileset]
+if {$ibert} { set_property generic {IBERT=1'b1} [current_fileset] }
 update_compile_order -fileset sources_1
 
 puts "Created [file join $proj_dir hpdp.xpr]"
