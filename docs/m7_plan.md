@@ -1,20 +1,23 @@
 # M7: Radiation mitigation and robustness: plan
 
-Status: **in progress** (2026-10-13). SPEC.md 10 (RAD-01 .. RAD-07); done when RAD-01 ..
-RAD-07 are met and the fault-injection report is written.
+Status: **done** (2026-10-13). SPEC.md 10 (RAD-01 .. RAD-07): all met, on the board where SPEC
+asks for it; fault-injection report `docs/m7_fault_injection.md`. Final build **m7h** (commit
+b506d30), app job/result v7 (`build/m7g/hpdp_run_v7.elf`). Left for later: SW-05 (Ethernet
+upload, M6) needs the board's Ethernet connected; O-5 (ESA / CNES decoder cross-check) needs
+access to those tools.
 
 ## Progress
 
 | # | State |
 |---|---|
-| 0 | Scene guard (`rtl/frontend/scene_guard.sv`, `tb_scene_guard`): regression passes; build met timing after pipelining the Nx·Ny·Nz product (WNS +0.175 ns). SYS-09 board re-run 1 (below) found scene starts lost with unfilled lines: fixed in the corner turn (`tb_corner_turn`); re-run 2 (m7d) keeps scene starts but loses whole scenes. Decision (a) taken (below); scene timestamps and packet flags now travel with the samples; SYS-09 re-run 3 pending (board) |
+| 0 | Scene guard (`rtl/frontend/scene_guard.sv`, `tb_scene_guard`): regression passes; build met timing after pipelining the Nx·Ny·Nz product (WNS +0.175 ns). SYS-09 board re-run 1 (below) found scene starts lost with unfilled lines: fixed in the corner turn (`tb_corner_turn`); re-run 2 (m7d) keeps scene starts but loses whole scenes. Decision (a) taken (below); scene timestamps and packet flags now travel with the samples. **SYS-09 re-run 3 (m7g, 2026-10-13): PASS**: RAW at 76.8 Msamples/s for 1 min, 59 353 of 59 904 lines dropped (99.1 %, counted), 218 of 234 scenes reached the compressor and all 218 were packetized, 7.4 M frames with 0 code errors, 0 sync losses, no stall |
 | 1 | UltraRAM ECC (below): regression passes; build met timing (WNS +0.100 ns; 28.7 k LUT, 33.9 k FF, 32.5 BRAM36, 56 URAM): all 56 URAM288 have ECC on (encode on the write port, decode on the read port). Board (build m7c, job/result v4, `run_m5.py --ecc`): single-bit errors in all three memories, 4 scenes 128×64×64: counts 1 / 4 / 4 as in simulation, capture and ground bit-exact |
 | 2 | Uncorrectable errors flag the scenes and raise an interrupt (below): regression passes; since 2026-10-13 table and corner-turn errors are attributed exactly (marks on the samples). Board (m7c): double-bit error in table entry 4100, correction bypassed: `CAL_DBE` 256 (4 scenes × 64 lines, not written back), data bit-exact, all 4 scenes flagged "internal error" by the ground station (`hpdp_gs.py decode`) |
-| 3 | Watchdogs (RAD-05, below): PL pipeline watchdogs (regression passes; mutation-checked; commit 1a0397f) and the PS watchdog in `hpdp_run` (written; board test pending: `run_m5.py --wdt-test`) |
-| LNK-10 | In-System IBERT on both channels, optional (`HPDP_IBERT=1`), after the user's JSB MARK 1 setup; built (`build/m7f_ibert`); eye scans pending (board: `sw/host/ibert_scan.tcl`) |
-| 4 | SEM controller (RAD-01, below): `sem_ultra` with ICAPE3 / FRAME_ECCE4 in `hpdp_top` on clk_fr; RAD registers, monitor FIFO, counters, interrupt; `hpdp_run` hands the configuration logic to the ICAP and grants it. Register path tested with a controller stand-in (regression 67 tests). Built (m7f, WNS +0.054 ns); board test pending (`run_m5.py --sem-inject`, `--sem-campaign`) |
-| 5 | SECDED / TMR (RAD-03) and triplicated state machines (RAD-04), below: regression passes (tests of every mechanism with forced upsets, mutation-checked); build m7g met timing (WNS +0.103 ns, WHS +0.010 ns; 37.4 k LUT, 38.7 k FF, 38.5 BRAM36, 56 URAM, 24 DSP); app v7 `build/m7g/hpdp_run_v7.elf` reports the weight ECC and TMR counters; board run pending |
-| 6 | Fault-injection campaign (RAD-07), report `docs/m7_fault_injection.md`. (a) Simulation done (`tb_fault`, 1 080 trials): protected classes 600 trials, 0 silent (343 corrected, 238 detected, 19 masked); unprotected pipeline registers and counters 22 % silent, accepted as residual risk (decision in the report). (b) ECC injection on the board done (m7c, rows 1 and 2); SEM campaign tool ready (job/result v7, `run_m5.py --sem-campaign`), board runs pending |
+| 3 | Watchdogs (RAD-05, below): PL pipeline watchdogs (regression passes; mutation-checked; commit 1a0397f) and the PS watchdog in `hpdp_run`. **Board (m7g, 2026-10-13): PASS**: armed during a run (`--wdt`), kicked, no reset; `--wdt-test` hangs on purpose and the board resets, `CRL_APB.RESET_REASON` 0x4 (system error) |
+| LNK-10 | In-System IBERT on both channels, optional (`HPDP_IBERT=1`), after the user's JSB MARK 1 setup; built (`build/m7f_ibert`). **Eye scans (2026-10-13)**, PRBS-31 traffic, increments 2/4, dwell BER 1e-6 (`docs/lnk10/`): SFP0 -> SFP1 horizontal 77.52 %, vertical 96.83 %; SFP1 -> SFP0 77.52 % / 90.48 % (JSB MARK 1: 82.95 % / 90.48 %); PRBS-31 meanwhile 1.125e12 bits, 0 errors (BER < 2.66e-12). The reverse direction works: the cable is duplex (O-1 closed) |
+| 4 | SEM controller (RAD-01, below): `sem_ultra` with ICAPE3 / FRAME_ECCE4 in `hpdp_top` on clk_fr; RAD registers, monitor FIFO, counters, interrupt; `hpdp_run` hands the configuration logic to the ICAP and grants it. Register path tested with a controller stand-in (regression 67 tests). Built (m7f, WNS +0.054 ns). **Board (m7g, 2026-10-13): PASS**: observing from power-up; one upset (frame 0x9000, ECC word) corrected after 131 ms; campaigns (RAD-07 b) below and in the report |
+| 5 | SECDED / TMR (RAD-03) and triplicated state machines (RAD-04), below: regression passes (tests of every mechanism with forced upsets, mutation-checked); build m7g met timing (WNS +0.103 ns, WHS +0.010 ns; 37.4 k LUT, 38.7 k FF, 38.5 BRAM36, 56 URAM, 24 DSP); app v7 `build/m7g/hpdp_run_v7.elf` reports the weight ECC and TMR counters. **Board (m7g, 2026-10-13)**: baseline over the fiber, ECC single-bit 1 / 4 / 4 and double-bit 256 (scenes flagged) as on m7c, **VER-08 10 min PASS** (2344 scenes, 0 dropped lines, 0 code errors, the same frame counts as M5); the RAD-03 / RAD-04 counters stayed 0 in every run. **Build m7h** (commit b506d30) adds TMR on the control state of the corner turn, packetizer and AOS framer, found by the campaign (report): WNS +0.087 ns, 38.2 k LUT, 39.2 k FF; board baseline and **VER-08 10 min PASS** (the same frame counts as m7g) |
+| 6 | Fault-injection campaign (RAD-07), report `docs/m7_fault_injection.md`. (a) Simulation done (`tb_fault`, chain to the AOS framer): on m7g the steering registers of the corner turn, packetizer and framer were silent on 93 - 100 % of upsets (40 % of all unprotected trials), so m7h triplicates them (decision 6). Final, m7h: protected classes 820 trials, **0 silent** (567 corrected, 238 detected, 15 masked; all 220 upsets in triplicated state corrected); remaining unprotected datapath registers 108 of 480 silent (22.5 %), accepted as residual risk (decision 7). (b) ECC injection on the board (m7c, m7g, rows 1, 2, 5) and **SEM campaigns on the board (m7g, 2026-10-13)**: 200 upsets in frames' ECC words, 158 corrected in 125 - 153 ms (mean 138), 42 not seen by the controller (masked or unused frames, undone), 0 uncorrectable, scenes bit-exact; 50 upsets in design bits, 39 corrected, 11 not seen, the scenes after them bit-exact, no stall |
 
 ### Item 1: memory ECC (RAD-02)
 
@@ -193,6 +196,19 @@ The user asked for work that needs no board and for decisions to be taken for th
 5. **LNK-10: In-System IBERT in the HPDP design**, as SPEC asks, optional at build time so
    the normal bitstream carries no debug cores; settings from the user's working setup on
    this board (JSB MARK 1/gth_sfp_link).
+6. **TMR on the steering state found by the fault campaign (build m7h).** The corner turn's
+   write / read addresses, counters and line descriptor, the packetizer's header index,
+   byte count, sequence count, packet index and timestamp, and the AOS framer's zone
+   position, first header pointer, buffer flags, frame count and padding were silent on
+   nearly every upset in simulation (an error there moves every later sample, header or
+   frame, some until reset). They are triplicated as in RAD-04: +0.7 k LUT, +0.5 k FF, WNS
+   +0.087 ns; every one of 220 simulated upsets in them was corrected.
+7. **Residual risk accepted:** upsets in the datapath registers (samples, residuals, sums,
+   the coder's bit accumulator) are silent about one time in four in simulation. Per bit,
+   flip-flops upset far less often than configuration memory (which SEM corrects), an upset
+   corrupts at most the scene in flight, and triplicating the datapath would triple its
+   flip-flops at 250 MHz. First candidate if a mission needs more: the packer's 128-bit bit
+   accumulator (85 % silent).
 
 ## Facts found so far
 
