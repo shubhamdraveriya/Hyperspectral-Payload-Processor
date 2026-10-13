@@ -1,25 +1,28 @@
 `timescale 1ns / 1ps
 
 // Fault-injection campaign, simulation part (SPEC RAD-07 a). The payload chain
-// as in hpdp_core (sensor_frontend -> scene_guard -> c123_core) processes one
-// scene per trial, from the vectors of +DIR (DMA source). Trial 0 has no fault
-// and gives the reference output. Every later trial resets the chain, reloads
-// the calibration table, injects one fault of a class (the classes in turn) at
-// a random moment of the scene, and compares the compressed output with the
-// reference. Outcome of a trial:
+// as in hpdp_core (sensor_frontend -> scene_guard -> c123_core ->
+// space_packetizer -> aos_framer, idle frames off) processes one scene per
+// trial, from the vectors of +DIR (DMA source). Trial 0 has no fault and gives
+// the reference output. Every later trial resets the chain, reloads the
+// calibration table, injects one fault of a class (the classes in turn) at a
+// random moment of the scene, and compares the AOS frames with the reference.
+// Outcome of a trial:
 //   masked     output identical, nothing reported
 //   corrected  output identical, a correction reported (ECC single-bit, a TMR
 //              copy outvoted)
 //   detected   an uncorrectable error reported (ECC double-bit, error marks
 //              on the samples, a scene padded) or the scene did not complete
-//              (what the PL watchdog reports, RAD-05), whatever the output
+//              (fewer frames: a stalled stage or a missing scene, which the PL
+//              watchdogs or hpdp_run report, RAD-05), whatever the output
 //   silent     output different, nothing but corrections reported
 // Classes: ECC single / double-bit errors in the calibration table, the
 // corner-turn buffers, the compressor line buffer and the weights (through
 // the memories' injection inputs: the simulation model of the ECC memories
 // does not decode real bit flips); an upset in one copy of a TMR memory
-// (coder state, neighbourhood memories) or of a TMR state machine register;
-// an upset in an unprotected pipeline or control register (what is left).
+// (coder state, neighbourhood memories) or of a TMR state machine register
+// (corner turn, scene guard, compressor packer, packetizer, AOS framer); an
+// upset in an unprotected pipeline or control register (what is left).
 // Plusargs: +DIR, +TRIALS=<per class> (default 4), +SEED, +CLASS=<n> (only
 // that class). PASS when no protected class has a silent outcome; results also
 // in fault_results.csv, and per target (TMR memory, TMR state register,
@@ -39,7 +42,7 @@ module tb_fault;
         "TMR memory copy (coder, neighbourhood)", "TMR state machine copy",
         "unprotected register"};
     localparam bit PROTECTED [NCLASS] = '{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0};
-    localparam int NTGT = 14;                   // targets of a class (fault_what), at most
+    localparam int NTGT = 25;                   // targets of a class (fault_what), at most
 
     // the target of a fault (classes 8 - 10: flip_tmr_ram, flip_tmr_fsm, flip_unprotected)
     function automatic string tgt_name(int c, int m);
@@ -58,6 +61,22 @@ module tb_fault;
                    3: return "scene guard: pad";
                    4: return "compressor packer: state (copy 0)";
                    5: return "compressor packer: state (copy 2)";
+                   6: return "packetizer: busy";
+                   7: return "packetizer: in_hdr";
+                   8: return "AOS framer: output state";
+                   9: return "corner turn: write count";
+                   10: return "corner turn: read address";
+                   11: return "corner turn: read band";
+                   12: return "corner turn: line descriptor";
+                   13: return "corner turn: line counter";
+                   14: return "packetizer: sequence count";
+                   15: return "packetizer: packet index";
+                   16: return "packetizer: payload bytes left";
+                   17: return "AOS framer: zone write position";
+                   18: return "AOS framer: first header pointer";
+                   19: return "AOS framer: buffers full";
+                   20: return "AOS framer: virtual channel count";
+                   21: return "AOS framer: buffer being filled";
                endcase
             10: case (m)
                    0:  return "coder: accumulator (pipeline)";
@@ -70,10 +89,16 @@ module tb_fault;
                    7:  return "radiometric: sum";
                    8:  return "radiometric: corrected sample";
                    9:  return "compressor packer: bit accumulator";
-                   10: return "corner turn: read address";
-                   11: return "corner turn: read band";
-                   12: return "corner turn: write count";
+                   10: return "predictor: prediction sum";
+                   11: return "predictor: wrapped prediction";
+                   12: return "predictor: doubled prediction";
                    13: return "scene guard: sample count";
+                   14: return "packetizer: header bytes";
+                   15: return "packetizer: input word";
+                   16: return "packetizer: input byte index";
+                   17: return "AOS framer: latched first header pointer";
+                   18: return "AOS framer: latched frame count";
+                   19: return "AOS framer: output byte index";
                endcase
         endcase
         return "";
@@ -99,7 +124,7 @@ module tb_fault;
     logic         sg_ue, sg_fill, sg_tlast, sg_tvalid, sg_tready;
     logic [63:0]  m_tdata;
     logic [7:0]   m_tkeep;
-    logic         m_tlast, m_tvalid, cfg_error;
+    logic         m_tlast, m_tvalid, cfg_error, pk_tready;
     se_status_t   se_st;
     fe_status_t   fe_st;
     logic [32:0]  tbl_rdata;
@@ -134,8 +159,56 @@ module tb_fault;
         .clk (clk_sys), .rst (rst_sys), .cfg (cc),
         .s_axis_tdata (sg_tdata), .s_axis_tuser (sg_tuser[0]), .s_axis_tvalid (sg_tvalid), .s_axis_tready (sg_tready),
         .m_axis_tdata (m_tdata), .m_axis_tkeep (m_tkeep), .m_axis_tlast (m_tlast), .m_axis_tvalid (m_tvalid),
-        .m_axis_tready (1'b1), .cfg_error,
+        .m_axis_tready (pk_tready), .cfg_error,
         .lb_inj, .lb_ecc, .w_sbe, .w_dbe, .tmr_mismatch (cmp_mm), .fsm_mismatch (pk_mm)
+    );
+
+    // Downlink as in hpdp_core: the scene's timestamp queued as it enters the
+    // compressor, its flags (uncorrectable error, lines dropped) for the packet
+    // headers, packets of 512 bytes, AOS frames (idle frames off, so a scene
+    // gives the same frames in every trial)
+    logic [7:0]  p_tdata, a_tdata;
+    logic [1:0]  p_tuser;
+    logic        p_tlast, p_tvalid, p_tready, a_tlast, a_tvalid;
+    logic        pkt_mm, aos_mm, meta_rd;
+    logic [23:0] meta_ts = '0;
+    logic        meta_v = 1'b0, scene_ue = 1'b0, scene_ld = 1'b0;
+    wire         sg_in    = sg_tvalid && sg_tready;
+    wire         sg_first = sg_in && sg_tuser[0];
+
+    always @(posedge clk_sys) begin
+        if (rst_sys) begin
+            {meta_v, scene_ue, scene_ld} <= '0;
+        end else begin
+            if (sg_first) begin
+                meta_v  <= 1'b1;
+                meta_ts <= sg_ts;
+            end else if (meta_rd) begin
+                meta_v  <= 1'b0;
+            end
+            if ((sg_in && sg_ue) || lb_ecc.dbe || w_dbe) scene_ue <= 1'b1;
+            if (sg_in && sg_fill) scene_ld <= 1'b1;
+        end
+    end
+
+    space_packetizer #(.PKT_MAX(2048)) u_pkt (
+        .clk (clk_sys), .rst (rst_sys), .apid (11'h123), .pkt_data (12'd512), .raw_mode (1'b0),
+        .scene_ld, .scene_ue, .cnt_clr (1'b0),
+        .s_axis_tdata (m_tdata), .s_axis_tkeep (m_tkeep), .s_axis_tlast (m_tlast),
+        .s_axis_tvalid (m_tvalid), .s_axis_tready (pk_tready),
+        .s_meta_tdata (meta_ts), .s_meta_tvalid (meta_v), .s_meta_tready (meta_rd),
+        .m_axis_tdata (p_tdata), .m_axis_tuser (p_tuser), .m_axis_tlast (p_tlast),
+        .m_axis_tvalid (p_tvalid), .m_axis_tready (p_tready),
+        .packets (), .scenes (), .scene_id (), .tmr_mismatch (pkt_mm)
+    );
+
+    aos_framer u_aos (
+        .clk (clk_sys), .rst (rst_sys), .scid (8'h5A), .vcid (6'd1), .idle_en (1'b0), .frame_gap (32'd0),
+        .cnt_clr (1'b0),
+        .s_axis_tdata (p_tdata), .s_axis_tuser (p_tuser), .s_axis_tlast (p_tlast),
+        .s_axis_tvalid (p_tvalid), .s_axis_tready (p_tready),
+        .m_axis_tdata (a_tdata), .m_axis_tlast (a_tlast), .m_axis_tvalid (a_tvalid), .m_axis_tready (1'b1),
+        .science_frames (), .idle_frames (), .tmr_mismatch (aos_mm)
     );
 
     // -----------------------------------------------------------------
@@ -199,14 +272,13 @@ module tb_fault;
         end
     end
 
-    logic [7:0] out_q [$];
-    logic       got_last = 1'b0;
+    logic [7:0] out_q [$];                      // AOS frame bytes
+    logic       got_last = 1'b0;                // the compressor ended the scene
+    int         aos_quiet = 0;                  // cycles since the last frame byte
     always @(posedge clk_sys) begin
-        if (!rst_sys && m_tvalid && !got_last) begin
-            for (int b = 0; b < 8; b++)
-                if (m_tkeep[b]) out_q.push_back(m_tdata[8 * b +: 8]);
-            if (m_tlast) got_last <= 1'b1;
-        end
+        if (!rst_sys && m_tvalid && pk_tready && m_tlast) got_last <= 1'b1;
+        if (!rst_sys && a_tvalid) out_q.push_back(a_tdata);
+        aos_quiet <= (rst_sys || a_tvalid) ? 0 : aos_quiet + 1;
     end
 
     logic       watching = 1'b0;
@@ -214,7 +286,8 @@ module tb_fault;
     logic [31:0] pad_start;
     always @(posedge clk_sys) begin
         if (watching && !rst_sys) begin
-            if (tbl_ecc.sbe || ct_ecc.sbe || lb_ecc.sbe || w_sbe || cmp_mm || ct_mm || sg_mm || pk_mm)
+            if (tbl_ecc.sbe || ct_ecc.sbe || lb_ecc.sbe || w_sbe || cmp_mm || ct_mm || sg_mm || pk_mm ||
+                pkt_mm || aos_mm)
                 n_corr++;
             if (tbl_ecc.dbe || ct_ecc.dbe || lb_ecc.dbe || w_dbe || (sg_tvalid && sg_tready && sg_ue))
                 n_det++;
@@ -224,11 +297,14 @@ module tb_fault;
     // -----------------------------------------------------------------
     // Fault injection
     // -----------------------------------------------------------------
+    // Bit indices are drawn into a variable first: xsim evaluates the index of a
+    // compound assignment twice (x[$urandom_range(..)] ^= 1 computes
+    // x[i] = !x[j], a no-op half the time).
     int fault_what;                             // which register / memory (for the log)
 
     // an upset in one copy of a TMR memory: coder state or a neighbourhood memory
     task automatic flip_tmr_ram();
-        int m, c, a, b;
+        int m, c, a, b, k;
         m = $urandom_range(0, 4);
         c = $urandom_range(0, 2);
         a = $urandom_range(0, fe.nz - 1);
@@ -236,9 +312,9 @@ module tb_fault;
         fault_what = m;
         case (m)
             0: case (c)
-                   0: u_cmp.u_coder.u_state.g_copy[0].u_copy.mem[a][$urandom_range(0, 42)] ^= 1'b1;
-                   1: u_cmp.u_coder.u_state.g_copy[1].u_copy.mem[a][$urandom_range(0, 42)] ^= 1'b1;
-                   default: u_cmp.u_coder.u_state.g_copy[2].u_copy.mem[a][$urandom_range(0, 42)] ^= 1'b1;
+                   0: begin k = $urandom_range(0, 42); u_cmp.u_coder.u_state.g_copy[0].u_copy.mem[a][k] ^= 1'b1; end
+                   1: begin k = $urandom_range(0, 42); u_cmp.u_coder.u_state.g_copy[1].u_copy.mem[a][k] ^= 1'b1; end
+                   default: begin k = $urandom_range(0, 42); u_cmp.u_coder.u_state.g_copy[2].u_copy.mem[a][k] ^= 1'b1; end
                endcase
             1: case (c)
                    0: u_cmp.u_nb.u_mem_w.g_copy[0].u_copy.mem[a][b] ^= 1'b1;
@@ -265,39 +341,61 @@ module tb_fault;
 
     // an upset in one copy of a TMR state machine register
     task automatic flip_tmr_fsm();
-        int m;
-        m = $urandom_range(0, 5);
+        int m, k;
+        m = $urandom_range(0, 21);
         fault_what = m;
         case (m)
             0: u_fe.u_ct.wb_1 ^= 1'b1;
-            1: u_fe.u_ct.full_0[$urandom_range(0, 1)] ^= 1'b1;
+            1: begin k = $urandom_range(0, 1); u_fe.u_ct.full_0[k] ^= 1'b1; end
             2: u_fe.u_ct.rd_on_2 ^= 1'b1;
             3: u_sg.pad_1 ^= 1'b1;
-            4: u_cmp.u_pack.state_0[$urandom_range(0, 2)] ^= 1'b1;
-            default: u_cmp.u_pack.state_2[$urandom_range(0, 2)] ^= 1'b1;
+            4: begin k = $urandom_range(0, 2); u_cmp.u_pack.state_0[k] ^= 1'b1; end
+            5: begin k = $urandom_range(0, 2); u_cmp.u_pack.state_2[k] ^= 1'b1; end
+            6: u_pkt.busy_1 ^= 1'b1;
+            7: u_pkt.in_hdr_2 ^= 1'b1;
+            8: begin k = $urandom_range(0, 1); u_aos.os_0[k] ^= 1'b1; end
+            9: begin k = $urandom_range(0, 11); u_fe.u_ct.wcnt_0[k] ^= 1'b1; end
+            10: begin k = $urandom_range(0, 11); u_fe.u_ct.ra_1[k] ^= 1'b1; end
+            11: begin k = $urandom_range(0, 15); u_fe.u_ct.zr_2[k] ^= 1'b1; end
+            12: begin k = $urandom_range(0, 27); u_fe.u_ct.rd_0[k] ^= 1'b1; end
+            13: begin k = $urandom_range(0, 23); u_fe.u_ct.lines_in_1[k] ^= 1'b1; end
+            14: begin k = $urandom_range(0, 13); u_pkt.seq_count_2[k] ^= 1'b1; end
+            15: begin k = $urandom_range(0, 15); u_pkt.pkt_index_0[k] ^= 1'b1; end
+            16: begin k = $urandom_range(0, 11); u_pkt.left_1[k] ^= 1'b1; end
+            17: begin k = $urandom_range(0, 9); u_aos.wp_2[k] ^= 1'b1; end
+            18: begin k = $urandom_range(0, 10); u_aos.fhp_0[k] ^= 1'b1; end
+            19: begin k = $urandom_range(0, 1); u_aos.full_1[k] ^= 1'b1; end
+            20: begin k = $urandom_range(0, 23); u_aos.vc_count_2[k] ^= 1'b1; end
+            default: u_aos.wb_0 ^= 1'b1;
         endcase
     endtask
 
     // an upset in an unprotected register
     task automatic flip_unprotected();
-        int m;
-        m = $urandom_range(0, 13);
+        int m, k;
+        m = $urandom_range(0, 19);
         fault_what = m;
         case (m)
-            0:  u_cmp.u_coder.acc1[$urandom_range(0, 31)] ^= 1'b1;
-            1:  u_cmp.u_coder.cnt1[$urandom_range(0, 10)] ^= 1'b1;
-            2:  u_cmp.u_coder.d1[$urandom_range(0, 15)] ^= 1'b1;
-            3:  u_cmp.u_nb.s1[$urandom_range(0, 15)] ^= 1'b1;
-            4:  u_cmp.u_nb.z1[$urandom_range(0, 15)] ^= 1'b1;
-            5:  u_cmp.u_nb.a1[$urandom_range(0, 11)] ^= 1'b1;
-            6:  u_fe.u_rc.diff3[$urandom_range(0, 16)] ^= 1'b1;
-            7:  u_fe.u_rc.sum5[$urandom_range(0, 33)] ^= 1'b1;
-            8:  u_fe.u_rc.c6[$urandom_range(0, 15)] ^= 1'b1;
-            9:  u_cmp.u_pack.acc[$urandom_range(0, 127)] ^= 1'b1;
-            10: u_fe.u_ct.ra[$urandom_range(0, 11)] ^= 1'b1;
-            11: u_fe.u_ct.zr[$urandom_range(0, 15)] ^= 1'b1;
-            12: u_fe.u_ct.wcnt[$urandom_range(0, 11)] ^= 1'b1;
-            default: u_sg.n[$urandom_range(0, 39)] ^= 1'b1;
+            0:  begin k = $urandom_range(0, 31); u_cmp.u_coder.acc1[k] ^= 1'b1; end
+            1:  begin k = $urandom_range(0, 10); u_cmp.u_coder.cnt1[k] ^= 1'b1; end
+            2:  begin k = $urandom_range(0, 15); u_cmp.u_coder.d1[k] ^= 1'b1; end
+            3:  begin k = $urandom_range(0, 15); u_cmp.u_nb.s1[k] ^= 1'b1; end
+            4:  begin k = $urandom_range(0, 15); u_cmp.u_nb.z1[k] ^= 1'b1; end
+            5:  begin k = $urandom_range(0, 11); u_cmp.u_nb.a1[k] ^= 1'b1; end
+            6:  begin k = $urandom_range(0, 16); u_fe.u_rc.diff3[k] ^= 1'b1; end
+            7:  begin k = $urandom_range(0, 33); u_fe.u_rc.sum5[k] ^= 1'b1; end
+            8:  begin k = $urandom_range(0, 15); u_fe.u_rc.c6[k] ^= 1'b1; end
+            9:  begin k = $urandom_range(0, 127); u_cmp.u_pack.acc[k] ^= 1'b1; end
+            10: begin k = $urandom_range(0, SUMW - 1); u_cmp.u_pred.dhat8[k] ^= 1'b1; end
+            11: begin k = $urandom_range(0, RAWW - 1); u_cmp.u_pred.wrap10[k] ^= 1'b1; end
+            12: begin k = $urandom_range(0, 16); u_cmp.u_pred.dbl12[k] ^= 1'b1; end
+            13: begin k = $urandom_range(0, 39); u_sg.n[k] ^= 1'b1; end
+            14: begin int j; j = $urandom_range(0, 13); k = $urandom_range(0, 7); u_pkt.hdr[j][k] ^= 1'b1; end
+            15: begin k = $urandom_range(0, 63); u_pkt.w[k] ^= 1'b1; end
+            16: begin k = $urandom_range(0, 2); u_pkt.bi[k] ^= 1'b1; end
+            17: begin int j; j = $urandom_range(0, 1); k = $urandom_range(0, 10); u_aos.fhp_r[j][k] ^= 1'b1; end
+            18: begin int j; j = $urandom_range(0, 1); k = $urandom_range(0, 23); u_aos.vcc_r[j][k] ^= 1'b1; end
+            default: begin k = $urandom_range(0, 9); u_aos.oi[k] ^= 1'b1; end
         endcase
     endtask
 
@@ -382,7 +480,8 @@ module tb_fault;
             begin
                 int t;
                 t = 0;
-                while (!got_last && t < timeout_cycles) begin
+                while (!(got_last && (ref_q.size() > 0 ? out_q.size() >= ref_q.size() : aos_quiet > 3000)) &&
+                       t < timeout_cycles) begin
                     @(posedge clk_sys);
                     t++;
                 end
@@ -390,7 +489,7 @@ module tb_fault;
         join
         repeat (50) @(posedge clk_sys);
         watching = 1'b0;
-        done_ok = got_last;
+        done_ok = got_last && out_q.size() >= ref_q.size();
         same = done_ok && (out_q.size() == ref_q.size());
         if (same)
             foreach (out_q[i]) if (out_q[i] !== ref_q[i]) same = 1'b0;
@@ -417,17 +516,18 @@ module tb_fault;
         read128({dir, "/tbl.hex"}, tbl);
         read128({dir, "/dma.hex"}, dma);
         dma_n = scene_len / 8;
-        timeout_cycles = fe.ny * period * 10 / 4 * 3 + 20000;
+        timeout_cycles = fe.ny * period * 10 / 4 * 3 + 40000;
         foreach (count[c, k]) count[c][k] = 0;
         foreach (tcount[c, m, k]) tcount[c][m][k] = 0;
         $display("tb_fault: %s, %0dx%0dx%0d, %0d trials per class", dir, fe.nx, fe.ny, fe.nz, trials);
 
         // reference
         trial(-1, o, done_ok, same);
-        if (!done_ok) $fatal(1, "tb_fault: the reference scene did not complete");
+        if (!done_ok || out_q.size() == 0 || out_q.size() % 892 != 0)
+            $fatal(1, "tb_fault: the reference scene did not complete (%0d frame bytes)", out_q.size());
         ref_q = out_q;
         if (n_corr != 0 || n_det != 0) $fatal(1, "tb_fault: events without a fault");
-        $display("  reference: %0d bytes", ref_q.size());
+        $display("  reference: %0d AOS frames", ref_q.size() / 892);
 
         errors = 0;
         n_run  = 0;

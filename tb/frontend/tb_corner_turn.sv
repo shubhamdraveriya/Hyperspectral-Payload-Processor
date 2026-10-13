@@ -10,8 +10,9 @@
 // every sample, the error mark (any input sample of the line marked, or a
 // double-bit error injected into a buffer word: the samples of that word), the
 // fill mark. Counters too. Upsets are forced into one copy of the triplicated
-// control state (wb, full, rd_on: RAD-04) during the run: the outputs must stay
-// exact, the mismatch must show, and be gone at the next clock.
+// control state (wb, full, rd_on, the write and read addresses and counters,
+// the line descriptor: RAD-04) during the run: the outputs must stay exact, the
+// mismatch must show, and be gone at the next clock.
 module tb_corner_turn;
     import frontend_pkg::*;
     import ecc_pkg::*;
@@ -53,7 +54,7 @@ module tb_corner_turn;
     );
 
     // upsets in one copy of the control state, at random times
-    int n_upsets = 0, mm_cycles = 0, mm_stuck = 0;
+    int n_upsets = 0, mm_cycles = 0, mm_stuck = 0, ub;
     logic mm_d = 1'b0;
     initial begin
         @(negedge rst);
@@ -61,13 +62,19 @@ module tb_corner_turn;
         repeat (30) begin                       // all early in the run
             repeat ($urandom_range(300, 700)) @(posedge clk);
             @(negedge clk);
-            case ($urandom_range(0, 5))
+            case ($urandom_range(0, 11))
                 0: dut.wb_0    = !dut.wb_0;
                 1: dut.wb_2    = !dut.wb_2;
                 2: dut.full_1  = dut.full_1 ^ 2'(1 << $urandom_range(0, 1));
                 3: dut.full_2  = dut.full_2 ^ 2'b11;
                 4: dut.rd_on_0 = !dut.rd_on_0;
-                default: dut.rd_on_1 = !dut.rd_on_1;
+                5: dut.rd_on_1 = !dut.rd_on_1;
+                6: begin ub = $urandom_range(0, 5); dut.wcnt_2[ub] ^= 1'b1; end       // EB = 6 here
+                7: dut.wr_on_0 ^= 1'b1;
+                8: begin ub = $urandom_range(0, 23); dut.lines_in_1[ub] ^= 1'b1; end
+                9: begin ub = $urandom_range(0, 5); dut.ra_0[ub] ^= 1'b1; end
+                10: begin ub = $urandom_range(0, 15); dut.zr_2[ub] ^= 1'b1; end
+                default: begin ub = $urandom_range(0, 27); dut.rd_1[ub] ^= 1'b1; end
             endcase
             n_upsets++;
         end

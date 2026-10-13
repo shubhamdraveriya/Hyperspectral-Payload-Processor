@@ -48,7 +48,8 @@ module space_packetizer import downlink_pkg::*; #(
     output logic [31:0] packets,
     output logic [31:0] scenes,
     output logic [15:0] scene_id,  // scene being packetized (counts from reset)
-    output logic        tmr_mismatch    // the voted state copies disagree (RAD-04)
+    output logic        tmr_mismatch    // the voted state copies disagree (RAD-04): busy,
+                                        // header, counters (sequence, packet index, bytes left), timestamp
 );
     localparam int LB = $clog2(PKT_MAX) + 1;    // packet length bits
 
@@ -152,13 +153,31 @@ module space_packetizer import downlink_pkg::*; #(
     (* DONT_TOUCH = "true" *) logic in_hdr_0, in_hdr_1, in_hdr_2;
     logic in_hdr;
     assign in_hdr = (in_hdr_0 & in_hdr_1) | (in_hdr_0 & in_hdr_2) | (in_hdr_1 & in_hdr_2);
-    logic          plast;
-    logic [3:0]    hi;                          // header byte index
-    logic [LB-1:0] left;                        // payload bytes still to send
+    // the packet is the last of its scene: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic plast_0, plast_1, plast_2;
+    logic plast;
+    assign plast = (plast_0 & plast_1) | (plast_0 & plast_2) | (plast_1 & plast_2);
+    // header byte index: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic [4-1:0] hi_0, hi_1, hi_2;
+    logic [4-1:0] hi;
+    assign hi = (hi_0 & hi_1) | (hi_0 & hi_2) | (hi_1 & hi_2);
+    // payload bytes still to send: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic [LB-1:0] left_0, left_1, left_2;
+    logic [LB-1:0] left;
+    assign left = (left_0 & left_1) | (left_0 & left_2) | (left_1 & left_2);
     logic [7:0]    hdr [14];
-    logic [13:0]   seq_count;
-    logic [15:0]   pkt_index;
-    logic [23:0]   ts;
+    // packet sequence count: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic [14-1:0] seq_count_0, seq_count_1, seq_count_2;
+    logic [14-1:0] seq_count;
+    assign seq_count = (seq_count_0 & seq_count_1) | (seq_count_0 & seq_count_2) | (seq_count_1 & seq_count_2);
+    // packet index in the scene: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic [16-1:0] pkt_index_0, pkt_index_1, pkt_index_2;
+    logic [16-1:0] pkt_index;
+    assign pkt_index = (pkt_index_0 & pkt_index_1) | (pkt_index_0 & pkt_index_2) | (pkt_index_1 & pkt_index_2);
+    // the scene's timestamp: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic [24-1:0] ts_0, ts_1, ts_2;
+    logic [24-1:0] ts;
+    assign ts = (ts_0 & ts_1) | (ts_0 & ts_2) | (ts_1 & ts_2);
 
     wire first_pkt = (pkt_index == 16'd0);
     wire start     = !busy && !dq_empty && (!first_pkt || s_meta_tvalid);
@@ -171,14 +190,24 @@ module space_packetizer import downlink_pkg::*; #(
     assign pf_rd         = send_pay;
 
     always_ff @(posedge clk) begin
+        {plast_0, plast_1, plast_2} <= {3{plast}};   // refresh (RAD-04)
+        {hi_0, hi_1, hi_2} <= {3{hi}};   // refresh (RAD-04)
+        {left_0, left_1, left_2} <= {3{left}};   // refresh (RAD-04)
+        {seq_count_0, seq_count_1, seq_count_2} <= {3{seq_count}};   // refresh (RAD-04)
+        {pkt_index_0, pkt_index_1, pkt_index_2} <= {3{pkt_index}};   // refresh (RAD-04)
+        {ts_0, ts_1, ts_2} <= {3{ts}};   // refresh (RAD-04)
         {busy_0, busy_1, busy_2} <= {3{busy}};   // refresh (RAD-04)
         {in_hdr_0, in_hdr_1, in_hdr_2} <= {3{in_hdr}};   // refresh (RAD-04)
         if (rst) begin
             {busy_0, busy_1, busy_2} <= {3{1'b0}};
             m_axis_tvalid <= 1'b0;
-            seq_count     <= '0;
+            {seq_count_0, seq_count_1, seq_count_2} <= {3{14'd0}};
             scene_id      <= '0;
-            pkt_index     <= '0;
+            {pkt_index_0, pkt_index_1, pkt_index_2} <= {3{16'd0}};
+            {hi_0, hi_1, hi_2} <= {3{4'd0}};
+            {left_0, left_1, left_2} <= {3{LB'(0)}};
+            {plast_0, plast_1, plast_2} <= {3{1'b0}};
+            {ts_0, ts_1, ts_2} <= {3{24'd0}};
             packets       <= '0;
             scenes        <= '0;
         end else begin
@@ -191,7 +220,7 @@ module space_packetizer import downlink_pkg::*; #(
                 len  = dq_dout[LB-1:0];
                 dlen = 16'(len) + 16'(SECONDARY_HDR - 1);
                 t    = first_pkt ? s_meta_tdata : ts;
-                if (first_pkt) ts <= s_meta_tdata;
+                if (first_pkt) {ts_0, ts_1, ts_2} <= {3{s_meta_tdata}};
                 hdr[0]  <= {3'b000, 1'b0, 1'b1, apid[10:8]};
                 hdr[1]  <= apid[7:0];
                 hdr[2]  <= {dq_dout[LB], first_pkt, seq_count[13:8]};
@@ -208,9 +237,9 @@ module space_packetizer import downlink_pkg::*; #(
                 hdr[13] <= {5'b00000, raw_mode, scene_ld, scene_ue};
                 {busy_0, busy_1, busy_2} <= {3{1'b1}};
                 {in_hdr_0, in_hdr_1, in_hdr_2} <= {3{1'b1}};
-                hi     <= '0;
-                left   <= len;
-                plast  <= dq_dout[LB];
+                {hi_0, hi_1, hi_2} <= {3{4'd0}};
+                {left_0, left_1, left_2} <= {3{len}};
+                {plast_0, plast_1, plast_2} <= {3{dq_dout[LB]}};
             end
 
             if (send_hdr) begin
@@ -218,7 +247,7 @@ module space_packetizer import downlink_pkg::*; #(
                 m_axis_tdata  <= hdr[hi];
                 m_axis_tuser  <= {plast, hi == 4'd0};
                 m_axis_tlast  <= 1'b0;
-                hi            <= hi + 4'd1;
+                {hi_0, hi_1, hi_2} <= {3{hi + 4'd1}};
                 if (hi == 4'(PRIMARY_HDR + SECONDARY_HDR - 1)) {in_hdr_0, in_hdr_1, in_hdr_2} <= {3{1'b0}};
             end
 
@@ -227,17 +256,17 @@ module space_packetizer import downlink_pkg::*; #(
                 m_axis_tdata  <= pf_dout;
                 m_axis_tuser  <= {plast, 1'b0};
                 m_axis_tlast  <= (left == LB'(1));
-                left          <= left - 1'b1;
+                {left_0, left_1, left_2} <= {3{left - 1'b1}};
                 if (left == LB'(1)) begin
                     {busy_0, busy_1, busy_2} <= {3{1'b0}};
-                    seq_count <= seq_count + 14'd1;
+                    {seq_count_0, seq_count_1, seq_count_2} <= {3{seq_count + 14'd1}};
                     packets   <= packets + 32'd1;
                     if (plast) begin
-                        pkt_index <= '0;
+                        {pkt_index_0, pkt_index_1, pkt_index_2} <= {3{16'd0}};
                         scene_id  <= scene_id + 16'd1;
                         scenes    <= scenes + 32'd1;
                     end else begin
-                        pkt_index <= pkt_index + 16'd1;
+                        {pkt_index_0, pkt_index_1, pkt_index_2} <= {3{pkt_index + 16'd1}};
                     end
                 end
             end
@@ -248,5 +277,11 @@ module space_packetizer import downlink_pkg::*; #(
         end
     end
 
-    assign tmr_mismatch = (busy_0 != busy_1) || (busy_0 != busy_2) || (in_hdr_0 != in_hdr_1) || (in_hdr_0 != in_hdr_2);
+    assign tmr_mismatch = (plast_0 != plast_1) || (plast_0 != plast_2) ||
+                          (hi_0 != hi_1) || (hi_0 != hi_2) ||
+                          (left_0 != left_1) || (left_0 != left_2) ||
+                          (seq_count_0 != seq_count_1) || (seq_count_0 != seq_count_2) ||
+                          (pkt_index_0 != pkt_index_1) || (pkt_index_0 != pkt_index_2) ||
+                          (ts_0 != ts_1) || (ts_0 != ts_2) ||
+                          (busy_0 != busy_1) || (busy_0 != busy_2) || (in_hdr_0 != in_hdr_1) || (in_hdr_0 != in_hdr_2);
 endmodule

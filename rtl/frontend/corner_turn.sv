@@ -58,7 +58,8 @@ module corner_turn import frontend_pkg::*, ecc_pkg::*; #(
 
     input  ecc_inj_t    inj,            // buffer ECC (SPEC RAD-02)
     output ecc_evt_t    ecc,
-    output logic        tmr_mismatch    // the voted state copies disagree (RAD-04)
+    output logic        tmr_mismatch    // the voted state copies disagree (RAD-04): control
+                                        // state, write and read addresses
 );
     localparam int EB = $clog2(NX_MAX * NZ_MAX);
     localparam int DQ = 16;             // line descriptors
@@ -85,11 +86,38 @@ module corner_turn import frontend_pkg::*, ecc_pkg::*; #(
     (* DONT_TOUCH = "true" *) logic wb_0, wb_1, wb_2;
     logic wb;
     assign wb = (wb_0 & wb_1) | (wb_0 & wb_2) | (wb_1 & wb_2);
-    logic          wr_on, wr_drop, wr_scene;
-    logic          scene_lost;          // a lost line started a scene: mark the next one sent
+    // writing the line: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic wr_on_0, wr_on_1, wr_on_2;
+    logic wr_on;
+    assign wr_on = (wr_on_0 & wr_on_1) | (wr_on_0 & wr_on_2) | (wr_on_1 & wr_on_2);
+    // dropping the line: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic wr_drop_0, wr_drop_1, wr_drop_2;
+    logic wr_drop;
+    assign wr_drop = (wr_drop_0 & wr_drop_1) | (wr_drop_0 & wr_drop_2) | (wr_drop_1 & wr_drop_2);
+    // the line starts a scene: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic wr_scene_0, wr_scene_1, wr_scene_2;
+    logic wr_scene;
+    assign wr_scene = (wr_scene_0 & wr_scene_1) | (wr_scene_0 & wr_scene_2) | (wr_scene_1 & wr_scene_2);
+    // a lost line started a scene: mark the next one sent: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic scene_lost_0, scene_lost_1, scene_lost_2;
+    logic scene_lost;
+    assign scene_lost = (scene_lost_0 & scene_lost_1) | (scene_lost_0 & scene_lost_2) | (scene_lost_1 & scene_lost_2);
+    // write index in the line: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic [EB-1:0] wcnt_0, wcnt_1, wcnt_2;
     logic [EB-1:0] wcnt;
-    logic [23:0]   lines_in, cur_ts;    // lines come in; timestamp of the current scene
-    logic          line_ue;             // table error seen in the line so far
+    assign wcnt = (wcnt_0 & wcnt_1) | (wcnt_0 & wcnt_2) | (wcnt_1 & wcnt_2);
+    // lines come in: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic [24-1:0] lines_in_0, lines_in_1, lines_in_2;
+    logic [24-1:0] lines_in;
+    assign lines_in = (lines_in_0 & lines_in_1) | (lines_in_0 & lines_in_2) | (lines_in_1 & lines_in_2);
+    // timestamp of the current scene: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic [24-1:0] cur_ts_0, cur_ts_1, cur_ts_2;
+    logic [24-1:0] cur_ts;
+    assign cur_ts = (cur_ts_0 & cur_ts_1) | (cur_ts_0 & cur_ts_2) | (cur_ts_1 & cur_ts_2);
+    // table error seen in the line so far: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic line_ue_0, line_ue_1, line_ue_2;
+    logic line_ue;
+    assign line_ue = (line_ue_0 & line_ue_1) | (line_ue_0 & line_ue_2) | (line_ue_1 & line_ue_2);
 
     wire           line_start = s_valid && s_user[1];
     wire           wr_now     = s_valid && (line_start ? !full[wb] : wr_on);
@@ -117,28 +145,41 @@ module corner_turn import frontend_pkg::*, ecc_pkg::*; #(
     end
 
     always_ff @(posedge clk) begin
+        {wcnt_0, wcnt_1, wcnt_2} <= {3{wcnt}};   // refresh (RAD-04)
+        {wr_on_0, wr_on_1, wr_on_2} <= {3{wr_on}};   // refresh (RAD-04)
+        {wr_drop_0, wr_drop_1, wr_drop_2} <= {3{wr_drop}};   // refresh (RAD-04)
+        {wr_scene_0, wr_scene_1, wr_scene_2} <= {3{wr_scene}};   // refresh (RAD-04)
+        {scene_lost_0, scene_lost_1, scene_lost_2} <= {3{scene_lost}};   // refresh (RAD-04)
+        {line_ue_0, line_ue_1, line_ue_2} <= {3{line_ue}};   // refresh (RAD-04)
+        {lines_in_0, lines_in_1, lines_in_2} <= {3{lines_in}};   // refresh (RAD-04)
+        {cur_ts_0, cur_ts_1, cur_ts_2} <= {3{cur_ts}};   // refresh (RAD-04)
         {wb_0, wb_1, wb_2} <= {3{wb}};   // refresh (RAD-04)
         if (rst) begin
             {wb_0, wb_1, wb_2} <= {3{1'b0}};
-            {wr_on, wr_drop, scene_lost} <= '0;
-            lines_in <= '0;
-            cur_ts   <= '0;
+            {wr_on_0, wr_on_1, wr_on_2} <= {3{1'b0}};
+            {wr_drop_0, wr_drop_1, wr_drop_2} <= {3{1'b0}};
+            {wr_scene_0, wr_scene_1, wr_scene_2} <= {3{1'b0}};
+            {scene_lost_0, scene_lost_1, scene_lost_2} <= {3{1'b0}};
+            {line_ue_0, line_ue_1, line_ue_2} <= {3{1'b0}};
+            {wcnt_0, wcnt_1, wcnt_2} <= {3{EB'(0)}};
+            {lines_in_0, lines_in_1, lines_in_2} <= {3{24'd0}};
+            {cur_ts_0, cur_ts_1, cur_ts_2} <= {3{24'd0}};
             dropped_lines  <= '0;
             unfilled_lines <= '0;
         end else if (s_valid) begin
-            wcnt    <= widx + 1'b1;
-            line_ue <= ue_now;
+            {wcnt_0, wcnt_1, wcnt_2} <= {3{widx + 1'b1}};
+            {line_ue_0, line_ue_1, line_ue_2} <= {3{ue_now}};
             if (line_start) begin
-                wr_on    <= !full[wb];
-                wr_drop  <=  full[wb];
-                wr_scene <= s_user[0];
-                lines_in <= lines_in + 24'd1;
-                cur_ts   <= ts_now;
+                {wr_on_0, wr_on_1, wr_on_2} <= {3{!full[wb]}};
+                {wr_drop_0, wr_drop_1, wr_drop_2} <= {3{full[wb]}};
+                {wr_scene_0, wr_scene_1, wr_scene_2} <= {3{s_user[0]}};
+                {lines_in_0, lines_in_1, lines_in_2} <= {3{lines_in + 24'd1}};
+                {cur_ts_0, cur_ts_1, cur_ts_2} <= {3{ts_now}};
             end
             if (s_last) begin
-                wr_on      <= 1'b0;
-                wr_drop    <= 1'b0;
-                scene_lost <= dq_push ? 1'b0 : (scene_lost || (drop_now && scene_now));
+                {wr_on_0, wr_on_1, wr_on_2} <= {3{1'b0}};
+                {wr_drop_0, wr_drop_1, wr_drop_2} <= {3{1'b0}};
+                {scene_lost_0, scene_lost_1, scene_lost_2} <= {3{dq_push ? 1'b0 : (scene_lost || (drop_now && scene_now))}};
                 if (wr_now) {wb_0, wb_1, wb_2} <= {3{!wb}};
                 if (drop_now) begin
                     dropped_lines <= sat_inc(dropped_lines);
@@ -171,9 +212,22 @@ module corner_turn import frontend_pkg::*, ecc_pkg::*; #(
     (* DONT_TOUCH = "true" *) logic rd_on_0, rd_on_1, rd_on_2;
     logic rd_on;
     assign rd_on = (rd_on_0 & rd_on_1) | (rd_on_0 & rd_on_2) | (rd_on_1 & rd_on_2);
-    desc_t         rd;
-    logic [15:0]   xr, zr;
+    // descriptor of the line being read: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic [$bits(desc_t)-1:0] rd_0, rd_1, rd_2;
+    desc_t rd;
+    assign rd = desc_t'((rd_0 & rd_1) | (rd_0 & rd_2) | (rd_1 & rd_2));
+    // read pixel: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic [16-1:0] xr_0, xr_1, xr_2;
+    logic [16-1:0] xr;
+    assign xr = (xr_0 & xr_1) | (xr_0 & xr_2) | (xr_1 & xr_2);
+    // read band: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic [16-1:0] zr_0, zr_1, zr_2;
+    logic [16-1:0] zr;
+    assign zr = (zr_0 & zr_1) | (zr_0 & zr_2) | (zr_1 & zr_2);
+    // read address in the buffer: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic [EB-1:0] ra_0, ra_1, ra_2;
     logic [EB-1:0] ra;
+    assign ra = (ra_0 & ra_1) | (ra_0 & ra_2) | (ra_1 & ra_2);
     logic [$clog2(OQ):0] oq_count;
     logic [$clog2(RL):0] inflight;      // reads issued, not yet in the output FIFO
 
@@ -197,19 +251,27 @@ module corner_turn import frontend_pkg::*, ecc_pkg::*; #(
     end
 
     always_ff @(posedge clk) begin
+        {rd_0, rd_1, rd_2} <= {3{rd}};   // refresh (RAD-04)
+        {xr_0, xr_1, xr_2} <= {3{xr}};   // refresh (RAD-04)
+        {zr_0, zr_1, zr_2} <= {3{zr}};   // refresh (RAD-04)
+        {ra_0, ra_1, ra_2} <= {3{ra}};   // refresh (RAD-04)
         {rd_on_0, rd_on_1, rd_on_2} <= {3{rd_on}};   // refresh (RAD-04)
         if (rst) begin
             {rd_on_0, rd_on_1, rd_on_2} <= {3{1'b0}};
+            {rd_0, rd_1, rd_2} <= {3{desc_t'(0)}};
+            {xr_0, xr_1, xr_2} <= {3{16'd0}};
+            {zr_0, zr_1, zr_2} <= {3{16'd0}};
+            {ra_0, ra_1, ra_2} <= {3{EB'(0)}};
             lines_out <= '0;
         end else begin
             if (issue) begin
                 if (!last_zr) begin
-                    zr <= zr + 16'd1;
-                    ra <= ra + EB'(cfg.nx);
+                    {zr_0, zr_1, zr_2} <= {3{zr + 16'd1}};
+                    {ra_0, ra_1, ra_2} <= {3{ra + EB'(cfg.nx)}};
                 end else begin
-                    zr <= '0;
-                    xr <= xr + 16'd1;
-                    ra <= EB'(xr + 16'd1);
+                    {zr_0, zr_1, zr_2} <= {3{16'd0}};
+                    {xr_0, xr_1, xr_2} <= {3{xr + 16'd1}};
+                    {ra_0, ra_1, ra_2} <= {3{EB'(xr + 16'd1)}};
                 end
                 if (rd_end) begin
                     {rd_on_0, rd_on_1, rd_on_2} <= {3{1'b0}};
@@ -219,10 +281,10 @@ module corner_turn import frontend_pkg::*, ecc_pkg::*; #(
             if (cnt_clr) lines_out <= '0;
             if (dq_pop) begin
                 {rd_on_0, rd_on_1, rd_on_2} <= {3{1'b1}};
-                rd    <= dq_dout;
-                xr    <= '0;
-                zr    <= '0;
-                ra    <= '0;
+                {rd_0, rd_1, rd_2} <= {3{dq_dout}};
+                {xr_0, xr_1, xr_2} <= {3{16'd0}};
+                {zr_0, zr_1, zr_2} <= {3{16'd0}};
+                {ra_0, ra_1, ra_2} <= {3{EB'(0)}};
             end
         end
     end
@@ -314,5 +376,17 @@ module corner_turn import frontend_pkg::*, ecc_pkg::*; #(
         .m_tready (m_axis_tready)
     );
 
-    assign tmr_mismatch = (wb_0 != wb_1) || (wb_0 != wb_2) || (full_0 != full_1) || (full_0 != full_2) || (rd_on_0 != rd_on_1) || (rd_on_0 != rd_on_2);
+    assign tmr_mismatch = (wcnt_0 != wcnt_1) || (wcnt_0 != wcnt_2) ||
+                          (wr_on_0 != wr_on_1) || (wr_on_0 != wr_on_2) ||
+                          (wr_drop_0 != wr_drop_1) || (wr_drop_0 != wr_drop_2) ||
+                          (wr_scene_0 != wr_scene_1) || (wr_scene_0 != wr_scene_2) ||
+                          (scene_lost_0 != scene_lost_1) || (scene_lost_0 != scene_lost_2) ||
+                          (line_ue_0 != line_ue_1) || (line_ue_0 != line_ue_2) ||
+                          (lines_in_0 != lines_in_1) || (lines_in_0 != lines_in_2) ||
+                          (cur_ts_0 != cur_ts_1) || (cur_ts_0 != cur_ts_2) ||
+                          (rd_0 != rd_1) || (rd_0 != rd_2) ||
+                          (xr_0 != xr_1) || (xr_0 != xr_2) ||
+                          (zr_0 != zr_1) || (zr_0 != zr_2) ||
+                          (ra_0 != ra_1) || (ra_0 != ra_2) ||
+                          (wb_0 != wb_1) || (wb_0 != wb_2) || (full_0 != full_1) || (full_0 != full_2) || (rd_on_0 != rd_on_1) || (rd_on_0 != rd_on_2);
 endmodule

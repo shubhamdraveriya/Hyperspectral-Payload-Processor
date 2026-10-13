@@ -31,6 +31,7 @@ module tb_downlink;
     logic        r_tlast, r_tvalid, r_tready;
     logic        a_tuser, a_tlast, a_tvalid, a_tready = 1'b0;
     logic [31:0] packets, scenes, science_frames, idle_frames, cadus;
+    logic        pkt_mm, aos_mm;                // TMR copies disagree (RAD-04)
 
     space_packetizer #(.PKT_MAX(2048)) u_pkt (
         .clk, .rst,
@@ -41,7 +42,7 @@ module tb_downlink;
         .s_meta_tdata (meta_tdata), .s_meta_tvalid (meta_tvalid), .s_meta_tready (meta_tready),
         .m_axis_tdata (p_tdata), .m_axis_tuser (p_tuser), .m_axis_tlast (p_tlast),
         .m_axis_tvalid (p_tvalid), .m_axis_tready (p_tready),
-        .packets, .scenes, .scene_id ()
+        .packets, .scenes, .scene_id (), .tmr_mismatch (pkt_mm)
     );
 
     aos_framer u_aos (
@@ -51,8 +52,46 @@ module tb_downlink;
         .s_axis_tvalid (p_tvalid), .s_axis_tready (p_tready),
         .m_axis_tdata (f_tdata), .m_axis_tlast (f_tlast), .m_axis_tvalid (f_tvalid),
         .m_axis_tready (f_tready),
-        .science_frames, .idle_frames
+        .science_frames, .idle_frames, .tmr_mismatch (aos_mm)
     );
+
+    // Upsets in one copy of the triplicated control state (RAD-04) of the
+    // packetizer and the framer, at random times: the outputs must stay exact,
+    // the mismatch must show, and be gone at the next clock. (Bit indices drawn
+    // into a variable first: xsim evaluates the index of a compound assignment
+    // twice.)
+    logic mm_d = 1'b0;
+    int   n_upsets = 0, mm_cycles = 0, mm_stuck = 0, ub;
+    initial begin
+        @(negedge rst);
+        repeat (100) @(posedge clk);
+        repeat (40) begin
+            repeat ($urandom_range(150, 600)) @(posedge clk);
+            @(negedge clk);
+            case ($urandom_range(0, 13))
+                0:  u_pkt.busy_0 ^= 1'b1;
+                1:  u_pkt.in_hdr_1 ^= 1'b1;
+                2:  begin ub = $urandom_range(0, 3); u_pkt.hi_2[ub] ^= 1'b1; end
+                3:  begin ub = $urandom_range(0, 11); u_pkt.left_0[ub] ^= 1'b1; end
+                4:  begin ub = $urandom_range(0, 13); u_pkt.seq_count_1[ub] ^= 1'b1; end
+                5:  begin ub = $urandom_range(0, 15); u_pkt.pkt_index_2[ub] ^= 1'b1; end
+                6:  begin ub = $urandom_range(0, 23); u_pkt.ts_0[ub] ^= 1'b1; end
+                7:  begin ub = $urandom_range(0, 1); u_aos.os_1[ub] ^= 1'b1; end
+                8:  u_aos.wb_2 ^= 1'b1;
+                9:  begin ub = $urandom_range(0, 9); u_aos.wp_0[ub] ^= 1'b1; end
+                10: begin ub = $urandom_range(0, 10); u_aos.fhp_1[ub] ^= 1'b1; end
+                11: begin ub = $urandom_range(0, 1); u_aos.full_2[ub] ^= 1'b1; end
+                12: begin ub = $urandom_range(0, 23); u_aos.vc_count_0[ub] ^= 1'b1; end
+                default: u_aos.pad_1 ^= 1'b1;
+            endcase
+            n_upsets++;
+        end
+    end
+    always @(posedge clk) begin
+        if (!rst && (pkt_mm || aos_mm)) mm_cycles++;
+        if (!rst && (pkt_mm || aos_mm) && mm_d) mm_stuck++;          // still there a clock later
+        mm_d <= pkt_mm || aos_mm;
+    end
 
     rs_encoder u_rs (
         .clk, .rst,
@@ -272,9 +311,14 @@ module tb_downlink;
         if (science_frames < nsci) begin errors++; $display("  framer science frames %0d", science_frames); end
         if (idle_en == 0 && ii != 0) begin errors++; $display("  idle CADUs with idle frames off"); end
         if (idle_en != 0 && ii == 0) begin errors++; $display("  no idle CADU seen"); end
+        if (n_upsets == 0 || mm_cycles != n_upsets || mm_stuck != 0) begin
+            errors++;
+            $display("  TMR: %0d upsets, %0d mismatch cycles, %0d not healed at the next clock",
+                     n_upsets, mm_cycles, mm_stuck);
+        end
         if (errors == 0)
-            $display("PASS: tb_downlink %s, %0d packets, %0d science CADUs, %0d idle CADUs",
-                     dir, packets, si, ii);
+            $display("PASS: tb_downlink %s, %0d packets, %0d science CADUs, %0d idle CADUs, %0d control state upsets masked",
+                     dir, packets, si, ii, n_upsets);
         else
             $display("FAIL: tb_downlink %s: %0d errors (packets %0d, frames %0d, CADUs %0d)",
                      dir, errors, p_err, f_err, a_err);

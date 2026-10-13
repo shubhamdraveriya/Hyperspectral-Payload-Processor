@@ -37,7 +37,8 @@ module aos_framer import downlink_pkg::*; (
 
     output logic [31:0] science_frames,
     output logic [31:0] idle_frames,
-    output logic        tmr_mismatch    // the voted state copies disagree (RAD-04)
+    output logic        tmr_mismatch    // the voted state copies disagree (RAD-04): output state,
+                                        // zone control (buffer, position, pointer, full, count, padding)
 );
     localparam int OQ = 8;                      // output FIFO
     localparam int RL = 2;                      // zone RAM read latency
@@ -47,17 +48,42 @@ module aos_framer import downlink_pkg::*; (
     // ---------------------------------------------------------------------
     (* ram_style = "block" *) logic [7:0] zone [2048];
 
-    logic        wb;                            // buffer being filled
-    logic [9:0]  wp;                            // next zone position
-    logic [10:0] fhp;                           // first packet start in this zone
-    logic [1:0]  full;
+    // buffer being filled: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic wb_0, wb_1, wb_2;
+    logic wb;
+    assign wb = (wb_0 & wb_1) | (wb_0 & wb_2) | (wb_1 & wb_2);
+    // next zone position: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic [10-1:0] wp_0, wp_1, wp_2;
+    logic [10-1:0] wp;
+    assign wp = (wp_0 & wp_1) | (wp_0 & wp_2) | (wp_1 & wp_2);
+    // first packet start in this zone: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic [11-1:0] fhp_0, fhp_1, fhp_2;
+    logic [11-1:0] fhp;
+    assign fhp = (fhp_0 & fhp_1) | (fhp_0 & fhp_2) | (fhp_1 & fhp_2);
+    // buffers holding a frame: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic [2-1:0] full_0, full_1, full_2;
+    logic [2-1:0] full;
+    assign full = (full_0 & full_1) | (full_0 & full_2) | (full_1 & full_2);
     logic [10:0] fhp_r [2];
     logic [23:0] vcc_r [2];
-    logic [23:0] vc_count;
+    // virtual channel frame count: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic [24-1:0] vc_count_0, vc_count_1, vc_count_2;
+    logic [24-1:0] vc_count;
+    assign vc_count = (vc_count_0 & vc_count_1) | (vc_count_0 & vc_count_2) | (vc_count_1 & vc_count_2);
 
     // idle packet after a scene: hdr bytes 0-5, then fill
-    logic        pad;                           // writing the idle packet
-    logic [10:0] pad_i, pad_len;                // byte index, total length (7..890)
+    // writing the idle packet: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic pad_0, pad_1, pad_2;
+    logic pad;
+    assign pad = (pad_0 & pad_1) | (pad_0 & pad_2) | (pad_1 & pad_2);
+    // idle packet byte index: three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic [11-1:0] pad_i_0, pad_i_1, pad_i_2;
+    logic [11-1:0] pad_i;
+    assign pad_i = (pad_i_0 & pad_i_1) | (pad_i_0 & pad_i_2) | (pad_i_1 & pad_i_2);
+    // idle packet length (7..890): three voted copies, kept apart through synthesis (RAD-04)
+    (* DONT_TOUCH = "true" *) logic [11-1:0] pad_len_0, pad_len_1, pad_len_2;
+    logic [11-1:0] pad_len;
+    assign pad_len = (pad_len_0 & pad_len_1) | (pad_len_0 & pad_len_2) | (pad_len_1 & pad_len_2);
 
     logic [7:0]  pad_byte;
     always_comb begin
@@ -94,39 +120,49 @@ module aos_framer import downlink_pkg::*; (
     end
 
     always_ff @(posedge clk) begin
+        {wb_0, wb_1, wb_2} <= {3{wb}};   // refresh (RAD-04)
+        {wp_0, wp_1, wp_2} <= {3{wp}};   // refresh (RAD-04)
+        {fhp_0, fhp_1, fhp_2} <= {3{fhp}};   // refresh (RAD-04)
+        {full_0, full_1, full_2} <= {3{full}};   // refresh (RAD-04)
+        {vc_count_0, vc_count_1, vc_count_2} <= {3{vc_count}};   // refresh (RAD-04)
+        {pad_0, pad_1, pad_2} <= {3{pad}};   // refresh (RAD-04)
+        {pad_i_0, pad_i_1, pad_i_2} <= {3{pad_i}};   // refresh (RAD-04)
+        {pad_len_0, pad_len_1, pad_len_2} <= {3{pad_len}};   // refresh (RAD-04)
         if (rst) begin
-            wb       <= 1'b0;
-            wp       <= '0;
-            fhp      <= FHP_NONE;
-            full     <= '0;
-            vc_count <= '0;
-            pad      <= 1'b0;
+            {wb_0, wb_1, wb_2} <= {3{1'b0}};
+            {wp_0, wp_1, wp_2} <= {3{10'd0}};
+            {fhp_0, fhp_1, fhp_2} <= {3{FHP_NONE}};
+            {full_0, full_1, full_2} <= {3{2'b00}};
+            {vc_count_0, vc_count_1, vc_count_2} <= {3{24'd0}};
+            {pad_0, pad_1, pad_2} <= {3{1'b0}};
+            {pad_i_0, pad_i_1, pad_i_2} <= {3{11'd0}};
+            {pad_len_0, pad_len_1, pad_len_2} <= {3{11'd0}};
         end else begin
             if (wr) begin
                 if (zone_end) begin
-                    full[wb]  <= 1'b1;
+                    {full_0[wb], full_1[wb], full_2[wb]} <= {3{1'b1}};
                     fhp_r[wb] <= fhp_now;
                     vcc_r[wb] <= vc_count;
-                    vc_count  <= vc_count + 24'd1;
-                    wb        <= !wb;
-                    wp        <= '0;
-                    fhp       <= FHP_NONE;
+                    {vc_count_0, vc_count_1, vc_count_2} <= {3{vc_count + 24'd1}};
+                    {wb_0, wb_1, wb_2} <= {3{!wb}};
+                    {wp_0, wp_1, wp_2} <= {3{10'd0}};
+                    {fhp_0, fhp_1, fhp_2} <= {3{FHP_NONE}};
                 end else begin
-                    wp  <= wp + 10'd1;
-                    fhp <= fhp_now;
+                    {wp_0, wp_1, wp_2} <= {3{wp + 10'd1}};
+                    {fhp_0, fhp_1, fhp_2} <= {3{fhp_now}};
                 end
             end
             // after the last packet of a scene, pad the frame with an idle packet
             if (in_take && s_axis_tlast && s_axis_tuser[1] && !zone_end) begin
-                pad     <= 1'b1;
-                pad_i   <= '0;
-                pad_len <= (space >= 11'd7) ? space : space + 11'(ZONE_BYTES);
+                {pad_0, pad_1, pad_2} <= {3{1'b1}};
+                {pad_i_0, pad_i_1, pad_i_2} <= {3{11'd0}};
+                {pad_len_0, pad_len_1, pad_len_2} <= {3{(space >= 11'd7) ? space : space + 11'(ZONE_BYTES)}};
             end
             if (pad_take) begin
-                pad_i <= pad_i + 11'd1;
-                if (pad_i == pad_len - 11'd1) pad <= 1'b0;
+                {pad_i_0, pad_i_1, pad_i_2} <= {3{pad_i + 11'd1}};
+                if (pad_i == pad_len - 11'd1) {pad_0, pad_1, pad_2} <= {3{1'b0}};
             end
-            if (rd_free) full[rd_buf] <= 1'b0;
+            if (rd_free) {full_0[rd_buf], full_1[rd_buf], full_2[rd_buf]} <= {3{1'b0}};
         end
     end
 
@@ -276,5 +312,13 @@ module aos_framer import downlink_pkg::*; (
         .m_tready (m_axis_tready)
     );
 
-    assign tmr_mismatch = (os_0 != os_1) || (os_0 != os_2);
+    assign tmr_mismatch = (wb_0 != wb_1) || (wb_0 != wb_2) ||
+                          (wp_0 != wp_1) || (wp_0 != wp_2) ||
+                          (fhp_0 != fhp_1) || (fhp_0 != fhp_2) ||
+                          (full_0 != full_1) || (full_0 != full_2) ||
+                          (vc_count_0 != vc_count_1) || (vc_count_0 != vc_count_2) ||
+                          (pad_0 != pad_1) || (pad_0 != pad_2) ||
+                          (pad_i_0 != pad_i_1) || (pad_i_0 != pad_i_2) ||
+                          (pad_len_0 != pad_len_1) || (pad_len_0 != pad_len_2) ||
+                          (os_0 != os_1) || (os_0 != os_2);
 endmodule
