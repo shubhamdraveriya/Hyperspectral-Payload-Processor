@@ -7,9 +7,9 @@ RAD-07 are met and the fault-injection report is written.
 
 | # | State |
 |---|---|
-| 0 | Scene guard (`rtl/frontend/scene_guard.sv`, `tb_scene_guard`): regression passes; build met timing after pipelining the Nx·Ny·Nz product (WNS +0.175 ns). SYS-09 board re-run 1 (below) found scene starts lost with unfilled lines: fixed in the corner turn (`tb_corner_turn`); re-run 2 (m7d) keeps scene starts but loses whole scenes: RAW overload handling needs a decision (below) |
+| 0 | Scene guard (`rtl/frontend/scene_guard.sv`, `tb_scene_guard`): regression passes; build met timing after pipelining the Nx·Ny·Nz product (WNS +0.175 ns). SYS-09 board re-run 1 (below) found scene starts lost with unfilled lines: fixed in the corner turn (`tb_corner_turn`); re-run 2 (m7d) keeps scene starts but loses whole scenes. Decision (a) taken (below); scene timestamps and packet flags now travel with the samples; SYS-09 re-run 3 pending (board) |
 | 1 | UltraRAM ECC (below): regression passes; build met timing (WNS +0.100 ns; 28.7 k LUT, 33.9 k FF, 32.5 BRAM36, 56 URAM): all 56 URAM288 have ECC on (encode on the write port, decode on the read port). Board (build m7c, job/result v4, `run_m5.py --ecc`): single-bit errors in all three memories, 4 scenes 128×64×64: counts 1 / 4 / 4 as in simulation, capture and ground bit-exact |
-| 2 | Uncorrectable errors flag the scenes and raise an interrupt (below): regression passes. Board (m7c): double-bit error in table entry 4100, correction bypassed: `CAL_DBE` 256 (4 scenes × 64 lines, not written back), data bit-exact, all 4 scenes flagged "internal error" by the ground station (`hpdp_gs.py decode`) |
+| 2 | Uncorrectable errors flag the scenes and raise an interrupt (below): regression passes; since 2026-10-13 table and corner-turn errors are attributed exactly (marks on the samples). Board (m7c): double-bit error in table entry 4100, correction bypassed: `CAL_DBE` 256 (4 scenes × 64 lines, not written back), data bit-exact, all 4 scenes flagged "internal error" by the ground station (`hpdp_gs.py decode`) |
 
 ### Item 1: memory ECC (RAD-02)
 
@@ -98,6 +98,45 @@ should deliver under overload and what `run_m5.py` should check:
   records, with flag bit 0 in every packet, match the model bit-exactly; `RAD.CAL_DBE` =
   1 + 24 (not written back); the interrupt bit is set. With the flag forced to 0 the test
   fails (264 ground bytes differ).
+
+| 3 | Watchdogs (RAD-05, below): PL pipeline watchdogs (regression passes; mutation-checked) and the PS watchdog in `hpdp_run` (written; board test pending: `run_m5.py --wdt-test`) |
+| LNK-10 | In-System IBERT on both channels, optional (`HPDP_IBERT=1`), after the user's JSB MARK 1 setup; build and eye scans pending (board: `sw/host/ibert_scan.tcl`) |
+
+## Decisions of 2026-10-13 (taken on the user's behalf)
+
+The user asked for work that needs no board and for decisions to be taken for them.
+
+1. **SYS-09 RAW overload: option (a).** RAW mode demonstrates that raw data exceeds the
+   link (the requirement); it is not made to deliver more. Option (b) (drop whole scenes)
+   would need the compressor to abandon images and buys nothing the requirement asks for.
+   `hpdp_run` ends a run once the sensor is done and the compressor and packetizer have
+   made no progress for a second, and reports how many scenes reached the compressor;
+   `run_m5.py` judges RAW runs by drops, a clean link and ground, and complete delivery of
+   every scene the compressor got.
+2. **Scene timestamps and packet flags travel with the samples** (found while deciding 1):
+   numbering scenes at the front end gave every scene after a lost one the wrong
+   timestamp, a timestamp queue overflow, and a shifted RAD-06 flag window. Now each line
+   carries its scene's timestamp and an uncorrectable-error mark through the corner turn
+   (fill lines and scene-guard padding marked as fill); the timestamp queue and the
+   per-scene flags live at the compressor input, numbered as the packetizer's scene IDs.
+   The lines-dropped flag (bit 1) is exact too, instead of "since the first packet header".
+3. **RAD-05 PL watchdogs** on the compressor (input or output pending), the downlink
+   (packetizer output pending) and the ground capture (records pending for the DMA): a
+   stage that moves nothing for `RAD.WD_TIMEOUT` clk_sys cycles (default 2^26, 0.27 s) is
+   counted (`RAD.WD_CMP/DL/GR`), shown in `RAD.STATUS.wd_stalled` and raises
+   `SYS.IRQ_STATUS.stall`; `hpdp_run` ends the job with `ST_STALL` (a full ground buffer
+   keeps `ST_GR_OVERFLOW`). The system test runs with a 20 000-cycle timeout (no false
+   stall under random back-pressure) and then forces a ground stall, which is caught.
+4. **RAD-05 PS watchdog: per job, not always on.** The FPD system watchdog (10 s), kicked
+   whenever `hpdp_run` reads the time (every wait loop does), armed by job flag `JOB_WDT`
+   (`run_m5.py --wdt`) and stopped at the end of the job, so debug sessions that halt the
+   processor are not reset. No PMU firmware runs in the JTAG flow, so `hpdp_run` routes the
+   watchdog error to a system reset itself (UG1087: `PMU_GLOBAL.ERROR_EN_1` and
+   `ERROR_SRST_EN_1`, bit `FPD_SWDT`). Test: `run_m5.py --wdt-test` (the app hangs on
+   purpose; `CRL_APB.RESET_REASON.pmu_sys_reset` must be set afterwards).
+5. **LNK-10: In-System IBERT in the HPDP design**, as SPEC asks, optional at build time so
+   the normal bitstream carries no debug cores; settings from the user's working setup on
+   this board (JSB MARK 1/gth_sfp_link).
 
 ## Facts found so far
 
