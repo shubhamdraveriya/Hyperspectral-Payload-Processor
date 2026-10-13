@@ -344,10 +344,11 @@ static int sem_cmd(u32 op)
     return poll(REG(rad.SEM_STATUS), HPDP_RAD__SEM_STATUS__BUSY_bm, 0, 100000);
 }
 
-/* Idle, inject a bit error, Observation; waits up to 5 s for its correction
-   (an injection into a masked frame is ignored by the controller). Returns the
-   time to the correction in ms, 0 if none was seen, -1 on a command failure. */
-static int sem_inject(u32 addr)
+/* Idle, inject a bit error, Observation; waits up to wait_us for its
+   correction (an injection into a masked frame is ignored by the controller).
+   Returns the time to the correction in ms, 0 if none was seen (or wait_us is
+   0), -1 on a command failure. */
+static int sem_inject(u32 addr, u32 wait_us)
 {
     u32 corr = rd(REG(rad.SEM_CORRECTIONS));
     u64 t0;
@@ -361,10 +362,77 @@ static int sem_inject(u32 addr)
         return -1;
     t0 = now();
     while (rd(REG(rad.SEM_CORRECTIONS)) == corr) {
-        if (now() - t0 > us_to_ticks(5000000u))
+        if (now() - t0 > us_to_ticks(wait_us))
             return 0;
     }
     return (int)((now() - t0) * 1000u / COUNTS_PER_SECOND) + 1;
+}
+
+/* Monitor output, discarded (the campaign's reports would flood the UART) */
+static void sem_discard(void)
+{
+    while (rd(REG(rad.SEM_MON)) & HPDP_RAD__SEM_MON__VALID_bm)
+        ;
+}
+
+static u32 xorshift32(u32 *x)
+{
+    *x ^= *x << 13;
+    *x ^= *x >> 17;
+    *x ^= *x << 5;
+    return *x;
+}
+
+/* SEM campaign (RAD-07 b): job->sem_count bit errors, one at a time, at frames
+   drawn from [sem_lfa_lo, sem_lfa_hi], each in the frame's ECC word (word 46,
+   bits 0 - 7: no effect on the design, PG187 error injection guidance) or, with
+   SEM_CAMP_DESIGN, at any word and bit. Each must be corrected within 5 s; one
+   that is not (a masked or unused frame) is injected again, which undoes it
+   (PG187). Stops at a command failure (-1), an uncorrectable error (-2, the
+   device needs reconfiguring) or 20 misses in a row (-3, the frame range is
+   probably wrong). */
+static int sem_campaign(void)
+{
+    u32 x = job->sem_seed ? job->sem_seed : 1u;
+    u32 span = job->sem_lfa_hi - job->sem_lfa_lo + 1u;
+    u32 unc = rd(REG(rad.SEM_UNCORRECTABLE));
+    u32 in_row = 0;
+
+    res->sem_lat_min_ms = 0;
+    for (u32 i = 0; i < job->sem_count; i++) {
+        u32 frame = job->sem_lfa_lo + xorshift32(&x) % span;
+        u32 r = xorshift32(&x);
+        u32 word = (job->sem_flags & SEM_CAMP_DESIGN) ? r % 93u : 46u;
+        u32 bit = (job->sem_flags & SEM_CAMP_DESIGN) ? (r >> 8) & 31u : r & 7u;
+        u32 addr = (frame << 12) | (word << 5) | bit;
+        int ms = sem_inject(addr, 5000000u);
+
+        sem_discard();
+        if (ms < 0)
+            return -1;
+        res->sem_injected++;
+        if (ms > 0) {
+            res->sem_corrected++;
+            res->sem_lat_sum_ms += (u32)ms;
+            if (res->sem_lat_min_ms == 0 || (u32)ms < res->sem_lat_min_ms)
+                res->sem_lat_min_ms = (u32)ms;
+            if ((u32)ms > res->sem_lat_max_ms)
+                res->sem_lat_max_ms = (u32)ms;
+            in_row = 0;
+        } else {
+            res->sem_missed++;
+            xil_printf("  SEM campaign: frame 0x%05x word %d bit %d not corrected: injected again to undo it\r\n",
+                       (unsigned)frame, (int)word, (int)bit);
+            if (sem_inject(addr, 0) < 0)
+                return -1;
+            sem_discard();
+            if (++in_row == 20)
+                return -3;
+        }
+        if (rd(REG(rad.SEM_UNCORRECTABLE)) != unc)
+            return -2;
+    }
+    return 0;
 }
 
 /* Memory ECC (RAD-02): arm the job's error injections. Each must have reached
@@ -742,6 +810,11 @@ static void fill_counters(volatile result_t *o)
     o->sem_corrections  = rd(REG(rad.SEM_CORRECTIONS));
     o->sem_uncorrectable = rd(REG(rad.SEM_UNCORRECTABLE));
     o->sem_heartbeats   = rd(REG(rad.SEM_HEARTBEATS));
+    o->ecc_w_sbe        = rd(REG(rad.W_SBE));
+    o->ecc_w_dbe        = rd(REG(rad.W_DBE));
+    o->tmr_cmp          = rd(REG(rad.TMR_CMP));
+    o->tmr_regs         = rd(REG(rad.TMR_REGS));
+    o->tmr_fsm          = rd(REG(rad.TMR_FSM));
 }
 
 static void print_summary(const run_t *r, volatile result_t *o, u64 ticks)
@@ -782,6 +855,9 @@ static void print_summary(const run_t *r, volatile result_t *o, u64 ticks)
     xil_printf("  memory ECC, corrected / uncorrectable reads: table %d / %d, corner turn %d / %d, "
                "line buffer %d / %d\r\n", (int)o->ecc_cal_sbe, (int)o->ecc_cal_dbe, (int)o->ecc_ct_sbe,
                (int)o->ecc_ct_dbe, (int)o->ecc_lb_sbe, (int)o->ecc_lb_dbe);
+    xil_printf("  weights ECC: %d corrected / %d uncorrectable reads; TMR disagreements: compressor memories %d, "
+               "registers %d, state machines %d\r\n", (int)o->ecc_w_sbe, (int)o->ecc_w_dbe, (int)o->tmr_cmp,
+               (int)o->tmr_regs, (int)o->tmr_fsm);
     xil_printf("  pipeline watchdog stalls: compressor %d, downlink %d, ground capture %d\r\n",
                (int)o->wd_cmp, (int)o->wd_dl, (int)o->wd_gr);
     xil_printf("  SEM: status 0x%03x, %d corrections, %d uncorrectable, %d heartbeats\r\n",
@@ -880,6 +956,9 @@ static int run_job(void)
         for (u32 i = 0; i < 3; i++)
             if ((job->ecc_inject[i] & ECC_INJ_ENABLE) && ((job->ecc_inject[i] >> ECC_INJ_MEM_SH) & 3u) > 2u)
                 st = ST_BAD_JOB;
+        if (job->sem_count && (job->sem_count > SEM_CAMP_MAX || job->sem_lfa_lo > job->sem_lfa_hi ||
+                               job->sem_lfa_hi >= (1u << 18) || (job->sem_flags & ~SEM_CAMP_DESIGN)))
+            st = ST_BAD_JOB;
         if (r.repeat > 1)
             xil_printf("  raw scenes streamed %d times: %d scenes, %d lines\r\n", (int)r.repeat, (int)r.total,
                        (int)(r.total * r.ny));
@@ -914,7 +993,7 @@ static int run_job(void)
         if (st == ST_OK && ecc_arm())
             st = ST_ECC;
         if (st == ST_OK && (job->sem_inject & SEM_INJ_ENABLE)) {
-            int ms = sem_inject(job->sem_inject);
+            int ms = sem_inject(job->sem_inject, 5000000u);
             u32 a = job->sem_inject & SEM_INJ_ADDR_bm;
             xil_printf("  SEM: bit error injected at frame 0x%05x word %d bit %d: ", (unsigned)(a >> 12),
                        (int)((a >> 5) & 0x7Fu), (int)(a & 0x1Fu));
@@ -927,6 +1006,25 @@ static int run_job(void)
             res->sem_inject_ms = ms > 0 ? (u32)ms : 0;
             sem_echo();
             if (ms < 0)
+                st = ST_SEM;
+        }
+        if (st == ST_OK && job->sem_count) {
+            static const char *const why[4] = {"", "controller did not take the commands",
+                                               "uncorrectable error: reconfigure the device",
+                                               "20 not corrected in a row: frame range wrong?"};
+            u64 t0 = now();
+            int rc;
+            xil_printf("  SEM campaign: %d bit errors at frames 0x%05x - 0x%05x, %s\r\n", (int)job->sem_count,
+                       (unsigned)job->sem_lfa_lo, (unsigned)job->sem_lfa_hi,
+                       (job->sem_flags & SEM_CAMP_DESIGN) ? "any word and bit" : "ECC words");
+            rc = sem_campaign();
+            xil_printf("  SEM campaign: %d injected, %d corrected (%d - %d ms, mean %d ms), %d not corrected, "
+                       "in %d s%s%s\r\n", (int)res->sem_injected, (int)res->sem_corrected,
+                       (int)res->sem_lat_min_ms, (int)res->sem_lat_max_ms,
+                       res->sem_corrected ? (int)(res->sem_lat_sum_ms / res->sem_corrected) : 0,
+                       (int)res->sem_missed, (int)((now() - t0) / COUNTS_PER_SECOND),
+                       rc ? ": stopped, " : "", rc ? why[-rc] : "");
+            if (rc)
                 st = ST_SEM;
         }
         if (st == ST_OK)

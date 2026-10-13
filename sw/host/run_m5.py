@@ -42,7 +42,8 @@ from hpdp_model import channel as ch  # noqa: E402
 from hpdp_model import formats as f  # noqa: E402
 from hpdp_model import framing, pipeline, rs  # noqa: E402
 import run_m4 as m4  # noqa: E402
-from hpdp_job import (JOB_WDT, JOB_WDT_TEST, RESET_REASON, sem_inject_word)  # noqa: E402
+from hpdp_job import (JOB_WDT, JOB_WDT_TEST, RESET_REASON, SEM_LFA_DEFAULT,  # noqa: E402
+                      sem_campaign_fields, sem_inject_word)
 from hpdp_job import (CAL_ADDR, GR_ADDR, JOB_LOAD_TABLE, JOB_NO_GR_CAPTURE, JOB_NO_IDLE, MAX_SCENES,  # noqa: E402
                       MODE_CAPTURE, MODE_DOWNLINK, MODE_PRBS, NET_PORT, NET_UPLOAD, OUT_ADDR, RAW_ADDR,
                       RESULT_ADDR, RESULT_MAGIC, UPLOAD_STATUS, ECC_MEMORIES, ECC_NAMES, ecc_inject_word,
@@ -127,6 +128,8 @@ def downlink_job(work, raws, cal, dims, a, cfg, ctx, expect, n_frames):
         job[f"ecc_inject{i}"] = ecc_inject_word(spec)
     if a.sem_inject:
         job["sem_inject"] = sem_inject_word(a.sem_inject)
+    if a.sem_campaign:
+        job.update(sem_campaign_fields(a.sem_campaign, a.sem_design, a.sem_seed))
     (work / "job.bin").write_bytes(pack_job(**job))
     return job
 
@@ -262,6 +265,11 @@ def fake_board(work, job, a, expect, dims, frames, packets):
              aos_idle=6, ei_bits=flips, gr_cadus=len(records), gr_skipped=len(records) - len(kept),
              gr_captured=len(kept), gr_bytes=len(gr),
              gr_asm_errors=sum(rec.asm_errors for rec in records))
+    # SEM controller observing; injections corrected (100 ms each)
+    n = job.get("sem_count", 0)
+    r.update(sem_status=0x4, sem_heartbeats=1000, sem_inject_ms=100 if job.get("sem_inject") else 0,
+             sem_injected=n, sem_corrected=n, sem_lat_min_ms=100 if n else 0, sem_lat_max_ms=100 if n else 0,
+             sem_lat_sum_ms=100 * n, sem_corrections=n + (1 if job.get("sem_inject") else 0))
     (work / "result.bin").write_bytes(pack_result(r, offsets, sizes))
 
 
@@ -295,6 +303,14 @@ def check_ecc(r, a, problems):
             problems.append(f"{ECC_NAMES[m]}: injected single-bit error: {s} corrected, {d} uncorrectable reads")
     if r["ecc_pending"]:
         problems.append(f"ECC injections armed but never written (RAD.STATUS 0x{r['ecc_pending']:X})")
+    # RAD-03 / RAD-04: nothing injects into these on the board, so any count is an
+    # upset (rare on the ground) or a false alarm
+    print(f"weights ECC: {r['ecc_w_sbe']} corrected / {r['ecc_w_dbe']} uncorrectable reads; TMR "
+          f"disagreements: compressor memories {r['tmr_cmp']}, registers {r['tmr_regs']}, "
+          f"state machines {r['tmr_fsm']}")
+    for k in ("ecc_w_sbe", "ecc_w_dbe", "tmr_cmp", "tmr_regs", "tmr_fsm"):
+        if r[k]:
+            problems.append(f"RAD.{k.replace('ecc_', '').upper()} = {r[k]} without an injection")
     # SEM controller (RAD-01): observing, nothing uncorrectable; an injected error corrected
     st = r["sem_status"]
     print(f"SEM: status 0x{st & 0x3FF:03X} ({'observing' if st & 4 else 'NOT observing'}), "
@@ -307,6 +323,8 @@ def check_ecc(r, a, problems):
         problems.append(f"SEM: {r['sem_uncorrectable']} uncorrectable configuration errors")
     if a.sem_inject and not r["sem_inject_ms"]:
         problems.append("SEM: injected error not corrected (masked frame?)")
+    if a.sem_campaign:
+        check_sem_campaign(r, a, problems)
     # pipeline watchdogs (RAD-05): no stage may stall
     stalls = {"compressor": r["wd_cmp"], "downlink": r["wd_dl"], "ground capture": r["wd_gr"]}
     print("pipeline watchdog stalls: " + ", ".join(f"{k} {v}" for k, v in stalls.items()))
@@ -314,6 +332,24 @@ def check_ecc(r, a, problems):
         if v:
             problems.append(f"{k} stage stalled {v} times (RAD.WD_*)")
     return any(injected.values())
+
+
+def check_sem_campaign(r, a, problems):
+    """RAD-07 (b): every injection the controller saw must be corrected; ones it
+    did not see (masked or unused frames) were undone by hpdp_run and are only
+    counted. The scenes after the campaign are checked as usual (bit-exact)."""
+    want = sem_campaign_fields(a.sem_campaign, a.sem_design, a.sem_seed)["sem_count"]
+    n, ok, missed = r["sem_injected"], r["sem_corrected"], r["sem_missed"]
+    mean = r["sem_lat_sum_ms"] / ok if ok else 0
+    print(f"SEM campaign ({'any word and bit' if a.sem_design else 'ECC words'}): {n} of {want} injected, "
+          f"{ok} corrected (latency {r['sem_lat_min_ms']} - {r['sem_lat_max_ms']} ms, mean {mean:.0f} ms), "
+          f"{missed} not seen by the controller (undone)")
+    if n != want:
+        problems.append(f"SEM campaign stopped after {n} of {want} injections")
+    if ok + missed != n:
+        problems.append(f"SEM campaign: {n} injected but {ok} corrected + {missed} not seen")
+    if n and ok == 0:
+        problems.append("SEM campaign: no injection corrected (frame range wrong?)")
 
 
 def verify_downlink(work, job, a, expect, dims, frames, packets):
@@ -545,6 +581,14 @@ def main():
     d.add_argument("--sem-inject", metavar="FRAME:WORD:BIT",
                    help="RAD-01: inject a configuration memory bit error before the scenes; the SEM "
                         "controller must correct it")
+    d.add_argument("--sem-campaign", metavar="COUNT[:LO:HI]",
+                   help="RAD-07 (b): COUNT configuration memory bit errors before the scenes, one at a "
+                        "time, at frames drawn from LO..HI (default %d..%d), in the frames' ECC words; "
+                        "each must be corrected" % SEM_LFA_DEFAULT)
+    d.add_argument("--sem-design", action="store_true",
+                   help="--sem-campaign at any word and bit of the frame (design bits) instead of the "
+                        "ECC word; the scenes after it show whether the design survived")
+    d.add_argument("--sem-seed", type=int, default=1, help="--sem-campaign frame / bit sequence seed")
     d.add_argument("--wdt-test", action="store_true",
                    help="no scenes: hpdp_run arms the watchdog and hangs; the board must reset")
     p.add_argument("--seq", type=int, default=1, help="job sequence number")
@@ -585,6 +629,11 @@ def main():
     for spec in a.ecc:
         try:
             ecc_inject_word(spec)
+        except ValueError as exc:
+            sys.exit(str(exc))
+    if a.sem_campaign:
+        try:
+            sem_campaign_fields(a.sem_campaign, a.sem_design, a.sem_seed)
         except ValueError as exc:
             sys.exit(str(exc))
     raws, cal, dims = m4.build_inputs(a)

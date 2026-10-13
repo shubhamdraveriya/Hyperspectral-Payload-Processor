@@ -27,6 +27,12 @@
  * (configuration logic to the ICAP, grant); a job can inject a configuration
  * memory error before the scenes (sem_inject, SEM_INJ_*), and the result
  * carries the controller's state and counters.
+ *
+ * Version 7 (M7) adds the SEM campaign (RAD-07 b): sem_count configuration
+ * memory bit errors before the scenes, one at a time, at frames drawn from
+ * [sem_lfa_lo, sem_lfa_hi]; the result counts the corrected ones and their
+ * latency. The result also carries the RAD-03 / RAD-04 counters (weight ECC,
+ * TMR disagreements).
  */
 #ifndef HPDP_JOB_H
 #define HPDP_JOB_H
@@ -42,7 +48,7 @@
 
 #define JOB_MAGIC       0x424F4A48u     /* "HJOB" */
 #define RESULT_MAGIC    0x53455248u     /* "HRES" */
-#define JOB_VERSION     6u
+#define JOB_VERSION     7u
 #define MAX_SCENES      64u
 
 #define JOB_LOAD_TABLE  0x1u            /* flags: DMA the calibration table first */
@@ -64,6 +70,10 @@
 
 #define SEM_INJ_ENABLE  0x80000000u     /* sem_inject: inject before the scenes */
 #define SEM_INJ_ADDR_bm 0x3FFFFFFFu     /*   [29:0] as RAD.SEM_INJ_ADDR: frame, word, bit */
+
+#define SEM_CAMP_DESIGN 0x1u            /* sem_flags: any word and bit of the frame (else the
+                                           frame's ECC word: word 46, bits 0 - 7) */
+#define SEM_CAMP_MAX    10000u          /* sem_count, at most */
 
 typedef struct {
     u32 magic, version, seq, flags;
@@ -91,6 +101,11 @@ typedef struct {
     u32 ecc_inject[3];                             /* ECC_INJ_* */
     /* version 6 */
     u32 sem_inject;                                /* SEM_INJ_* */
+    /* version 7 */
+    u32 sem_count;                                 /* SEM campaign: bit errors before the scenes */
+    u32 sem_lfa_lo, sem_lfa_hi;                    /*   linear frame addresses drawn from */
+    u32 sem_seed;                                  /*   xorshift32 seed (0: 1) */
+    u32 sem_flags;                                 /*   SEM_CAMP_* */
 } job_t;
 
 enum {
@@ -138,6 +153,12 @@ typedef struct {
     /* version 6: SEM controller (RAD-01) */
     u32 sem_status, sem_corrections, sem_uncorrectable, sem_heartbeats;
     u32 sem_inject_ms;                             /* injection to correction (0: none seen) */
+    /* version 7: SEM campaign (RAD-07 b) */
+    u32 sem_injected, sem_corrected, sem_missed;   /* missed: no correction within 5 s (undone) */
+    u32 sem_lat_min_ms, sem_lat_max_ms, sem_lat_sum_ms;    /* injection to correction, corrected ones */
+    u32 ecc_w_sbe, ecc_w_dbe;                      /* compressor weights (RAD-03) */
+    u32 tmr_cmp, tmr_regs, tmr_fsm;                /* TMR copies disagreed: compressor memories,
+                                                      register block (RAD-03), state machines (RAD-04) */
     u32 scene_offset[MAX_SCENES];                  /* from out_addr */
     u32 scene_bytes[MAX_SCENES];
 } result_t;
