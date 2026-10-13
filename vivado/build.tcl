@@ -39,6 +39,7 @@ report_timing_summary -max_paths 10 -file [file join $rpt timing_summary.rpt]
 report_utilization -file [file join $rpt utilization.rpt]
 report_cdc -file [file join $rpt cdc.rpt]
 report_methodology -file [file join $rpt methodology.rpt]
+report_bus_skew -file [file join $rpt bus_skew.rpt]     ;# the set_bus_skew constraints (VER-09)
 
 write_hw_platform -fixed -include_bit -force [file join $build_dir hpdp.xsa]
 

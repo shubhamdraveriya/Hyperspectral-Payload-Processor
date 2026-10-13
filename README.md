@@ -12,16 +12,19 @@ The full specification is in [SPEC.md](SPEC.md).
 
 ## Status
 
+Project report (results, requirements compliance, open items):
+[docs/project_report.md](docs/project_report.md).
+
 | Milestone | Content | State |
 |---|---|---|
 | M0 | Repository, tool flow, ZCU106 base design with DMA loopback | **done**: 64 MB loopback passes on the board at 3865 MB/s ([notes](docs/m0_bringup.md)) |
-| M1 | Python reference models (CCSDS 123, framing, RS) | models done, 142 tests pass; independent CCSDS 123 check pending ([notes](docs/m1_models.md)) |
+| M1 | Python reference models (CCSDS 123, framing, RS) | models done, 144 tests pass; independent CCSDS 123 check pending (O-5) ([notes](docs/m1_models.md)) |
 | M2 | CCSDS 123 compressor RTL | **done**: bit-exact on 28 configurations; 250 MHz met at 512 × 256 (13.6k LUT, 19 DSP, 8 URAM) ([notes](docs/m2_compressor.md)) |
 | M3 | Sensor emulator, radiometric correction, corner turn | **done**: bit-exact with the models through the compressor on 12 tests (incl. line drops with fill lines); 250 MHz met at 512 × 256 (1.1k LUT, 1 DSP, 32 URAM) ([notes](docs/m3_frontend.md)) |
 | M4 | On-board compression run | **done**: 15 scenes from the board identical to the model and decoded bit-exactly; 99.8 Msamples/s; 250 MHz met on the full chip, CDC clean ([notes](docs/m4_board_run.md)) |
-| M5 | Downlink chain and optical link | — |
-| M6 | PC ground station | — |
-| M7 | Radiation mitigation | — |
+| M5 | Downlink chain and optical link | **done**: PRBS-31 3.4 × 10¹² bits error-free over the fiber (VER-06); scenes bit-exact at BER 0 / 10⁻⁴ / 10⁻³ (VER-07); 76.8 Msamples/s for 10 min without a dropped line (VER-08) ([notes](docs/m5_downlink.md)) |
+| M6 | PC ground station | **done** except the Ethernet upload board test (SW-05, needs the board's Ethernet): decodes, verifies and displays captures and live streams ([notes](docs/m6_ground_station.md)) |
+| M7 | Radiation mitigation | **done**: SEM scrubbing (upsets corrected in ≤ 153 ms on the board), ECC, TMR, watchdogs; fault campaign with no silent corruption in protected state; final build m7h ([plan](docs/m7_plan.md), [report](docs/m7_fault_injection.md)) |
 
 ## Layout
 
