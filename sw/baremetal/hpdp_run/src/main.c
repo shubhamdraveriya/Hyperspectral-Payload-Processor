@@ -28,6 +28,7 @@
 #include "xil_cache.h"
 #include "xil_io.h"
 #include "xil_printf.h"
+#include "xwdtps.h"
 #ifdef SDT
 #include "xiltimer.h"
 #else
@@ -58,11 +59,52 @@ static volatile u32 gr_avail;                       /* ground record bytes in DD
 static inline u32 rd(UINTPTR a) { return Xil_In32(a); }
 static inline void wr(UINTPTR a, u32 v) { Xil_Out32(a, v); }
 
+/* PS watchdog (RAD-05): the FPD system watchdog, about 10 s, kicked whenever the
+   time is read (every wait loop does). Its timeout is routed to a system reset
+   through the PMU error manager (UG1087: PMU_GLOBAL ERROR_EN_1, ERROR_SRST_EN_1,
+   bit FPD_SWDT), since no PMU firmware runs in the JTAG flow; after the reset,
+   CRL_APB.RESET_REASON shows pmu_sys_reset. Armed per job (JOB_WDT). */
+#define PMU_GLOBAL_ERROR_EN_1      0xFFD805A0u
+#define PMU_GLOBAL_ERROR_SRST_EN_1 0xFFD8056Cu
+#define PMU_ERR1_FPD_SWDT          (1u << 13)
+#define WDT_CRV                    59u      /* (59 + 1) x 4096 x 4096 / 100 MHz = 10 s */
+
+static XWdtPs wdt;
+static int wdt_on;
+
 static u64 now(void)
 {
     XTime t;
+    if (wdt_on)
+        XWdtPs_RestartWdt(&wdt);
     XTime_GetTime(&t);
     return (u64)t;
+}
+
+static int wdt_arm(void)
+{
+    XWdtPs_Config *c = XWdtPs_LookupConfig(XPAR_XWDTPS_0_BASEADDR);
+
+    if (c == NULL || XWdtPs_CfgInitialize(&wdt, c, c->BaseAddress) != XST_SUCCESS)
+        return -1;
+    XWdtPs_Stop(&wdt);
+    XWdtPs_SetControlValue(&wdt, XWDTPS_CLK_PRESCALE, XWDTPS_CCR_PSCALE_4096);
+    XWdtPs_SetControlValue(&wdt, XWDTPS_COUNTER_RESET, WDT_CRV);
+    XWdtPs_EnableOutput(&wdt, XWDTPS_RESET_SIGNAL);
+    Xil_Out32(PMU_GLOBAL_ERROR_EN_1, Xil_In32(PMU_GLOBAL_ERROR_EN_1) | PMU_ERR1_FPD_SWDT);
+    Xil_Out32(PMU_GLOBAL_ERROR_SRST_EN_1, PMU_ERR1_FPD_SWDT);
+    XWdtPs_Start(&wdt);
+    XWdtPs_RestartWdt(&wdt);
+    wdt_on = 1;
+    return 0;
+}
+
+static void wdt_disarm(void)
+{
+    if (wdt_on) {
+        XWdtPs_Stop(&wdt);
+        wdt_on = 0;
+    }
 }
 
 static u64 us_to_ticks(u64 us) { return (u64)COUNTS_PER_SECOND * us / 1000000u; }
@@ -265,6 +307,64 @@ static void configure(const run_t *r)
     wr(REG(gr.CNT_CLEAR), 1);
     wr(REG(lnk.CNT_CLEAR), 1);
     wr(REG(rad.CNT_CLEAR), 1);
+}
+
+/* SEM controller (RAD-01). After boot the configuration logic belongs to the
+   PCAP: hand it to the ICAP (CSU pcap_ctrl.PCAP_PR = 0, PG187), then grant it
+   to the controller, which initializes and starts observing. */
+#define CSU_PCAP_CTRL           0xFFCA3008u
+#define SEM_OBSERVATION         (1u << 2)
+#define SEM_STATES              0xFEu       /* state bits 1..7: all 0 = Idle */
+
+static void sem_echo(void)
+{
+    u32 v;
+    while ((v = rd(REG(rad.SEM_MON))) & HPDP_RAD__SEM_MON__VALID_bm)
+        xil_printf("%c", (char)(v & 0xFFu));
+}
+
+static int sem_start(void)
+{
+    u64 t0 = now();
+
+    Xil_Out32(CSU_PCAP_CTRL, Xil_In32(CSU_PCAP_CTRL) & ~1u);
+    wr(REG(rad.SEM_CTRL), HPDP_RAD__SEM_CTRL__GRANT_bm);
+    while (!(rd(REG(rad.SEM_STATUS)) & SEM_OBSERVATION)) {
+        if (now() - t0 > us_to_ticks(5000000u))
+            return -1;
+    }
+    xil_printf("SEM controller observing after %d ms\r\n", (int)((now() - t0) * 1000u / COUNTS_PER_SECOND));
+    return 0;
+}
+
+/* Gives a command and waits until it is taken */
+static int sem_cmd(u32 op)
+{
+    wr(REG(rad.SEM_CMD), HPDP_RAD__SEM_CMD__GO_bm | op);
+    return poll(REG(rad.SEM_STATUS), HPDP_RAD__SEM_STATUS__BUSY_bm, 0, 100000);
+}
+
+/* Idle, inject a bit error, Observation; waits up to 5 s for its correction
+   (an injection into a masked frame is ignored by the controller). Returns the
+   time to the correction in ms, 0 if none was seen, -1 on a command failure. */
+static int sem_inject(u32 addr)
+{
+    u32 corr = rd(REG(rad.SEM_CORRECTIONS));
+    u64 t0;
+
+    if (sem_cmd(0xE) || poll(REG(rad.SEM_STATUS), SEM_STATES, 0, 1000000))
+        return -1;
+    wr(REG(rad.SEM_INJ_ADDR), addr & SEM_INJ_ADDR_bm);
+    if (sem_cmd(0xC) || poll(REG(rad.SEM_STATUS), SEM_STATES, 0, 1000000))
+        return -1;
+    if (sem_cmd(0xA))
+        return -1;
+    t0 = now();
+    while (rd(REG(rad.SEM_CORRECTIONS)) == corr) {
+        if (now() - t0 > us_to_ticks(5000000u))
+            return 0;
+    }
+    return (int)((now() - t0) * 1000u / COUNTS_PER_SECOND) + 1;
 }
 
 /* Memory ECC (RAD-02): arm the job's error injections. Each must have reached
@@ -517,6 +617,12 @@ static int acquire(const run_t *r, u32 *offset, u32 *bytes, u64 *ticks, u32 *gr_
         }
         if (dma_error())
             return ST_DMA;
+        /* a pipeline watchdog found a stage stalled (RAD-05): end the job now;
+           a full ground buffer stalls the ground stage on purpose */
+        if (rd(REG(rad.WD_CMP)) | rd(REG(rad.WD_DL)) | rd(REG(rad.WD_GR))) {
+            xil_printf("  pipeline stalled: RAD.STATUS 0x%08x\r\n", (unsigned)rd(REG(rad.STATUS)));
+            return gr_full ? ST_GR_OVERFLOW : ST_STALL;
+        }
         if (now() > deadline)
             return ST_TIMEOUT;
         net_poll();                                 /* live upload (no-op without network) */
@@ -628,7 +734,14 @@ static void fill_counters(volatile result_t *o)
     o->ecc_ct_dbe       = rd(REG(rad.CT_DBE));
     o->ecc_lb_sbe       = rd(REG(rad.LB_SBE));
     o->ecc_lb_dbe       = rd(REG(rad.LB_DBE));
-    o->ecc_pending      = rd(REG(rad.STATUS));
+    o->ecc_pending      = rd(REG(rad.STATUS)) & HPDP_RAD__STATUS__INJ_PENDING_bm;
+    o->wd_cmp           = rd(REG(rad.WD_CMP));
+    o->wd_dl            = rd(REG(rad.WD_DL));
+    o->wd_gr            = rd(REG(rad.WD_GR));
+    o->sem_status       = rd(REG(rad.SEM_STATUS));
+    o->sem_corrections  = rd(REG(rad.SEM_CORRECTIONS));
+    o->sem_uncorrectable = rd(REG(rad.SEM_UNCORRECTABLE));
+    o->sem_heartbeats   = rd(REG(rad.SEM_HEARTBEATS));
 }
 
 static void print_summary(const run_t *r, volatile result_t *o, u64 ticks)
@@ -669,6 +782,11 @@ static void print_summary(const run_t *r, volatile result_t *o, u64 ticks)
     xil_printf("  memory ECC, corrected / uncorrectable reads: table %d / %d, corner turn %d / %d, "
                "line buffer %d / %d\r\n", (int)o->ecc_cal_sbe, (int)o->ecc_cal_dbe, (int)o->ecc_ct_sbe,
                (int)o->ecc_ct_dbe, (int)o->ecc_lb_sbe, (int)o->ecc_lb_dbe);
+    xil_printf("  pipeline watchdog stalls: compressor %d, downlink %d, ground capture %d\r\n",
+               (int)o->wd_cmp, (int)o->wd_dl, (int)o->wd_gr);
+    xil_printf("  SEM: status 0x%03x, %d corrections, %d uncorrectable, %d heartbeats\r\n",
+               (unsigned)(o->sem_status & 0x3FFu), (int)o->sem_corrections, (int)o->sem_uncorrectable,
+               (int)o->sem_heartbeats);
     if (r->mode & MODE_DOWNLINK) {
         xil_printf("  downlink: %d packets, %d scenes, %d science / %d idle frames, %d CADUs, %d bits injected\r\n",
                    (int)o->pkt_packets, (int)o->pkt_scenes, (int)o->aos_science, (int)o->aos_idle,
@@ -717,6 +835,19 @@ static int run_job(void)
     res->version = JOB_VERSION;
     res->seq = job->seq;
     res->timer_hz = COUNTS_PER_SECOND;
+
+    if (job->version == JOB_VERSION && (job->flags & (JOB_WDT | JOB_WDT_TEST))) {
+        if (wdt_arm()) {
+            xil_printf("  PS watchdog not available\r\n");
+        } else if (job->flags & JOB_WDT_TEST) {
+            xil_printf("\r\njob %d: PS watchdog test: hanging now, the system must reset in about 10 s\r\n",
+                       (int)job->seq);
+            for (;;)
+                ;                                   /* no more kicks */
+        } else {
+            xil_printf("  PS watchdog armed (10 s)\r\n");
+        }
+    }
 
     if (job->version != JOB_VERSION) {
         st = ST_BAD_JOB;
@@ -782,6 +913,22 @@ static int run_job(void)
             st = ST_TABLE;
         if (st == ST_OK && ecc_arm())
             st = ST_ECC;
+        if (st == ST_OK && (job->sem_inject & SEM_INJ_ENABLE)) {
+            int ms = sem_inject(job->sem_inject);
+            u32 a = job->sem_inject & SEM_INJ_ADDR_bm;
+            xil_printf("  SEM: bit error injected at frame 0x%05x word %d bit %d: ", (unsigned)(a >> 12),
+                       (int)((a >> 5) & 0x7Fu), (int)(a & 0x1Fu));
+            if (ms < 0)
+                xil_printf("controller did not take the commands\r\n");
+            else if (ms == 0)
+                xil_printf("no correction within 5 s (masked frame?)\r\n");
+            else
+                xil_printf("corrected after %d ms\r\n", ms);
+            res->sem_inject_ms = ms > 0 ? (u32)ms : 0;
+            sem_echo();
+            if (ms < 0)
+                st = ST_SEM;
+        }
         if (st == ST_OK)
             st = acquire(&r, offset, bytes, &ticks, &gr_bytes, &dl_ticks);
         wr(REG(se.CTRL), 0);
@@ -814,6 +961,7 @@ static int run_job(void)
         res->scene_offset[s] = offset[s];
         res->scene_bytes[s] = bytes[s];
     }
+    wdt_disarm();
     res->status = st;
     if (st == ST_OK && !(r.mode & MODE_PRBS))
         print_summary(&r, res, ticks);
@@ -890,6 +1038,11 @@ int main(void)
         xil_printf("FAIL: hpdp_run: HPDP not found\r\n");
         return 1;
     }
+    if (sem_start()) {
+        xil_printf("warning: SEM controller not observing (RAD.SEM_STATUS 0x%08x)\r\n",
+                   (unsigned)rd(REG(rad.SEM_STATUS)));
+    }
+    sem_echo();
     if (poll(REG(sys.STATUS), HPDP_SYS__STATUS__SENSOR_LOCKED_bm, HPDP_SYS__STATUS__SENSOR_LOCKED_bm, 100000))
         xil_printf("warning: clk_sensor MMCM not locked\r\n");
 

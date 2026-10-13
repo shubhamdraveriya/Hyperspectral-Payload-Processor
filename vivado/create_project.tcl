@@ -28,6 +28,9 @@ set_property USED_IN_SYNTHESIS false [get_files waivers.xdc]
 # GTH transceivers of the SFP cages (instantiated in hpdp_top)
 source [file join $repo vivado ip gt_link.tcl]
 
+# Soft Error Mitigation controller (RAD-01, instantiated in hpdp_top)
+source [file join $repo vivado ip sem.tcl]
+
 # Optional In-System IBERT on both channels for eye scans (LNK-10): HPDP_IBERT=1
 set ibert [expr {[info exists ::env(HPDP_IBERT)] && $::env(HPDP_IBERT) eq "1"}]
 if {$ibert} {

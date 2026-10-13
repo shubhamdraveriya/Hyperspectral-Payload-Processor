@@ -221,6 +221,25 @@ module hpdp_top #(
     // ---------------------------------------------------------------------
     // Block design: PS, DMA, hpdp_core
     // ---------------------------------------------------------------------
+    // Soft error mitigation controller (RAD-01) on clk_fr, which runs from the
+    // board oscillator whatever the PS does; its interface goes to hpdp_core
+    logic [9:0]  sem_status;
+    logic        sem_cmd_busy, sem_icap_avail, sem_mon_write, sem_cmd_strobe, sem_grant;
+    logic [7:0]  sem_mon_data;
+    logic [43:0] sem_cmd_code;
+
+    sem_support u_sem (
+        .clk        (clk_fr),
+        .grant      (sem_grant),
+        .status     (sem_status),
+        .cmd_strobe (sem_cmd_strobe),
+        .cmd_code   (sem_cmd_code),
+        .cmd_busy   (sem_cmd_busy),
+        .icap_avail (sem_icap_avail),
+        .mon_data   (sem_mon_data),
+        .mon_write  (sem_mon_write)
+    );
+
     system_wrapper u_system (
         .clk_link           (clk_link),
         .gt_tx_done         (tx_done),
@@ -247,6 +266,15 @@ module hpdp_top #(
         .gt_rxprbserr       (rxprbserr),
         .gt_rxprbslocked    (rxprbslocked),
         .gt_rxclkcorcnt     (rxclkcorcnt),
-        .gt_rxbufstatus     (rxbufstatus)
+        .gt_rxbufstatus     (rxbufstatus),
+        .clk_sem            (clk_fr),
+        .sem_status         (sem_status),
+        .sem_cmd_busy       (sem_cmd_busy),
+        .sem_icap_avail     (sem_icap_avail),
+        .sem_mon_data       (sem_mon_data),
+        .sem_mon_write      (sem_mon_write),
+        .sem_cmd_strobe     (sem_cmd_strobe),
+        .sem_cmd_code       (sem_cmd_code),
+        .sem_grant          (sem_grant)
     );
 endmodule

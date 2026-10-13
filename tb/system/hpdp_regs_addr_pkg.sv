@@ -118,6 +118,12 @@ package hpdp_regs_addr_pkg;
     localparam logic [31:0] RAD_STATUS                       = 32'hF0008;
     localparam logic [31:0] RAD_ECC_INJECT                   = 32'hF0040;
     localparam logic [31:0] RAD_ECC_INJECT_ADDR              = 32'hF0044;
+    localparam logic [31:0] RAD_WD_TIMEOUT                   = 32'hF0048;
+    localparam logic [31:0] RAD_SEM_CTRL                     = 32'hF004C;
+    localparam logic [31:0] RAD_SEM_CMD                      = 32'hF0050;
+    localparam logic [31:0] RAD_SEM_INJ_ADDR                 = 32'hF0054;
+    localparam logic [31:0] RAD_SEM_STATUS                   = 32'hF0058;
+    localparam logic [31:0] RAD_SEM_MON                      = 32'hF005C;
     localparam logic [31:0] RAD_CNT_CLEAR                    = 32'hF007C;
     localparam logic [31:0] RAD_CAL_SBE                      = 32'hF0080;
     localparam logic [31:0] RAD_CAL_DBE                      = 32'hF0084;
@@ -125,5 +131,12 @@ package hpdp_regs_addr_pkg;
     localparam logic [31:0] RAD_CT_DBE                       = 32'hF008C;
     localparam logic [31:0] RAD_LB_SBE                       = 32'hF0090;
     localparam logic [31:0] RAD_LB_DBE                       = 32'hF0094;
+    localparam logic [31:0] RAD_WD_CMP                       = 32'hF0098;
+    localparam logic [31:0] RAD_WD_DL                        = 32'hF009C;
+    localparam logic [31:0] RAD_WD_GR                        = 32'hF00A0;
+    localparam logic [31:0] RAD_SEM_CORRECTIONS              = 32'hF00A4;
+    localparam logic [31:0] RAD_SEM_UNCORRECTABLE            = 32'hF00A8;
+    localparam logic [31:0] RAD_SEM_HEARTBEATS               = 32'hF00AC;
+    localparam logic [31:0] RAD_SEM_MON_DROPPED              = 32'hF00B0;
 
 endpackage

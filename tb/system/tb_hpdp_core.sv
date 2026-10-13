@@ -28,6 +28,16 @@
 // clk_ctrl 100 MHz, clk_sys 250 MHz, clk_sensor 100 MHz, clk_link 62.5 MHz
 // (unrelated phases). The DMA streams have random gaps, the S2MM sides random
 // back-pressure.
+//
+// Pipeline watchdogs (RAD-05): a tight timeout (20 000 cycles) during the runs
+// must find no stall under the random back-pressure; at the end the ground
+// capture DMA stops taking records while idle frames are captured, and the
+// ground stage's watchdog must catch it.
+//
+// SEM controller (RAD-01): a stand-in on clk_sem with PG187's interface
+// behaviour (initialization once granted, Observation with heartbeats, Idle,
+// error injection, the correction found in Observation, status reports on the
+// monitor interface); the test drives it through the RAD registers.
 module tb_hpdp_core;
     import hpdp_regs_addr_pkg::*;
 
@@ -63,6 +73,65 @@ module tb_hpdp_core;
     logic [7:0]   cmp_tkeep, gr_tkeep;
     logic         cmp_tlast, cmp_tvalid, cmp_tready = 1'b0;
     logic         gr_tlast, gr_tvalid, gr_tready = 1'b0;
+    logic         hold_gr = 1'b0;                   // RAD-05 test: the ground DMA stops
+
+    // SEM controller stand-in (clk_sem = 31.25 MHz)
+    logic        clk_sem = 1'b0;
+    always #16 clk_sem = ~clk_sem;
+    logic [9:0]  sem_status = '0;
+    logic        sem_cmd_busy = 1'b0, sem_mon_write = 1'b0, sem_cmd_strobe, sem_grant;
+    logic [7:0]  sem_mon_data = '0;
+    logic [43:0] sem_cmd_code, sem_last_code = '0;
+    byte unsigned sem_mq [$];                       // monitor bytes to send
+    int          sem_state = 0, sem_t = 0, sem_busy_t = 0, sem_inj_t = 0, sem_cor_t = 0, sem_cmds = 0;
+    logic        sem_injected = 1'b0;
+
+    task automatic sem_say(string m);
+        foreach (m[i]) sem_mq.push_back(m[i]);
+    endtask
+
+    always @(posedge clk_sem) begin
+        sem_t++;
+        // heartbeat in Observation
+        sem_status[0] <= (sem_state == 2) && (sem_t % 64 == 0);
+        // monitor bytes, one every 4 cycles
+        sem_mon_write <= 1'b0;
+        if (sem_t % 4 == 0 && sem_mq.size() > 0) begin
+            sem_mon_data  <= sem_mq.pop_front();
+            sem_mon_write <= 1'b1;
+        end
+        // commands
+        if (sem_busy_t > 0) sem_busy_t--;
+        sem_cmd_busy <= (sem_busy_t > 0);
+        if (sem_cmd_strobe) begin
+            sem_cmds++;
+            sem_last_code = sem_cmd_code;
+            sem_busy_t    = 8;
+            case (sem_cmd_code[43:40])
+                4'hE: if (sem_state == 2) begin sem_state = 3; sem_say("SC 00\n"); end
+                4'hA: if (sem_state == 3) begin sem_state = 2; sem_say("SC 02\n"); end
+                4'hC: if (sem_state == 3) begin sem_inj_t = 30; sem_injected = 1'b1; end
+                default: ;
+            endcase
+        end
+        // states: 0 waiting for the grant, 1 initialization, 2 Observation, 3 Idle
+        case (sem_state)
+            0: if (sem_grant) begin sem_state = 1; sem_t = 1; sem_say("SC 01\n"); end
+            1: if (sem_t > 200) begin sem_state = 2; sem_say("SC 02\n"); end
+            2: if (sem_injected) begin
+                   sem_injected = 1'b0;
+                   sem_cor_t    = 20;
+                   sem_say("COR\n");
+               end
+            default: ;
+        endcase
+        if (sem_inj_t > 0) sem_inj_t--;
+        if (sem_cor_t > 0) sem_cor_t--;
+        sem_status[1] <= (sem_state == 1);
+        sem_status[2] <= (sem_state == 2);
+        sem_status[3] <= (sem_cor_t > 0);
+        sem_status[5] <= (sem_inj_t > 0);
+    end
     logic         irq;
 
     // transceivers
@@ -107,6 +176,8 @@ module tb_hpdp_core;
         .gt_rxdata, .gt_rxcharisk, .gt_rxdisperr, .gt_rxnotintable (4'b0000),
         .gt_rxbyteisaligned, .gt_rxprbserr (2'b00), .gt_rxprbslocked (2'b00),
         .gt_rxclkcorcnt (4'b0000), .gt_rxbufstatus (6'b000000),
+        .clk_sem, .sem_status, .sem_cmd_busy, .sem_icap_avail (1'b1), .sem_mon_data, .sem_mon_write,
+        .sem_cmd_strobe, .sem_cmd_code, .sem_grant,
         .irq
     );
 
@@ -355,13 +426,14 @@ module tb_hpdp_core;
             end
             if (gr_tlast) g_lasts++;
         end
-        gr_tready <= ($urandom_range(0, 99) < out_pct);
+        gr_tready <= !hold_gr && ($urandom_range(0, 99) < out_pct);
     end
 
     // -----------------------------------------------------------------
     // Test sequence
     // -----------------------------------------------------------------
     task automatic configure();
+        wr(RAD_WD_TIMEOUT, 20000);                          // tight: no false stall allowed
         wr(AOS_CTRL, 0);                                    // no idle frames until the end
         wr(SYS_NX, nx);  wr(SYS_NY, ny);  wr(SYS_NZ, nz);  wr(SYS_DEPTH, depth);
         wr(SYS_MODE, 3);                                    // capture and downlink
@@ -483,6 +555,7 @@ module tb_hpdp_core;
         expect_reg("GR.ID", GR_ID, 32'h0009_0100);
         expect_reg("SYS.BUILD_ID", SYS_BUILD_ID, BUILD_ID);
         expect_reg("SE.LINE_PERIOD reset", SE_LINE_PERIOD, 1000);
+        expect_reg("RAD.WD_TIMEOUT reset", RAD_WD_TIMEOUT, 32'h0400_0000);
         poll("sensor clock locked", SYS_STATUS, 32'h4, 32'h4, 5);
 
         configure();
@@ -514,6 +587,45 @@ module tb_hpdp_core;
         mm2s_wait();
         poll("table load", RC_TBL_WORDS, 32'hFFFF_FFFF, tbl.size(), 10);
         check_table();
+
+        // SEM controller (RAD-01): grant, Observation, Idle, an injection,
+        // Observation again with the correction counted, status reports
+        begin
+            logic [31:0] v;
+            string mon;
+            logic [43:0] exp_code;
+            expect_reg("RAD.SEM_STATUS before the grant", RAD_SEM_STATUS, 32'h0000_2000);   // ICAP available
+            wr(RAD_SEM_CTRL, 1);
+            poll("SEM Observation", RAD_SEM_STATUS, 32'h0000_00FE, 32'h0000_0004, 100);
+            wr(RAD_SEM_CMD, 32'h8000_000E);                 // enter Idle
+            poll("SEM Idle", RAD_SEM_STATUS, 32'h0000_10FE, 32'h0, 50);
+            wr(RAD_SEM_INJ_ADDR, (32'h123 << 12) | (10 << 5) | 5);
+            wr(RAD_SEM_CMD, 32'h8000_000C);                 // inject: frame 0x123, word 10, bit 5
+            poll("SEM injection given", RAD_SEM_STATUS, 32'h0000_1020, 32'h0, 50);
+            exp_code = {4'hC, 10'd0, 18'h123, 7'd10, 5'd5};
+            if (sem_last_code !== exp_code) begin
+                errors++;
+                $display("  SEM injection command %011h, expected %011h", sem_last_code, exp_code);
+            end
+            wr(RAD_SEM_CMD, 32'h8000_000A);                 // enter Observation
+            poll("SEM correction counted", RAD_SEM_CORRECTIONS, 32'hFFFF_FFFF, 1, 100);
+            expect_reg("RAD.SEM_UNCORRECTABLE", RAD_SEM_UNCORRECTABLE, 0);
+            expect_reg("RAD.SEM_MON_DROPPED", RAD_SEM_MON_DROPPED, 0);
+            repeat (2000) @(posedge clk_ctrl);              // the last report on its way; heartbeats
+            rd(RAD_SEM_HEARTBEATS, v);
+            if (v == 0) begin errors++; $display("  RAD.SEM_HEARTBEATS = 0"); end
+            mon = "";
+            for (int i = 0; i < 64; i++) begin
+                rd(RAD_SEM_MON, v);
+                if (!v[8]) break;
+                mon = {mon, string'(byte'(v[7:0]))};
+            end
+            if (mon != "SC 01\nSC 02\nSC 00\nSC 02\nCOR\n") begin
+                errors++;
+                $display("  RAD.SEM_MON reports \"%s\"", mon);
+            end
+            if (sem_cmds != 3) begin errors++; $display("  %0d SEM commands, expected 3", sem_cmds); end
+        end
 
         // memory ECC: single-bit errors into words that the acquisitions read
         begin
@@ -565,6 +677,9 @@ module tb_hpdp_core;
         expect_reg("RAD.CAL_DBE", RAD_CAL_DBE, ecc_dbe ? 1 + PASSES * scenes * ny : 0);
         expect_reg("RAD.CT_DBE", RAD_CT_DBE, 0);
         expect_reg("RAD.LB_DBE", RAD_LB_DBE, 0);
+        expect_reg("RAD.WD_CMP (no stall)", RAD_WD_CMP, 0);
+        expect_reg("RAD.WD_DL (no stall)", RAD_WD_DL, 0);
+        expect_reg("RAD.WD_GR (no stall)", RAD_WD_GR, 0);
         wr(RAD_CNT_CLEAR, 1);
         poll("RAD counters cleared", RAD_CT_SBE, 32'hFFFF_FFFF, 0, 5);     // (non-zero before)
         expect_reg("RAD.CAL_SBE after clear", RAD_CAL_SBE, 0);
@@ -649,6 +764,20 @@ module tb_hpdp_core;
         if (gpos != ground.size()) begin
             errors++;
             $display("  %0d ground bytes captured, expected %0d", gpos, ground.size());
+        end
+
+        // RAD-05: the ground capture DMA stops taking records (it stays stopped)
+        // while idle frames are captured too: the ground stage stalls
+        begin
+            logic [31:0] irqs;
+            expect_reg("RAD.WD_GR before the stall", RAD_WD_GR, 0);
+            hold_gr = 1'b1;
+            wr(GR_CTRL, 1);                                 // capture, idle frames too
+            poll("RAD.STATUS ground stage stalled", RAD_STATUS, 32'h70, 32'h40, 1000);
+            expect_reg("RAD.WD_GR after the stall", RAD_WD_GR, 1);
+            expect_reg("RAD.WD_CMP after the stall", RAD_WD_CMP, 0);
+            rd(SYS_IRQ_STATUS, irqs);
+            if (!irqs[5]) begin errors++; $display("  SYS.IRQ_STATUS.stall not set"); end
         end
         if (errors == 0)
             $display("PASS: tb_hpdp_core %s, %0d passes, %0d bytes, %0d scenes; downlink %0d CADUs, %0d ground records in %0d transfers",

@@ -113,6 +113,20 @@ module hpdp_core
     input  logic [3:0]   gt_rxclkcorcnt,
     input  logic [5:0]   gt_rxbufstatus,
 
+    // Soft error mitigation controller (RAD-01, sem_support in hpdp_top), clk_sem
+    input  logic         clk_sem,
+    input  logic [9:0]   sem_status,        // heartbeat, initialization, observation,
+                                            // correction, classification, injection,
+                                            // diagnostic scan, detect only, essential,
+                                            // uncorrectable
+    input  logic         sem_cmd_busy,
+    input  logic         sem_icap_avail,
+    input  logic [7:0]   sem_mon_data,      // monitor interface: status report bytes
+    input  logic         sem_mon_write,
+    output logic         sem_cmd_strobe,
+    output logic [43:0]  sem_cmd_code,
+    output logic         sem_grant,
+
     output logic         irq                // level, clk_ctrl
 );
     // ---------------------------------------------------------------------
@@ -154,6 +168,7 @@ module hpdp_core
         logic [1:0]  inj_mem;
         logic        inj_dbe;
         logic [17:0] inj_addr;
+        logic [31:0] wd_timeout;                // pipeline watchdogs (RAD-05)
     } sys_cfg_t;
 
     typedef struct packed {
@@ -199,6 +214,8 @@ module hpdp_core
     typedef struct packed {                     // memory ECC (RAD-02), clk_sys
         logic [2:0]  inj_pending;               // table, corner turn, line buffer
         logic [2:0][1:0][31:0] ecc_count;       // [memory][sbe, dbe]
+        logic [2:0]  wd_stalled;                // compressor, downlink, ground capture
+        logic [2:0][31:0] wd_count;
     } rad_stat_t;
 
     typedef struct packed {
@@ -353,6 +370,7 @@ module hpdp_core
         sys_cfg_src.inj_mem     = hwif_out.rad.ECC_INJECT.memory.value;
         sys_cfg_src.inj_dbe     = hwif_out.rad.ECC_INJECT.dbe.value;
         sys_cfg_src.inj_addr    = hwif_out.rad.ECC_INJECT_ADDR.addr.value;
+        sys_cfg_src.wd_timeout  = hwif_out.rad.WD_TIMEOUT.cycles.value;
 
         sen_cfg_src.soft_reset  = hwif_out.sys.CTRL.soft_reset.value;
         sen_cfg_src.fe          = fe_ctrl;
@@ -983,6 +1001,36 @@ module hpdp_core
         .captured (dl_src.captured), .skipped (dl_src.skipped)
     );
 
+    // ---------------------------------------------------------------------
+    // Pipeline watchdogs (RAD-05): a stage with work pending that moves nothing
+    // for RAD.WD_TIMEOUT cycles is stalled (counted, status, interrupt)
+    // ---------------------------------------------------------------------
+    logic [2:0]       wd_stalled, wd_stall;
+    logic [2:0][31:0] wd_count;
+
+    stall_watchdog u_wd_cmp (
+        .clk (clk_sys), .rst (rst_sys), .timeout (sys_cfg.wd_timeout),
+        .pending (sg_tvalid || c_tvalid), .progress (in_fire || out_fire),
+        .stalled (wd_stalled[0]), .stall (wd_stall[0]));
+
+    stall_watchdog u_wd_dl (
+        .clk (clk_sys), .rst (rst_sys), .timeout (sys_cfg.wd_timeout),
+        .pending (p_tvalid), .progress (p_tvalid && p_tready),
+        .stalled (wd_stalled[1]), .stall (wd_stall[1]));
+
+    stall_watchdog u_wd_gr (
+        .clk (clk_sys), .rst (rst_sys), .timeout (sys_cfg.wd_timeout),
+        .pending (m_axis_gr_tvalid), .progress (m_axis_gr_tvalid && m_axis_gr_tready),
+        .stalled (wd_stalled[2]), .stall (wd_stall[2]));
+
+    always_ff @(posedge clk_sys) begin
+        if (rst_sys || rad_clr)
+            wd_count <= '0;
+        else
+            for (int s = 0; s < 3; s++)
+                if (wd_stall[s]) wd_count[s] <= sat_inc(wd_count[s]);
+    end
+
     always_comb begin
         sys_stat_src.fe              = fe_stat;
         sys_stat_src.wr_seq_echo     = sys_cfg.wr_seq;
@@ -1000,14 +1048,146 @@ module hpdp_core
         sys_stat_src.samples_padded  = samples_padded;
         rad_stat_src.inj_pending     = {ecc[2].pending, ecc[1].pending, ecc[0].pending};
         rad_stat_src.ecc_count       = ecc_count;
+        rad_stat_src.wd_stalled      = wd_stalled;
+        rad_stat_src.wd_count        = wd_count;
         sys_stat_src.dl              = dl_src;
     end
+
+    // ---------------------------------------------------------------------
+    // Soft error mitigation controller (RAD-01). It runs on clk_sem (in
+    // hpdp_top); commands go over as a sequence count in a snapshot, status and
+    // counters come back the same way, and the monitor bytes (its status
+    // reports) through an asynchronous FIFO that never holds it up (bytes that
+    // find the FIFO full are counted).
+    // ---------------------------------------------------------------------
+    typedef struct packed {
+        logic        grant;
+        logic [7:0]  cmd_seq, clr_seq;
+        logic [43:0] cmd_code;
+    } sem_cfg_t;
+
+    typedef struct packed {
+        logic [9:0]  status;
+        logic        busy, avail;
+        logic [7:0]  cmd_done;                  // sequence count of the last command given
+        logic [31:0] corrections, uncorrectable, heartbeats, mon_dropped;
+    } sem_stat_t;
+
+    logic [7:0] sem_cmd_seq;
+    always_ff @(posedge clk_ctrl) begin
+        if (rst_ctrl)
+            sem_cmd_seq <= '0;
+        else if (hwif_out.rad.SEM_CMD.go.value)
+            sem_cmd_seq <= sem_cmd_seq + 8'd1;
+    end
+
+    sem_cfg_t  sem_cfg_src, sem_cfg;
+    sem_stat_t sem_stat_src, sem_stat;
+    logic      rst_sem;
+
+    always_comb begin
+        sem_cfg_src.grant    = hwif_out.rad.SEM_CTRL.grant.value;
+        sem_cfg_src.cmd_seq  = sem_cmd_seq;
+        sem_cfg_src.clr_seq  = rad_clr_seq;
+        // PG187 command codes (UltraScale+): op in [43:40]; error injection
+        // {4'hC, 8'h00, slr 2'b00, linear frame address, word, bit}
+        sem_cfg_src.cmd_code = {hwif_out.rad.SEM_CMD.op.value,
+                                hwif_out.rad.SEM_CMD.op.value == 4'hC ?
+                                {10'd0, hwif_out.rad.SEM_INJ_ADDR.lfa.value, hwif_out.rad.SEM_INJ_ADDR.word.value,
+                                 hwif_out.rad.SEM_INJ_ADDR.bitn.value} : 40'd0};
+    end
+
+    xpm_cdc_async_rst #(.DEST_SYNC_FF(4), .RST_ACTIVE_HIGH(1)) u_cdc_rst_sem (
+        .src_arst (rst_ctrl), .dest_clk (clk_sem), .dest_arst (rst_sem));
+
+    cdc_bus #(.WIDTH($bits(sem_cfg_t))) u_cdc_sem_cfg (
+        .src_clk (clk_ctrl), .src_rst (rst_ctrl), .src_data (sem_cfg_src),
+        .dest_clk (clk_sem), .dest_rst (rst_sem), .dest_data (sem_cfg));
+
+    cdc_bus #(.WIDTH($bits(sem_stat_t))) u_cdc_sem_stat (
+        .src_clk (clk_sem), .src_rst (rst_sem), .src_data (sem_stat_src),
+        .dest_clk (clk_ctrl), .dest_rst (rst_ctrl), .dest_data (sem_stat));
+
+    // clk_sem: commands (one strobe per new sequence count, when not busy),
+    // counters of correction, uncorrectable and heartbeat events
+    logic [7:0] sem_cmd_seen, sem_clr_seen;
+    logic [9:0] sem_status_d;
+    logic       sem_wait;                       // a command was given: wait for busy to drop
+    logic [31:0] sem_corr, sem_unc, sem_hb, sem_drop;
+    logic        mon_full;
+
+    always_ff @(posedge clk_sem) begin
+        if (rst_sem) begin
+            sem_cmd_seen   <= '0;
+            sem_clr_seen   <= '0;
+            sem_cmd_strobe <= 1'b0;
+            sem_wait       <= 1'b0;
+            sem_status_d   <= '0;
+            {sem_corr, sem_unc, sem_hb, sem_drop} <= '0;
+        end else begin
+            sem_cmd_strobe <= 1'b0;
+            sem_status_d   <= sem_status;
+            if (sem_wait) begin
+                if (!sem_cmd_strobe && !sem_cmd_busy) sem_wait <= 1'b0;
+            end else if (sem_cfg.cmd_seq != sem_cmd_seen && !sem_cmd_busy) begin
+                sem_cmd_strobe <= 1'b1;
+                sem_cmd_code   <= sem_cfg.cmd_code;
+                sem_cmd_seen   <= sem_cfg.cmd_seq;
+                sem_wait       <= 1'b1;
+            end
+            if (sem_status[3] && !sem_status_d[3]) sem_corr <= sat_inc(sem_corr);
+            if (sem_status[9] && !sem_status_d[9]) sem_unc  <= sat_inc(sem_unc);
+            if (sem_status[0] && !sem_status_d[0]) sem_hb   <= sat_inc(sem_hb);
+            if (sem_mon_write && mon_full)         sem_drop <= sat_inc(sem_drop);
+            if (sem_cfg.clr_seq != sem_clr_seen) begin
+                {sem_corr, sem_unc, sem_hb, sem_drop} <= '0;
+                sem_clr_seen <= sem_cfg.clr_seq;
+            end
+        end
+    end
+    assign sem_grant = sem_cfg.grant;
+
+    always_comb begin
+        sem_stat_src.status        = sem_status;
+        sem_stat_src.busy          = sem_cmd_busy || sem_wait;
+        sem_stat_src.avail         = sem_icap_avail;
+        sem_stat_src.cmd_done      = sem_cmd_seen;
+        sem_stat_src.corrections   = sem_corr;
+        sem_stat_src.uncorrectable = sem_unc;
+        sem_stat_src.heartbeats    = sem_hb;
+        sem_stat_src.mon_dropped   = sem_drop;
+    end
+
+    // monitor bytes -> clk_ctrl; RAD.SEM_MON reads the oldest byte and removes it
+    logic [7:0] mon_dout;
+    logic       mon_empty, mon_rd;
+
+    xpm_fifo_async #(
+        .FIFO_MEMORY_TYPE ("block"),
+        .FIFO_WRITE_DEPTH (2048),
+        .WRITE_DATA_WIDTH (8),
+        .READ_DATA_WIDTH  (8),
+        .READ_MODE        ("fwft"),
+        .FIFO_READ_LATENCY (0),
+        .CDC_SYNC_STAGES  (2),
+        .USE_ADV_FEATURES ("0000")
+    ) u_sem_mon (
+        .rst (rst_sem), .wr_clk (clk_sem), .wr_en (sem_mon_write && !mon_full), .din (sem_mon_data),
+        .full (mon_full), .rd_clk (clk_ctrl), .rd_en (mon_rd), .dout (mon_dout), .empty (mon_empty),
+        .sleep (1'b0), .injectsbiterr (1'b0), .injectdbiterr (1'b0),
+        .overflow (), .wr_rst_busy (), .almost_full (), .wr_ack (), .prog_full (), .wr_data_count (),
+        .underflow (), .rd_rst_busy (), .almost_empty (), .data_valid (), .prog_empty (),
+        .rd_data_count (), .sbiterr (), .dbiterr ());
+
+    assign mon_rd = hwif_out.rad.SEM_MON.data.swacc && !mon_empty;
 
     // ---------------------------------------------------------------------
     // Status registers and interrupts (clk_ctrl)
     // ---------------------------------------------------------------------
     logic [31:0] scenes_prev, lock_losses_prev, sync_losses_prev;
-    logic [33:0] dbe_prev;
+    logic [33:0] dbe_prev, wd_prev;
+    logic [31:0] sem_unc_prev;
+    wire  [33:0] wd_sum  = 34'(rad_stat.wd_count[0]) + 34'(rad_stat.wd_count[1]) + 34'(rad_stat.wd_count[2]);
     wire  [33:0] dbe_sum = 34'(rad_stat.ecc_count[0][1]) + 34'(rad_stat.ecc_count[1][1]) +
                            34'(rad_stat.ecc_count[2][1]);
     wire  [31:0] errors_now = se_stat.underrun_samples | se_stat.period_overruns |
@@ -1027,12 +1207,16 @@ module hpdp_core
             lock_losses_prev <= '0;
             sync_losses_prev <= '0;
             dbe_prev         <= '0;
+            wd_prev          <= '0;
+            sem_unc_prev     <= '0;
         end else begin
             scenes_prev      <= sys_stat.scenes_done;
             error_sum_prev   <= error_sum;
             lock_losses_prev <= lnk_stat.lock_losses;
             sync_losses_prev <= dl_stat.sync_losses;
             dbe_prev         <= dbe_sum;
+            wd_prev          <= wd_sum;
+            sem_unc_prev     <= sem_stat.uncorrectable;
         end
     end
 
@@ -1048,6 +1232,8 @@ module hpdp_core
         hwif_in.sys.IRQ_STATUS.link_lock_loss.hwset = lnk_up && lnk_stat.lock_losses > lock_losses_prev;
         hwif_in.sys.IRQ_STATUS.sync_loss.hwset      = dl_stat.sync_losses > sync_losses_prev;
         hwif_in.sys.IRQ_STATUS.ecc_uncorrectable.hwset = dbe_sum > dbe_prev;
+        hwif_in.sys.IRQ_STATUS.stall.hwset             = wd_sum > wd_prev;
+        hwif_in.sys.IRQ_STATUS.sem_uncorrectable.hwset = sem_stat.uncorrectable > sem_unc_prev;
         hwif_in.sys.BUILD_ID.build_id.next    = BUILD_ID;
 
         hwif_in.se.STATUS.busy.next             = se_stat.busy;
@@ -1075,6 +1261,19 @@ module hpdp_core
         hwif_in.ct.SAMPLES_PADDED.count.next    = sys_stat.samples_padded;
 
         hwif_in.rad.STATUS.inj_pending.next     = rad_stat.inj_pending;
+        hwif_in.rad.STATUS.wd_stalled.next      = rad_stat.wd_stalled;
+        hwif_in.rad.WD_CMP.count.next           = rad_stat.wd_count[0];
+        hwif_in.rad.WD_DL.count.next            = rad_stat.wd_count[1];
+        hwif_in.rad.WD_GR.count.next            = rad_stat.wd_count[2];
+        hwif_in.rad.SEM_STATUS.state.next       = sem_stat.status;
+        hwif_in.rad.SEM_STATUS.busy.next        = sem_stat.busy || sem_stat.cmd_done != sem_cmd_seq;
+        hwif_in.rad.SEM_STATUS.icap_avail.next  = sem_stat.avail;
+        hwif_in.rad.SEM_MON.data.next           = mon_dout;
+        hwif_in.rad.SEM_MON.valid.next          = !mon_empty;
+        hwif_in.rad.SEM_CORRECTIONS.count.next  = sem_stat.corrections;
+        hwif_in.rad.SEM_UNCORRECTABLE.count.next = sem_stat.uncorrectable;
+        hwif_in.rad.SEM_HEARTBEATS.count.next   = sem_stat.heartbeats;
+        hwif_in.rad.SEM_MON_DROPPED.count.next  = sem_stat.mon_dropped;
         hwif_in.rad.CAL_SBE.count.next          = rad_stat.ecc_count[0][0];
         hwif_in.rad.CAL_DBE.count.next          = rad_stat.ecc_count[0][1];
         hwif_in.rad.CT_SBE.count.next           = rad_stat.ecc_count[1][0];
@@ -1135,7 +1334,9 @@ module hpdp_core
                 (hwif_out.sys.IRQ_STATUS.error.value          && hwif_out.sys.IRQ_EN.error.value) ||
                 (hwif_out.sys.IRQ_STATUS.link_lock_loss.value && hwif_out.sys.IRQ_EN.link_lock_loss.value) ||
                 (hwif_out.sys.IRQ_STATUS.sync_loss.value      && hwif_out.sys.IRQ_EN.sync_loss.value) ||
-                (hwif_out.sys.IRQ_STATUS.ecc_uncorrectable.value && hwif_out.sys.IRQ_EN.ecc_uncorrectable.value));
+                (hwif_out.sys.IRQ_STATUS.ecc_uncorrectable.value && hwif_out.sys.IRQ_EN.ecc_uncorrectable.value) ||
+                (hwif_out.sys.IRQ_STATUS.stall.value          && hwif_out.sys.IRQ_EN.stall.value) ||
+                (hwif_out.sys.IRQ_STATUS.sem_uncorrectable.value && hwif_out.sys.IRQ_EN.sem_uncorrectable.value));
         gt_reset_all  <= rst_ctrl || hwif_out.lnk.CTRL.gt_reset.value;
         gt_reset_rx   <= hwif_out.lnk.CTRL.rx_reset.value;
         sfp_tx_enable <= {2{hwif_out.lnk.CTRL.tx_enable.value && !rst_ctrl}};

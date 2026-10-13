@@ -5,9 +5,11 @@ import struct
 
 JOB_ADDR, RESULT_ADDR = 0x1000_0000, 0x1000_1000
 CAL_ADDR, RAW_ADDR, OUT_ADDR, GR_ADDR = 0x1100_0000, 0x1200_0000, 0x3000_0000, 0x4000_0000
-JOB_MAGIC, RESULT_MAGIC, JOB_VERSION, MAX_SCENES = 0x424F4A48, 0x53455248, 4, 64
+JOB_MAGIC, RESULT_MAGIC, JOB_VERSION, MAX_SCENES = 0x424F4A48, 0x53455248, 6, 64
 
 JOB_LOAD_TABLE, JOB_NO_IDLE, JOB_NO_GR_CAPTURE = 0x1, 0x2, 0x4    # flags
+JOB_WDT, JOB_WDT_TEST = 0x8, 0x10                                  # PS watchdog (RAD-05)
+RESET_REASON = 0xFF5E0220                       # CRL_APB; bit 2 pmu_sys_reset (a system error)
 MODE_CAPTURE, MODE_DOWNLINK, MODE_PRBS = 0x1, 0x2, 0x4  # mode bits
 NET_UPLOAD, NET_PORT = 0x1, 5001                        # net_ctrl: ground records over TCP (net.h)
 UPLOAD_STATUS = ["not requested", "complete", "no client connected (served on request)", "incomplete"]
@@ -21,7 +23,7 @@ JOB_FIELDS = ("magic version seq flags nx ny nz depth scenes line_period source 
               "ei_ctrl ei_threshold ei_seed ei_burst_len ei_period ei_asm_bits "
               "lnk_ctrl gr_sync gr_xfer gr_addr gr_capacity link_timeout_ms prbs_seconds "
               "net_ctrl net_ip net_mask net_port repeat "
-              "ecc_inject0 ecc_inject1 ecc_inject2").split()
+              "ecc_inject0 ecc_inject1 ecc_inject2 sem_inject").split()
 
 RESULT_FIELDS = ("magic version seq status build_id scenes_done timer_hz ticks_lo ticks_hi "
                  "se_lines se_underrun se_overruns se_dropped rc_clamped rc_replaced tbl_words "
@@ -35,12 +37,15 @@ RESULT_FIELDS = ("magic version seq status build_id scenes_done timer_hz ticks_l
                  "prbs_errors prbs_words_lo prbs_words_hi prbs_ticks_lo prbs_ticks_hi prbs_status "
                  "downlink_ticks_lo downlink_ticks_hi "
                  "net_ip upload_status upload_bytes "
-                 "ecc_cal_sbe ecc_cal_dbe ecc_ct_sbe ecc_ct_dbe ecc_lb_sbe ecc_lb_dbe ecc_pending").split()
+                 "ecc_cal_sbe ecc_cal_dbe ecc_ct_sbe ecc_ct_dbe ecc_lb_sbe ecc_lb_dbe ecc_pending "
+                 "wd_cmp wd_dl wd_gr "
+                 "sem_status sem_corrections sem_uncorrectable sem_heartbeats sem_inject_ms").split()
 RESULT_WORDS = len(RESULT_FIELDS) + 2 * MAX_SCENES      # then scene_offset[], scene_bytes[]
 
 STATUS = ["OK", "bad job", "HPDP not found", "compressor configuration error",
           "calibration table load failed", "DMA error", "timeout", "output buffer overflow",
-          "link not locked", "ground buffer full", "ECC injection not armed"]
+          "link not locked", "ground buffer full", "ECC injection not armed", "pipeline stalled",
+          "SEM controller not responding"]
 
 def ecc_inject_word(spec):
     """'MEMORY:ADDR[:dbe]' (MEMORY cal, ct or lb) -> job ecc_inject word (hpdp_job.h ECC_INJ_*)"""
@@ -51,6 +56,18 @@ def ecc_inject_word(spec):
     if not 0 <= addr < 1 << 18:
         raise ValueError(f"ECC injection address {addr} out of range")
     return 0x8000_0000 | (0x4000_0000 if len(parts) == 3 else 0) | (ECC_MEMORIES[parts[0]] << 28) | addr
+
+
+def sem_inject_word(spec):
+    """'FRAME:WORD:BIT' (linear frame address, word 0..92, bit 0..31; numbers in
+    any base) -> job sem_inject word (hpdp_job.h SEM_INJ_*)"""
+    parts = spec.split(":")
+    if len(parts) != 3:
+        raise ValueError(f"SEM injection {spec!r}: expected FRAME:WORD:BIT")
+    frame, word, bit = (int(x, 0) for x in parts)
+    if not (0 <= frame < 1 << 18 and 0 <= word <= 92 and 0 <= bit <= 31):
+        raise ValueError(f"SEM injection {spec!r}: frame < 2^18, word 0..92, bit 0..31")
+    return 0x8000_0000 | (frame << 12) | (word << 5) | bit
 
 
 # result offset of a field, for the XSDB scripts

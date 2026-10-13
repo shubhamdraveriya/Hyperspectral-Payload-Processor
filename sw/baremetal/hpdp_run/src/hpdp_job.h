@@ -18,6 +18,15 @@
  * Version 4 (M7) adds memory ECC (RAD-02): up to three error injections armed
  * before the scenes (ecc_inject[], ECC_INJ_*; a calibration table entry is
  * rewritten so that the error goes in), and the ECC counters in the result.
+ *
+ * Version 5 (M7) adds the pipeline watchdog counters (RAD-05) to the result; a
+ * stalled stage ends the job (ST_STALL). Flag JOB_WDT arms the PS watchdog for
+ * the job; JOB_WDT_TEST arms it and hangs, so the board must reset.
+ *
+ * Version 6 (M7) adds the SEM controller (RAD-01): hpdp_run starts it at power-up
+ * (configuration logic to the ICAP, grant); a job can inject a configuration
+ * memory error before the scenes (sem_inject, SEM_INJ_*), and the result
+ * carries the controller's state and counters.
  */
 #ifndef HPDP_JOB_H
 #define HPDP_JOB_H
@@ -33,12 +42,14 @@
 
 #define JOB_MAGIC       0x424F4A48u     /* "HJOB" */
 #define RESULT_MAGIC    0x53455248u     /* "HRES" */
-#define JOB_VERSION     4u
+#define JOB_VERSION     6u
 #define MAX_SCENES      64u
 
 #define JOB_LOAD_TABLE  0x1u            /* flags: DMA the calibration table first */
 #define JOB_NO_IDLE     0x2u            /*        no AOS idle frames while the scenes go down */
 #define JOB_NO_GR_CAPTURE 0x4u          /*        ground records counted, not captured (long runs) */
+#define JOB_WDT         0x8u            /*        PS watchdog armed during the job (RAD-05) */
+#define JOB_WDT_TEST    0x10u           /*        arm it, then hang: the system must reset */
 
 #define MODE_CAPTURE    0x1u            /* mode bits */
 #define MODE_DOWNLINK   0x2u
@@ -50,6 +61,9 @@
 #define ECC_INJ_DBE     0x40000000u     /*   double-bit error (else single-bit) */
 #define ECC_INJ_MEM_SH  28u             /*   memory [29:28]: 0 table, 1 corner turn, 2 line buffer */
 #define ECC_INJ_ADDR_bm 0x0003FFFFu     /*   address [17:0], as RAD.ECC_INJECT_ADDR */
+
+#define SEM_INJ_ENABLE  0x80000000u     /* sem_inject: inject before the scenes */
+#define SEM_INJ_ADDR_bm 0x3FFFFFFFu     /*   [29:0] as RAD.SEM_INJ_ADDR: frame, word, bit */
 
 typedef struct {
     u32 magic, version, seq, flags;
@@ -75,6 +89,8 @@ typedef struct {
                                                       long runs (VER-08); DOWNLINK without CAPTURE */
     /* version 4 */
     u32 ecc_inject[3];                             /* ECC_INJ_* */
+    /* version 6 */
+    u32 sem_inject;                                /* SEM_INJ_* */
 } job_t;
 
 enum {
@@ -89,6 +105,8 @@ enum {
     ST_LINK,                /* link not LOCKED (or PRBS checker not locked) */
     ST_GR_OVERFLOW,         /* ground buffer full */
     ST_ECC,                 /* an ECC error injection could not be armed */
+    ST_STALL,               /* a pipeline watchdog found a stage stalled (RAD-05) */
+    ST_SEM,                 /* the SEM controller is not observing, or took no command */
 };
 
 typedef struct {
@@ -115,6 +133,11 @@ typedef struct {
     /* version 4: RAD counters, reads that returned a corrected / an uncorrectable word */
     u32 ecc_cal_sbe, ecc_cal_dbe, ecc_ct_sbe, ecc_ct_dbe, ecc_lb_sbe, ecc_lb_dbe;
     u32 ecc_pending;                               /* RAD.STATUS: injections not yet written */
+    /* version 5: pipeline watchdog stalls (RAD-05) */
+    u32 wd_cmp, wd_dl, wd_gr;
+    /* version 6: SEM controller (RAD-01) */
+    u32 sem_status, sem_corrections, sem_uncorrectable, sem_heartbeats;
+    u32 sem_inject_ms;                             /* injection to correction (0: none seen) */
     u32 scene_offset[MAX_SCENES];                  /* from out_addr */
     u32 scene_bytes[MAX_SCENES];
 } result_t;

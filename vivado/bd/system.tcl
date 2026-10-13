@@ -130,10 +130,13 @@ foreach pin {
     gt_txdata gt_txcharisk gt_prbs_sel gt_prbs_force_err gt_prbs_cnt_reset gt_loopback
     gt_txpolarity gt_rxpolarity gt_rxbufreset gt_rxdata gt_rxcharisk gt_rxdisperr gt_rxnotintable
     gt_rxbyteisaligned gt_rxprbserr gt_rxprbslocked gt_rxclkcorcnt gt_rxbufstatus
+    clk_sem sem_status sem_cmd_busy sem_icap_avail sem_mon_data sem_mon_write
+    sem_cmd_strobe sem_cmd_code sem_grant
 } {
     make_bd_pins_external -name $pin [get_bd_pins hpdp/$pin]
 }
 set_property CONFIG.FREQ_HZ 62500000 [get_bd_ports clk_link]
+set_property CONFIG.FREQ_HZ 31250000 [get_bd_ports clk_sem]
 
 # ---------------------------------------------------------------------------
 # Interconnect: control (PS -> core and DMA registers) and data (DMA -> PS DDR)

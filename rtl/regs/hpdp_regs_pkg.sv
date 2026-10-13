@@ -5,7 +5,7 @@ package hpdp_regs_pkg;
 
     localparam HPDP_REGS_DATA_WIDTH = 32;
     localparam HPDP_REGS_MIN_ADDR_WIDTH = 20;
-    localparam HPDP_REGS_SIZE = 'hf0098;
+    localparam HPDP_REGS_SIZE = 'hf00b4;
 
     typedef struct {
         logic next;
@@ -51,11 +51,21 @@ package hpdp_regs_pkg;
     } hpdp_sys__IRQ_STATUS__ecc_uncorrectable__in_t;
 
     typedef struct {
+        logic hwset;
+    } hpdp_sys__IRQ_STATUS__stall__in_t;
+
+    typedef struct {
+        logic hwset;
+    } hpdp_sys__IRQ_STATUS__sem_uncorrectable__in_t;
+
+    typedef struct {
         hpdp_sys__IRQ_STATUS__scene_done__in_t scene_done;
         hpdp_sys__IRQ_STATUS__error__in_t error;
         hpdp_sys__IRQ_STATUS__link_lock_loss__in_t link_lock_loss;
         hpdp_sys__IRQ_STATUS__sync_loss__in_t sync_loss;
         hpdp_sys__IRQ_STATUS__ecc_uncorrectable__in_t ecc_uncorrectable;
+        hpdp_sys__IRQ_STATUS__stall__in_t stall;
+        hpdp_sys__IRQ_STATUS__sem_uncorrectable__in_t sem_uncorrectable;
     } hpdp_sys__IRQ_STATUS__in_t;
 
     typedef struct {
@@ -529,8 +539,44 @@ package hpdp_regs_pkg;
     } hpdp_rad__STATUS__inj_pending__in_t;
 
     typedef struct {
+        logic [2:0] next;
+    } hpdp_rad__STATUS__wd_stalled__in_t;
+
+    typedef struct {
         hpdp_rad__STATUS__inj_pending__in_t inj_pending;
+        hpdp_rad__STATUS__wd_stalled__in_t wd_stalled;
     } hpdp_rad__STATUS__in_t;
+
+    typedef struct {
+        logic [9:0] next;
+    } hpdp_rad__SEM_STATUS__state__in_t;
+
+    typedef struct {
+        logic next;
+    } hpdp_rad__SEM_STATUS__busy__in_t;
+
+    typedef struct {
+        logic next;
+    } hpdp_rad__SEM_STATUS__icap_avail__in_t;
+
+    typedef struct {
+        hpdp_rad__SEM_STATUS__state__in_t state;
+        hpdp_rad__SEM_STATUS__busy__in_t busy;
+        hpdp_rad__SEM_STATUS__icap_avail__in_t icap_avail;
+    } hpdp_rad__SEM_STATUS__in_t;
+
+    typedef struct {
+        logic [7:0] next;
+    } hpdp_rad__SEM_MON__data__in_t;
+
+    typedef struct {
+        logic next;
+    } hpdp_rad__SEM_MON__valid__in_t;
+
+    typedef struct {
+        hpdp_rad__SEM_MON__data__in_t data;
+        hpdp_rad__SEM_MON__valid__in_t valid;
+    } hpdp_rad__SEM_MON__in_t;
 
     typedef struct {
         logic [31:0] next;
@@ -581,13 +627,78 @@ package hpdp_regs_pkg;
     } counter_desc_04efc7f6__in_t;
 
     typedef struct {
+        logic [31:0] next;
+    } counter_desc_a7c667a9__count__in_t;
+
+    typedef struct {
+        counter_desc_a7c667a9__count__in_t count;
+    } counter_desc_a7c667a9__in_t;
+
+    typedef struct {
+        logic [31:0] next;
+    } counter_desc_f4327443__count__in_t;
+
+    typedef struct {
+        counter_desc_f4327443__count__in_t count;
+    } counter_desc_f4327443__in_t;
+
+    typedef struct {
+        logic [31:0] next;
+    } counter_desc_3417fa1e__count__in_t;
+
+    typedef struct {
+        counter_desc_3417fa1e__count__in_t count;
+    } counter_desc_3417fa1e__in_t;
+
+    typedef struct {
+        logic [31:0] next;
+    } counter_desc_42ad9689__count__in_t;
+
+    typedef struct {
+        counter_desc_42ad9689__count__in_t count;
+    } counter_desc_42ad9689__in_t;
+
+    typedef struct {
+        logic [31:0] next;
+    } counter_desc_f532f54f__count__in_t;
+
+    typedef struct {
+        counter_desc_f532f54f__count__in_t count;
+    } counter_desc_f532f54f__in_t;
+
+    typedef struct {
+        logic [31:0] next;
+    } counter_desc_105b6eaa__count__in_t;
+
+    typedef struct {
+        counter_desc_105b6eaa__count__in_t count;
+    } counter_desc_105b6eaa__in_t;
+
+    typedef struct {
+        logic [31:0] next;
+    } counter_desc_88141411__count__in_t;
+
+    typedef struct {
+        counter_desc_88141411__count__in_t count;
+    } counter_desc_88141411__in_t;
+
+    typedef struct {
         hpdp_rad__STATUS__in_t STATUS;
+        hpdp_rad__SEM_STATUS__in_t SEM_STATUS;
+        hpdp_rad__SEM_MON__in_t SEM_MON;
         counter_desc_39b3f3e0__in_t CAL_SBE;
         counter_desc_59fcf2ac__in_t CAL_DBE;
         counter_desc_e2657fdd__in_t CT_SBE;
         counter_desc_f1ba7390__in_t CT_DBE;
         counter_desc_d1e5d135__in_t LB_SBE;
         counter_desc_04efc7f6__in_t LB_DBE;
+        counter_desc_a7c667a9__in_t WD_CMP;
+        counter_desc_f4327443__in_t WD_DL;
+        counter_desc_3417fa1e__in_t WD_GR;
+        counter_desc_42ad9689__in_t SEM_CORRECTIONS;
+        counter_desc_f532f54f__in_t SEM_UNCORRECTABLE;
+        counter_desc_105b6eaa__in_t SEM_HEARTBEATS;
+        counter_desc_88141411__in_t SEM_MON_DROPPED;
     } hpdp_rad__in_t;
 
     typedef struct {
@@ -633,11 +744,21 @@ package hpdp_regs_pkg;
     } hpdp_sys__IRQ_EN__ecc_uncorrectable__out_t;
 
     typedef struct {
+        logic value;
+    } hpdp_sys__IRQ_EN__stall__out_t;
+
+    typedef struct {
+        logic value;
+    } hpdp_sys__IRQ_EN__sem_uncorrectable__out_t;
+
+    typedef struct {
         hpdp_sys__IRQ_EN__scene_done__out_t scene_done;
         hpdp_sys__IRQ_EN__error__out_t error;
         hpdp_sys__IRQ_EN__link_lock_loss__out_t link_lock_loss;
         hpdp_sys__IRQ_EN__sync_loss__out_t sync_loss;
         hpdp_sys__IRQ_EN__ecc_uncorrectable__out_t ecc_uncorrectable;
+        hpdp_sys__IRQ_EN__stall__out_t stall;
+        hpdp_sys__IRQ_EN__sem_uncorrectable__out_t sem_uncorrectable;
     } hpdp_sys__IRQ_EN__out_t;
 
     typedef struct {
@@ -661,11 +782,21 @@ package hpdp_regs_pkg;
     } hpdp_sys__IRQ_STATUS__ecc_uncorrectable__out_t;
 
     typedef struct {
+        logic value;
+    } hpdp_sys__IRQ_STATUS__stall__out_t;
+
+    typedef struct {
+        logic value;
+    } hpdp_sys__IRQ_STATUS__sem_uncorrectable__out_t;
+
+    typedef struct {
         hpdp_sys__IRQ_STATUS__scene_done__out_t scene_done;
         hpdp_sys__IRQ_STATUS__error__out_t error;
         hpdp_sys__IRQ_STATUS__link_lock_loss__out_t link_lock_loss;
         hpdp_sys__IRQ_STATUS__sync_loss__out_t sync_loss;
         hpdp_sys__IRQ_STATUS__ecc_uncorrectable__out_t ecc_uncorrectable;
+        hpdp_sys__IRQ_STATUS__stall__out_t stall;
+        hpdp_sys__IRQ_STATUS__sem_uncorrectable__out_t sem_uncorrectable;
     } hpdp_sys__IRQ_STATUS__out_t;
 
     typedef struct {
@@ -1210,8 +1341,68 @@ package hpdp_regs_pkg;
     } hpdp_rad__ECC_INJECT_ADDR__out_t;
 
     typedef struct {
+        logic [31:0] value;
+    } hpdp_rad__WD_TIMEOUT__cycles__out_t;
+
+    typedef struct {
+        hpdp_rad__WD_TIMEOUT__cycles__out_t cycles;
+    } hpdp_rad__WD_TIMEOUT__out_t;
+
+    typedef struct {
+        logic value;
+    } hpdp_rad__SEM_CTRL__grant__out_t;
+
+    typedef struct {
+        hpdp_rad__SEM_CTRL__grant__out_t grant;
+    } hpdp_rad__SEM_CTRL__out_t;
+
+    typedef struct {
+        logic [3:0] value;
+    } hpdp_rad__SEM_CMD__op__out_t;
+
+    typedef struct {
+        logic value;
+    } hpdp_rad__SEM_CMD__go__out_t;
+
+    typedef struct {
+        hpdp_rad__SEM_CMD__op__out_t op;
+        hpdp_rad__SEM_CMD__go__out_t go;
+    } hpdp_rad__SEM_CMD__out_t;
+
+    typedef struct {
+        logic [4:0] value;
+    } hpdp_rad__SEM_INJ_ADDR__bitn__out_t;
+
+    typedef struct {
+        logic [6:0] value;
+    } hpdp_rad__SEM_INJ_ADDR__word__out_t;
+
+    typedef struct {
+        logic [17:0] value;
+    } hpdp_rad__SEM_INJ_ADDR__lfa__out_t;
+
+    typedef struct {
+        hpdp_rad__SEM_INJ_ADDR__bitn__out_t bitn;
+        hpdp_rad__SEM_INJ_ADDR__word__out_t word;
+        hpdp_rad__SEM_INJ_ADDR__lfa__out_t lfa;
+    } hpdp_rad__SEM_INJ_ADDR__out_t;
+
+    typedef struct {
+        logic swacc;
+    } hpdp_rad__SEM_MON__data__out_t;
+
+    typedef struct {
+        hpdp_rad__SEM_MON__data__out_t data;
+    } hpdp_rad__SEM_MON__out_t;
+
+    typedef struct {
         hpdp_rad__ECC_INJECT__out_t ECC_INJECT;
         hpdp_rad__ECC_INJECT_ADDR__out_t ECC_INJECT_ADDR;
+        hpdp_rad__WD_TIMEOUT__out_t WD_TIMEOUT;
+        hpdp_rad__SEM_CTRL__out_t SEM_CTRL;
+        hpdp_rad__SEM_CMD__out_t SEM_CMD;
+        hpdp_rad__SEM_INJ_ADDR__out_t SEM_INJ_ADDR;
+        hpdp_rad__SEM_MON__out_t SEM_MON;
         cnt_clear__out_t CNT_CLEAR;
     } hpdp_rad__out_t;
 

@@ -65,6 +65,8 @@ regfile hpdp_sys {
         field { sw = rw; hw = r; desc = "Link lock lost"; } link_lock_loss[2:2] = 0;
         field { sw = rw; hw = r; desc = "Ground frame sync lost"; } sync_loss[3:3] = 0;
         field { sw = rw; hw = r; desc = "Uncorrectable memory error"; } ecc_uncorrectable[4:4] = 0;
+        field { sw = rw; hw = r; desc = "Pipeline stall"; } stall[5:5] = 0;
+        field { sw = rw; hw = r; desc = "Uncorrectable configuration memory error"; } sem_uncorrectable[6:6] = 0;
     } IRQ_EN @ 0x0C;
 
     reg {
@@ -75,6 +77,8 @@ regfile hpdp_sys {
         field { sw = rw; hw = r; onwrite = woclr; hwset; desc = "LNK.LOCK_LOSSES incremented"; } link_lock_loss[2:2] = 0;
         field { sw = rw; hw = r; onwrite = woclr; hwset; desc = "GR.SYNC_LOSSES incremented"; } sync_loss[3:3] = 0;
         field { sw = rw; hw = r; onwrite = woclr; hwset; desc = "A memory read returned an uncorrectable word (RAD.*_DBE incremented, RAD-06)"; } ecc_uncorrectable[4:4] = 0;
+        field { sw = rw; hw = r; onwrite = woclr; hwset; desc = "A pipeline watchdog found a stage stalled (RAD.WD_* incremented, RAD-05)"; } stall[5:5] = 0;
+        field { sw = rw; hw = r; onwrite = woclr; hwset; desc = "The SEM controller found an uncorrectable configuration memory error (RAD.SEM_UNCORRECTABLE incremented, RAD-01)"; } sem_uncorrectable[6:6] = 0;
     } IRQ_STATUS @ 0x10;
 
     reg {
@@ -548,6 +552,7 @@ regfile hpdp_rad {
     reg {
         name = "Status";
         field { sw = r; hw = w; desc = "Armed ECC error injections not yet written: bit 0 calibration table, bit 1 corner-turn buffers, bit 2 compressor line buffer"; } inj_pending[2:0];
+        field { sw = r; hw = w; desc = "Stages stalled now (RAD-05): bit 4 compressor, bit 5 downlink, bit 6 ground capture"; } wd_stalled[6:4];
     } STATUS @ 0x08;
 
     reg {
@@ -561,6 +566,41 @@ regfile hpdp_rad {
         name = "ECC error injection address";
         field { sw = rw; hw = r; desc = "Calibration table: entry z*Nx + x. Corner-turn buffers: buffer * 2^17 + z*Nx + x (sample in the BIL line). Compressor line buffer: x*Nz + z (sample in the BIP row). The error goes into the 64-bit word that holds it (one table entry, four samples)."; } addr[17:0] = 0;
     } ECC_INJECT_ADDR @ 0x44;
+    reg {
+        name = "Pipeline watchdog timeout";
+        desc = "RAD-05: a stage with work pending (compressor input or output, packetizer output, ground records for the DMA) that moves nothing for this many clk_sys cycles is stalled: counted (WD_*), RAD.STATUS.wd_stalled, SYS.IRQ_STATUS.stall. 0: off. Must exceed the longest legitimate pause (AOS.FRAME_GAP).";
+        field { sw = rw; hw = r; desc = "clk_sys cycles (default 2^26: 0.27 s)"; } cycles[31:0] = 0x04000000;
+    } WD_TIMEOUT @ 0x48;
+
+    reg {
+        name = "SEM control";
+        desc = "RAD-01: the Soft Error Mitigation controller scans and corrects the configuration memory. On Zynq UltraScale+ the configuration logic belongs to the PCAP after boot: software clears CSU pcap_ctrl.PCAP_PR (0xFFCA3008 bit 0), then sets grant; the controller then initializes and starts observing.";
+        field { sw = rw; hw = r; desc = "1: the ICAP is granted to the controller"; } grant[0:0] = 0;
+    } SEM_CTRL @ 0x4C;
+    reg {
+        name = "SEM command";
+        desc = "Writing go = 1 gives the controller command op (PG187): 0xE enter Idle (from Observation), 0xA enter Observation (from Idle), 0xF enter Detect only, 0xD Diagnostic scan, 0xB software reset (from Idle), 0xC inject a bit error at SEM_INJ_ADDR (from Idle). Wait for SEM_STATUS.busy = 0 before the next.";
+        field { sw = rw; hw = r; desc = "Command"; } op[3:0] = 0;
+        field { sw = rw; hw = r; singlepulse; desc = "Write 1 to give the command"; } go[31:31] = 0;
+    } SEM_CMD @ 0x50;
+    reg {
+        name = "SEM error injection address";
+        field { sw = rw; hw = r; desc = "Bit in the word, 0..31"; } bitn[4:0] = 0;
+        field { sw = rw; hw = r; desc = "Word in the frame, 0..92"; } word[11:5] = 0;
+        field { sw = rw; hw = r; desc = "Linear frame address"; } lfa[29:12] = 0;
+    } SEM_INJ_ADDR @ 0x54;
+    reg {
+        name = "SEM status";
+        field { sw = r; hw = w; desc = "Status interface: bit 0 heartbeat, 1 initialization, 2 observation, 3 correction, 4 classification, 5 injection, 6 diagnostic scan, 7 detect only, 8 essential, 9 uncorrectable (all of 1..7 low: Idle)"; } state[9:0];
+        field { sw = r; hw = w; desc = "A command is being given"; } busy[12:12];
+        field { sw = r; hw = w; desc = "The ICAP is available to the controller"; } icap_avail[13:13];
+    } SEM_STATUS @ 0x58;
+    reg {
+        name = "SEM monitor";
+        desc = "The controller's status reports (PG187 monitor interface), one byte per read: reading returns the oldest byte and removes it.";
+        field { sw = r; hw = w; swacc; desc = "Byte"; } data[7:0];
+        field { sw = r; hw = w; desc = "1: data holds a byte"; } valid[8:8];
+    } SEM_MON @ 0x5C;
 
     cnt_clear CNT_CLEAR @ 0x7C;
     counter CAL_SBE @ 0x80;
@@ -575,6 +615,20 @@ regfile hpdp_rad {
     LB_SBE -> desc = "Compressor line buffer reads that returned a corrected word (one per sample read)";
     counter LB_DBE @ 0x94;
     LB_DBE -> desc = "Compressor line buffer reads that returned an uncorrectable word";
+    counter WD_CMP @ 0x98;
+    WD_CMP -> desc = "Compressor stalls (input or output pending, nothing moving for WD_TIMEOUT)";
+    counter WD_DL @ 0x9C;
+    WD_DL -> desc = "Downlink stalls (packetizer output pending, nothing moving for WD_TIMEOUT)";
+    counter WD_GR @ 0xA0;
+    WD_GR -> desc = "Ground capture stalls (records pending for the DMA, nothing moving for WD_TIMEOUT)";
+    counter SEM_CORRECTIONS @ 0xA4;
+    SEM_CORRECTIONS -> desc = "Configuration memory errors corrected by the SEM controller";
+    counter SEM_UNCORRECTABLE @ 0xA8;
+    SEM_UNCORRECTABLE -> desc = "Uncorrectable configuration memory errors found by the SEM controller";
+    counter SEM_HEARTBEATS @ 0xAC;
+    SEM_HEARTBEATS -> desc = "SEM heartbeat pulses (the controller is scanning)";
+    counter SEM_MON_DROPPED @ 0xB0;
+    SEM_MON_DROPPED -> desc = "SEM monitor bytes lost because SEM_MON was not read in time";
 };
 
 // ---------------------------------------------------------------------------

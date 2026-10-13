@@ -61,6 +61,14 @@ extern "C" {
 #define HPDP_SYS__IRQ_EN__ECC_UNCORRECTABLE_bp 4
 #define HPDP_SYS__IRQ_EN__ECC_UNCORRECTABLE_bw 1
 #define HPDP_SYS__IRQ_EN__ECC_UNCORRECTABLE_reset 0x0
+#define HPDP_SYS__IRQ_EN__STALL_bm 0x20
+#define HPDP_SYS__IRQ_EN__STALL_bp 5
+#define HPDP_SYS__IRQ_EN__STALL_bw 1
+#define HPDP_SYS__IRQ_EN__STALL_reset 0x0
+#define HPDP_SYS__IRQ_EN__SEM_UNCORRECTABLE_bm 0x40
+#define HPDP_SYS__IRQ_EN__SEM_UNCORRECTABLE_bp 6
+#define HPDP_SYS__IRQ_EN__SEM_UNCORRECTABLE_bw 1
+#define HPDP_SYS__IRQ_EN__SEM_UNCORRECTABLE_reset 0x0
 
 // reg - hpdp_sys::IRQ_STATUS
 #define HPDP_SYS__IRQ_STATUS__SCENE_DONE_bm 0x1
@@ -83,6 +91,14 @@ extern "C" {
 #define HPDP_SYS__IRQ_STATUS__ECC_UNCORRECTABLE_bp 4
 #define HPDP_SYS__IRQ_STATUS__ECC_UNCORRECTABLE_bw 1
 #define HPDP_SYS__IRQ_STATUS__ECC_UNCORRECTABLE_reset 0x0
+#define HPDP_SYS__IRQ_STATUS__STALL_bm 0x20
+#define HPDP_SYS__IRQ_STATUS__STALL_bp 5
+#define HPDP_SYS__IRQ_STATUS__STALL_bw 1
+#define HPDP_SYS__IRQ_STATUS__STALL_reset 0x0
+#define HPDP_SYS__IRQ_STATUS__SEM_UNCORRECTABLE_bm 0x40
+#define HPDP_SYS__IRQ_STATUS__SEM_UNCORRECTABLE_bp 6
+#define HPDP_SYS__IRQ_STATUS__SEM_UNCORRECTABLE_bw 1
+#define HPDP_SYS__IRQ_STATUS__SEM_UNCORRECTABLE_reset 0x0
 
 // reg - hpdp_sys::BUILD_ID
 #define HPDP_SYS__BUILD_ID__BUILD_ID_bm 0xffffffff
@@ -931,6 +947,9 @@ typedef struct __attribute__ ((__packed__)) {
 #define HPDP_RAD__STATUS__INJ_PENDING_bm 0x7
 #define HPDP_RAD__STATUS__INJ_PENDING_bp 0
 #define HPDP_RAD__STATUS__INJ_PENDING_bw 3
+#define HPDP_RAD__STATUS__WD_STALLED_bm 0x70
+#define HPDP_RAD__STATUS__WD_STALLED_bp 4
+#define HPDP_RAD__STATUS__WD_STALLED_bw 3
 
 // reg - hpdp_rad::ECC_INJECT
 #define HPDP_RAD__ECC_INJECT__MEMORY_bm 0x3
@@ -951,6 +970,61 @@ typedef struct __attribute__ ((__packed__)) {
 #define HPDP_RAD__ECC_INJECT_ADDR__ADDR_bp 0
 #define HPDP_RAD__ECC_INJECT_ADDR__ADDR_bw 18
 #define HPDP_RAD__ECC_INJECT_ADDR__ADDR_reset 0x0
+
+// reg - hpdp_rad::WD_TIMEOUT
+#define HPDP_RAD__WD_TIMEOUT__CYCLES_bm 0xffffffff
+#define HPDP_RAD__WD_TIMEOUT__CYCLES_bp 0
+#define HPDP_RAD__WD_TIMEOUT__CYCLES_bw 32
+#define HPDP_RAD__WD_TIMEOUT__CYCLES_reset 0x4000000
+
+// reg - hpdp_rad::SEM_CTRL
+#define HPDP_RAD__SEM_CTRL__GRANT_bm 0x1
+#define HPDP_RAD__SEM_CTRL__GRANT_bp 0
+#define HPDP_RAD__SEM_CTRL__GRANT_bw 1
+#define HPDP_RAD__SEM_CTRL__GRANT_reset 0x0
+
+// reg - hpdp_rad::SEM_CMD
+#define HPDP_RAD__SEM_CMD__OP_bm 0xf
+#define HPDP_RAD__SEM_CMD__OP_bp 0
+#define HPDP_RAD__SEM_CMD__OP_bw 4
+#define HPDP_RAD__SEM_CMD__OP_reset 0x0
+#define HPDP_RAD__SEM_CMD__GO_bm 0x80000000
+#define HPDP_RAD__SEM_CMD__GO_bp 31
+#define HPDP_RAD__SEM_CMD__GO_bw 1
+#define HPDP_RAD__SEM_CMD__GO_reset 0x0
+
+// reg - hpdp_rad::SEM_INJ_ADDR
+#define HPDP_RAD__SEM_INJ_ADDR__BITN_bm 0x1f
+#define HPDP_RAD__SEM_INJ_ADDR__BITN_bp 0
+#define HPDP_RAD__SEM_INJ_ADDR__BITN_bw 5
+#define HPDP_RAD__SEM_INJ_ADDR__BITN_reset 0x0
+#define HPDP_RAD__SEM_INJ_ADDR__WORD_bm 0xfe0
+#define HPDP_RAD__SEM_INJ_ADDR__WORD_bp 5
+#define HPDP_RAD__SEM_INJ_ADDR__WORD_bw 7
+#define HPDP_RAD__SEM_INJ_ADDR__WORD_reset 0x0
+#define HPDP_RAD__SEM_INJ_ADDR__LFA_bm 0x3ffff000
+#define HPDP_RAD__SEM_INJ_ADDR__LFA_bp 12
+#define HPDP_RAD__SEM_INJ_ADDR__LFA_bw 18
+#define HPDP_RAD__SEM_INJ_ADDR__LFA_reset 0x0
+
+// reg - hpdp_rad::SEM_STATUS
+#define HPDP_RAD__SEM_STATUS__STATE_bm 0x3ff
+#define HPDP_RAD__SEM_STATUS__STATE_bp 0
+#define HPDP_RAD__SEM_STATUS__STATE_bw 10
+#define HPDP_RAD__SEM_STATUS__BUSY_bm 0x1000
+#define HPDP_RAD__SEM_STATUS__BUSY_bp 12
+#define HPDP_RAD__SEM_STATUS__BUSY_bw 1
+#define HPDP_RAD__SEM_STATUS__ICAP_AVAIL_bm 0x2000
+#define HPDP_RAD__SEM_STATUS__ICAP_AVAIL_bp 13
+#define HPDP_RAD__SEM_STATUS__ICAP_AVAIL_bw 1
+
+// reg - hpdp_rad::SEM_MON
+#define HPDP_RAD__SEM_MON__DATA_bm 0xff
+#define HPDP_RAD__SEM_MON__DATA_bp 0
+#define HPDP_RAD__SEM_MON__DATA_bw 8
+#define HPDP_RAD__SEM_MON__VALID_bm 0x100
+#define HPDP_RAD__SEM_MON__VALID_bp 8
+#define HPDP_RAD__SEM_MON__VALID_bw 1
 
 // reg - counter_desc_39b3f3e0
 #define COUNTER_DESC_39B3F3E0__COUNT_bm 0xffffffff
@@ -982,6 +1056,41 @@ typedef struct __attribute__ ((__packed__)) {
 #define COUNTER_DESC_04EFC7F6__COUNT_bp 0
 #define COUNTER_DESC_04EFC7F6__COUNT_bw 32
 
+// reg - counter_desc_a7c667a9
+#define COUNTER_DESC_A7C667A9__COUNT_bm 0xffffffff
+#define COUNTER_DESC_A7C667A9__COUNT_bp 0
+#define COUNTER_DESC_A7C667A9__COUNT_bw 32
+
+// reg - counter_desc_f4327443
+#define COUNTER_DESC_F4327443__COUNT_bm 0xffffffff
+#define COUNTER_DESC_F4327443__COUNT_bp 0
+#define COUNTER_DESC_F4327443__COUNT_bw 32
+
+// reg - counter_desc_3417fa1e
+#define COUNTER_DESC_3417FA1E__COUNT_bm 0xffffffff
+#define COUNTER_DESC_3417FA1E__COUNT_bp 0
+#define COUNTER_DESC_3417FA1E__COUNT_bw 32
+
+// reg - counter_desc_42ad9689
+#define COUNTER_DESC_42AD9689__COUNT_bm 0xffffffff
+#define COUNTER_DESC_42AD9689__COUNT_bp 0
+#define COUNTER_DESC_42AD9689__COUNT_bw 32
+
+// reg - counter_desc_f532f54f
+#define COUNTER_DESC_F532F54F__COUNT_bm 0xffffffff
+#define COUNTER_DESC_F532F54F__COUNT_bp 0
+#define COUNTER_DESC_F532F54F__COUNT_bw 32
+
+// reg - counter_desc_105b6eaa
+#define COUNTER_DESC_105B6EAA__COUNT_bm 0xffffffff
+#define COUNTER_DESC_105B6EAA__COUNT_bp 0
+#define COUNTER_DESC_105B6EAA__COUNT_bw 32
+
+// reg - counter_desc_88141411
+#define COUNTER_DESC_88141411__COUNT_bm 0xffffffff
+#define COUNTER_DESC_88141411__COUNT_bp 0
+#define COUNTER_DESC_88141411__COUNT_bw 32
+
 // regfile - hpdp_rad
 typedef struct __attribute__ ((__packed__)) {
     uint32_t ID;
@@ -990,7 +1099,13 @@ typedef struct __attribute__ ((__packed__)) {
     uint8_t RESERVED_c_3f[0x34];
     uint32_t ECC_INJECT;
     uint32_t ECC_INJECT_ADDR;
-    uint8_t RESERVED_48_7b[0x34];
+    uint32_t WD_TIMEOUT;
+    uint32_t SEM_CTRL;
+    uint32_t SEM_CMD;
+    uint32_t SEM_INJ_ADDR;
+    uint32_t SEM_STATUS;
+    uint32_t SEM_MON;
+    uint8_t RESERVED_60_7b[0x1c];
     uint32_t CNT_CLEAR;
     uint32_t CAL_SBE;
     uint32_t CAL_DBE;
@@ -998,6 +1113,13 @@ typedef struct __attribute__ ((__packed__)) {
     uint32_t CT_DBE;
     uint32_t LB_SBE;
     uint32_t LB_DBE;
+    uint32_t WD_CMP;
+    uint32_t WD_DL;
+    uint32_t WD_GR;
+    uint32_t SEM_CORRECTIONS;
+    uint32_t SEM_UNCORRECTABLE;
+    uint32_t SEM_HEARTBEATS;
+    uint32_t SEM_MON_DROPPED;
 } hpdp_rad_t;
 
 // addrmap - hpdp_regs
@@ -1026,7 +1148,7 @@ typedef struct __attribute__ ((__packed__)) {
 } hpdp_regs_t;
 
 
-static_assert(sizeof(hpdp_regs_t) == 0xf0098, "Packing error");
+static_assert(sizeof(hpdp_regs_t) == 0xf00b4, "Packing error");
 
 #ifdef __cplusplus
 }

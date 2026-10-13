@@ -17,6 +17,7 @@ set tests {
     scene_guard  tb_scene_guard       {}
     sample_ram   tb_sample_ram        {}
     corner_turn  tb_corner_turn       {}
+    watchdog     tb_stall_watchdog    {}
 }
 
 set repo  [file normalize [file join [file dirname [info script]] ..]]

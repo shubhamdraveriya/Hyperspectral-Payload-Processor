@@ -42,6 +42,7 @@ from hpdp_model import channel as ch  # noqa: E402
 from hpdp_model import formats as f  # noqa: E402
 from hpdp_model import framing, pipeline, rs  # noqa: E402
 import run_m4 as m4  # noqa: E402
+from hpdp_job import (JOB_WDT, JOB_WDT_TEST, RESET_REASON, sem_inject_word)  # noqa: E402
 from hpdp_job import (CAL_ADDR, GR_ADDR, JOB_LOAD_TABLE, JOB_NO_GR_CAPTURE, JOB_NO_IDLE, MAX_SCENES,  # noqa: E402
                       MODE_CAPTURE, MODE_DOWNLINK, MODE_PRBS, NET_PORT, NET_UPLOAD, OUT_ADDR, RAW_ADDR,
                       RESULT_ADDR, RESULT_MAGIC, UPLOAD_STATUS, ECC_MEMORIES, ECC_NAMES, ecc_inject_word,
@@ -110,7 +111,7 @@ def downlink_job(work, raws, cal, dims, a, cfg, ctx, expect, n_frames):
     if a.raw:
         job["cmp_opts"] = m4.pack_reg("cmp.OPTS", raw=1, user_data=cfg.user_data)
     job.update(flags=JOB_LOAD_TABLE | (JOB_NO_IDLE if a.no_idle else 0) |
-               (JOB_NO_GR_CAPTURE if a.no_ground_capture else 0),
+               (JOB_NO_GR_CAPTURE if a.no_ground_capture else 0) | (JOB_WDT if a.wdt else 0),
                repeat=a.repeat,
                mode=MODE_DOWNLINK | (0 if a.no_capture else MODE_CAPTURE),
                pkt_apid=a.apid, pkt_data=a.pkt_data,
@@ -124,6 +125,8 @@ def downlink_job(work, raws, cal, dims, a, cfg, ctx, expect, n_frames):
                net_mask=ip_word(a.board_mask), net_port=NET_PORT)
     for i, spec in enumerate(a.ecc):
         job[f"ecc_inject{i}"] = ecc_inject_word(spec)
+    if a.sem_inject:
+        job["sem_inject"] = sem_inject_word(a.sem_inject)
     (work / "job.bin").write_bytes(pack_job(**job))
     return job
 
@@ -170,7 +173,7 @@ def check_upload(work, a):
 def prbs_job(work, a):
     work.mkdir(parents=True, exist_ok=True)
     job = dict(seq=a.seq, mode=MODE_PRBS, lnk_ctrl=link_ctrl(a), prbs_seconds=a.prbs,
-               link_timeout_ms=a.link_timeout)
+               link_timeout_ms=a.link_timeout, flags=JOB_WDT if a.wdt else 0)
     (work / "job.bin").write_bytes(pack_job(**job))
     return job
 
@@ -189,6 +192,42 @@ def write_xsdb(work, job, a, seconds):
                   f"if {{$gr_bytes > 0}} {{ mrd -force -bin -file {{{w}/gr.bin}} 0x{GR_ADDR:08X} "
                   f"[expr {{($gr_bytes + 3) / 4}}] }} else {{ close [open {{{w}/gr.bin}} w] }}\n")
     m4.xsdb_script(work, a.xsa, m4.find_elf(a), loads, job["seq"], timeout, reads, "run_m5")
+
+
+def wdt_test(work, a):
+    """RAD-05 PS watchdog test: hpdp_run arms the watchdog and hangs; the system
+    must reset (CRL_APB.RESET_REASON pmu_sys_reset) within about 10 s."""
+    work.mkdir(parents=True, exist_ok=True)
+    (work / "job.bin").write_bytes(pack_job(seq=a.seq, flags=JOB_WDT_TEST))
+    w = work.as_posix()
+    wait = f"""# PS watchdog test: clear the reset reasons, wait, read them back
+targets -set -nocase -filter {{name =~ "PSU"}}
+mwr -force 0x{RESET_REASON:08X} 0x7F
+after 25000
+if {{[catch {{mrd -force -value 0x{RESET_REASON:08X}}} rr]}} {{
+    after 2000
+    targets -set -nocase -filter {{name =~ "PSU"}}
+    set rr [mrd -force -value 0x{RESET_REASON:08X}]
+}}
+set f [open {{{w}/reset_reason.txt}} w]
+puts $f $rr
+close $f
+puts "run_m5: RESET_REASON $rr"
+"""
+    m4.xsdb_script(work, a.xsa, m4.find_elf(a), [], a.seq, 0, "", "run_m5", wait=wait)
+    print(f"files and XSDB script in {work}")
+    if a.dry_run:
+        return 0
+    print("running XSDB (JTAG): hpdp_run hangs on purpose, the PS watchdog must reset the board ...")
+    if subprocess.call([a.xsdb, str(work / "run.tcl")]) != 0:
+        print("FAIL: XSDB reported an error")
+        return 1
+    rr = int((work / "reset_reason.txt").read_text().split()[0], 0)
+    ok = bool(rr & 0x4)
+    print(f"CRL_APB.RESET_REASON 0x{rr:04X}: " + ("system reset by a system error (the watchdog)"
+                                                 if ok else "no watchdog reset"))
+    print(("PASS" if ok else "FAIL") + ": run_m5 PS watchdog test (RAD-05)")
+    return 0 if ok else 1
 
 
 # ---------------------------------------------------------------------------
@@ -256,6 +295,24 @@ def check_ecc(r, a, problems):
             problems.append(f"{ECC_NAMES[m]}: injected single-bit error: {s} corrected, {d} uncorrectable reads")
     if r["ecc_pending"]:
         problems.append(f"ECC injections armed but never written (RAD.STATUS 0x{r['ecc_pending']:X})")
+    # SEM controller (RAD-01): observing, nothing uncorrectable; an injected error corrected
+    st = r["sem_status"]
+    print(f"SEM: status 0x{st & 0x3FF:03X} ({'observing' if st & 4 else 'NOT observing'}), "
+          f"{r['sem_corrections']} corrections, {r['sem_uncorrectable']} uncorrectable, "
+          f"{r['sem_heartbeats']} heartbeats" +
+          (f"; injected error corrected after {r['sem_inject_ms']} ms" if r["sem_inject_ms"] else ""))
+    if not st & 4:
+        problems.append("SEM controller not observing")
+    if r["sem_uncorrectable"]:
+        problems.append(f"SEM: {r['sem_uncorrectable']} uncorrectable configuration errors")
+    if a.sem_inject and not r["sem_inject_ms"]:
+        problems.append("SEM: injected error not corrected (masked frame?)")
+    # pipeline watchdogs (RAD-05): no stage may stall
+    stalls = {"compressor": r["wd_cmp"], "downlink": r["wd_dl"], "ground capture": r["wd_gr"]}
+    print("pipeline watchdog stalls: " + ", ".join(f"{k} {v}" for k, v in stalls.items()))
+    for k, v in stalls.items():
+        if v:
+            problems.append(f"{k} stage stalled {v} times (RAD.WD_*)")
     return any(injected.values())
 
 
@@ -483,6 +540,13 @@ def main():
                    help="RAD-02: inject an ECC error before the scenes into the word that holds ADDR "
                         "(MEMORY cal: table entry z*Nx+x; ct: corner-turn sample buffer*2^17+z*Nx+x; "
                         "lb: line buffer sample x*Nz+z); single-bit unless ':dbe'; up to 3, one per memory")
+    d = p.add_argument_group("PS watchdog (RAD-05)")
+    d.add_argument("--wdt", action="store_true", help="arm the PS watchdog (10 s) during the job")
+    d.add_argument("--sem-inject", metavar="FRAME:WORD:BIT",
+                   help="RAD-01: inject a configuration memory bit error before the scenes; the SEM "
+                        "controller must correct it")
+    d.add_argument("--wdt-test", action="store_true",
+                   help="no scenes: hpdp_run arms the watchdog and hangs; the board must reset")
     p.add_argument("--seq", type=int, default=1, help="job sequence number")
     p.add_argument("--work", default=str(Path.home() / "hpdp_m5"), help="work directory (no spaces)")
     p.add_argument("--xsa", default=str(REPO / "build" / "m5" / "hpdp.xsa"))
@@ -499,6 +563,8 @@ def main():
     if " " in str(work.resolve()):
         sys.exit("the work directory must not contain spaces (XSDB)")
 
+    if a.wdt_test:
+        return wdt_test(work, a)
     if a.prbs:
         if a.fake_board:
             sys.exit("--fake-board does not apply to --prbs")

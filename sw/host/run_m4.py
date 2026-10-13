@@ -139,10 +139,11 @@ def write_xsdb(work, job, a, run_seconds):
                 "run_m4")
 
 
-def xsdb_script(work, xsa, elf, loads, seq, timeout, reads, tool):
+def xsdb_script(work, xsa, elf, loads, seq, timeout, reads, tool, wait=None):
     """Writes work/run.tcl: JTAG boot override, bitstream from the XSA, PS init,
     data files (name, address), job.bin and hpdp_run, wait for the result with
-    this seq, read result.bin, then the TCL lines `reads`."""
+    this seq, read result.bin, then the TCL lines `reads`. `wait`, if given,
+    replaces the result wait and read-back."""
     with zipfile.ZipFile(Path(xsa).resolve()) as z:
         names = z.namelist()
         bit = next(n for n in names if n.endswith(".bit"))
@@ -174,7 +175,7 @@ rst -processor
 dow -data {{{w}/job.bin}} 0x{JOB_ADDR:08X}
 dow {{{w}/hpdp_run.elf}}
 con
-# poll and read back through the debug port's memory access (PSU target), so the
+{wait if wait is not None else f'''# poll and read back through the debug port's memory access (PSU target), so the
 # A53 is never halted: halting it could delay a DMA re-arm (emulator underrun)
 targets -set -nocase -filter {{name =~ "PSU"}}
 set t0 [clock seconds]
@@ -187,7 +188,7 @@ while {{1}} {{
 }}
 mrd -force -bin -file {{{w}/result.bin}} 0x{RESULT_ADDR:08X} {RESULT_WORDS}
 {reads}puts "{tool}: result read back"
-"""
+'''}"""
     (work / "run.tcl").write_text(tcl, encoding="utf-8", newline="\n")
 
 

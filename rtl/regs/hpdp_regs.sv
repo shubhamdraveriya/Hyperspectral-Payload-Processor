@@ -387,6 +387,12 @@ module hpdp_regs (
             logic STATUS;
             logic ECC_INJECT;
             logic ECC_INJECT_ADDR;
+            logic WD_TIMEOUT;
+            logic SEM_CTRL;
+            logic SEM_CMD;
+            logic SEM_INJ_ADDR;
+            logic SEM_STATUS;
+            logic SEM_MON;
             logic CNT_CLEAR;
             logic CAL_SBE;
             logic CAL_DBE;
@@ -394,6 +400,13 @@ module hpdp_regs (
             logic CT_DBE;
             logic LB_SBE;
             logic LB_DBE;
+            logic WD_CMP;
+            logic WD_DL;
+            logic WD_GR;
+            logic SEM_CORRECTIONS;
+            logic SEM_UNCORRECTABLE;
+            logic SEM_HEARTBEATS;
+            logic SEM_MON_DROPPED;
         } rad;
     } decoded_reg_strb_t;
     decoded_reg_strb_t decoded_reg_strb;
@@ -525,6 +538,12 @@ module hpdp_regs (
         decoded_reg_strb.rad.STATUS = cpuif_req_masked & (cpuif_addr == 20'hf0008) & !cpuif_req_is_wr;
         decoded_reg_strb.rad.ECC_INJECT = cpuif_req_masked & (cpuif_addr == 20'hf0040);
         decoded_reg_strb.rad.ECC_INJECT_ADDR = cpuif_req_masked & (cpuif_addr == 20'hf0044);
+        decoded_reg_strb.rad.WD_TIMEOUT = cpuif_req_masked & (cpuif_addr == 20'hf0048);
+        decoded_reg_strb.rad.SEM_CTRL = cpuif_req_masked & (cpuif_addr == 20'hf004c);
+        decoded_reg_strb.rad.SEM_CMD = cpuif_req_masked & (cpuif_addr == 20'hf0050);
+        decoded_reg_strb.rad.SEM_INJ_ADDR = cpuif_req_masked & (cpuif_addr == 20'hf0054);
+        decoded_reg_strb.rad.SEM_STATUS = cpuif_req_masked & (cpuif_addr == 20'hf0058) & !cpuif_req_is_wr;
+        decoded_reg_strb.rad.SEM_MON = cpuif_req_masked & (cpuif_addr == 20'hf005c) & !cpuif_req_is_wr;
         decoded_reg_strb.rad.CNT_CLEAR = cpuif_req_masked & (cpuif_addr == 20'hf007c);
         decoded_reg_strb.rad.CAL_SBE = cpuif_req_masked & (cpuif_addr == 20'hf0080) & !cpuif_req_is_wr;
         decoded_reg_strb.rad.CAL_DBE = cpuif_req_masked & (cpuif_addr == 20'hf0084) & !cpuif_req_is_wr;
@@ -532,6 +551,13 @@ module hpdp_regs (
         decoded_reg_strb.rad.CT_DBE = cpuif_req_masked & (cpuif_addr == 20'hf008c) & !cpuif_req_is_wr;
         decoded_reg_strb.rad.LB_SBE = cpuif_req_masked & (cpuif_addr == 20'hf0090) & !cpuif_req_is_wr;
         decoded_reg_strb.rad.LB_DBE = cpuif_req_masked & (cpuif_addr == 20'hf0094) & !cpuif_req_is_wr;
+        decoded_reg_strb.rad.WD_CMP = cpuif_req_masked & (cpuif_addr == 20'hf0098) & !cpuif_req_is_wr;
+        decoded_reg_strb.rad.WD_DL = cpuif_req_masked & (cpuif_addr == 20'hf009c) & !cpuif_req_is_wr;
+        decoded_reg_strb.rad.WD_GR = cpuif_req_masked & (cpuif_addr == 20'hf00a0) & !cpuif_req_is_wr;
+        decoded_reg_strb.rad.SEM_CORRECTIONS = cpuif_req_masked & (cpuif_addr == 20'hf00a4) & !cpuif_req_is_wr;
+        decoded_reg_strb.rad.SEM_UNCORRECTABLE = cpuif_req_masked & (cpuif_addr == 20'hf00a8) & !cpuif_req_is_wr;
+        decoded_reg_strb.rad.SEM_HEARTBEATS = cpuif_req_masked & (cpuif_addr == 20'hf00ac) & !cpuif_req_is_wr;
+        decoded_reg_strb.rad.SEM_MON_DROPPED = cpuif_req_masked & (cpuif_addr == 20'hf00b0) & !cpuif_req_is_wr;
         decoded_err = '0;
     end
 
@@ -574,6 +600,14 @@ module hpdp_regs (
                     logic next;
                     logic load_next;
                 } ecc_uncorrectable;
+                struct {
+                    logic next;
+                    logic load_next;
+                } stall;
+                struct {
+                    logic next;
+                    logic load_next;
+                } sem_uncorrectable;
             } IRQ_EN;
             struct {
                 struct {
@@ -596,6 +630,14 @@ module hpdp_regs (
                     logic next;
                     logic load_next;
                 } ecc_uncorrectable;
+                struct {
+                    logic next;
+                    logic load_next;
+                } stall;
+                struct {
+                    logic next;
+                    logic load_next;
+                } sem_uncorrectable;
             } IRQ_STATUS;
             struct {
                 struct {
@@ -1009,6 +1051,42 @@ module hpdp_regs (
             } ECC_INJECT_ADDR;
             struct {
                 struct {
+                    logic [31:0] next;
+                    logic load_next;
+                } cycles;
+            } WD_TIMEOUT;
+            struct {
+                struct {
+                    logic next;
+                    logic load_next;
+                } grant;
+            } SEM_CTRL;
+            struct {
+                struct {
+                    logic [3:0] next;
+                    logic load_next;
+                } op;
+                struct {
+                    logic next;
+                    logic load_next;
+                } go;
+            } SEM_CMD;
+            struct {
+                struct {
+                    logic [4:0] next;
+                    logic load_next;
+                } bitn;
+                struct {
+                    logic [6:0] next;
+                    logic load_next;
+                } word;
+                struct {
+                    logic [17:0] next;
+                    logic load_next;
+                } lfa;
+            } SEM_INJ_ADDR;
+            struct {
+                struct {
                     logic next;
                     logic load_next;
                 } clear;
@@ -1040,6 +1118,12 @@ module hpdp_regs (
                 struct {
                     logic value;
                 } ecc_uncorrectable;
+                struct {
+                    logic value;
+                } stall;
+                struct {
+                    logic value;
+                } sem_uncorrectable;
             } IRQ_EN;
             struct {
                 struct {
@@ -1057,6 +1141,12 @@ module hpdp_regs (
                 struct {
                     logic value;
                 } ecc_uncorrectable;
+                struct {
+                    logic value;
+                } stall;
+                struct {
+                    logic value;
+                } sem_uncorrectable;
             } IRQ_STATUS;
             struct {
                 struct {
@@ -1396,6 +1486,35 @@ module hpdp_regs (
             } ECC_INJECT_ADDR;
             struct {
                 struct {
+                    logic [31:0] value;
+                } cycles;
+            } WD_TIMEOUT;
+            struct {
+                struct {
+                    logic value;
+                } grant;
+            } SEM_CTRL;
+            struct {
+                struct {
+                    logic [3:0] value;
+                } op;
+                struct {
+                    logic value;
+                } go;
+            } SEM_CMD;
+            struct {
+                struct {
+                    logic [4:0] value;
+                } bitn;
+                struct {
+                    logic [6:0] value;
+                } word;
+                struct {
+                    logic [17:0] value;
+                } lfa;
+            } SEM_INJ_ADDR;
+            struct {
+                struct {
                     logic value;
                 } clear;
             } CNT_CLEAR;
@@ -1541,6 +1660,52 @@ module hpdp_regs (
         end
     end
     assign hwif_out.sys.IRQ_EN.ecc_uncorrectable.value = field_storage.sys.IRQ_EN.ecc_uncorrectable.value;
+    // Field: hpdp_regs.sys.IRQ_EN.stall
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.sys.IRQ_EN.stall.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.sys.IRQ_EN && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.sys.IRQ_EN.stall.value & ~decoded_wr_biten[5:5]) | (decoded_wr_data[5:5] & decoded_wr_biten[5:5]);
+            load_next_c = '1;
+        end
+        field_combo.sys.IRQ_EN.stall.next = next_c;
+        field_combo.sys.IRQ_EN.stall.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.sys.IRQ_EN.stall.value <= 1'h0;
+        end else begin
+            if(field_combo.sys.IRQ_EN.stall.load_next) begin
+                field_storage.sys.IRQ_EN.stall.value <= field_combo.sys.IRQ_EN.stall.next;
+            end
+        end
+    end
+    assign hwif_out.sys.IRQ_EN.stall.value = field_storage.sys.IRQ_EN.stall.value;
+    // Field: hpdp_regs.sys.IRQ_EN.sem_uncorrectable
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.sys.IRQ_EN.sem_uncorrectable.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.sys.IRQ_EN && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.sys.IRQ_EN.sem_uncorrectable.value & ~decoded_wr_biten[6:6]) | (decoded_wr_data[6:6] & decoded_wr_biten[6:6]);
+            load_next_c = '1;
+        end
+        field_combo.sys.IRQ_EN.sem_uncorrectable.next = next_c;
+        field_combo.sys.IRQ_EN.sem_uncorrectable.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.sys.IRQ_EN.sem_uncorrectable.value <= 1'h0;
+        end else begin
+            if(field_combo.sys.IRQ_EN.sem_uncorrectable.load_next) begin
+                field_storage.sys.IRQ_EN.sem_uncorrectable.value <= field_combo.sys.IRQ_EN.sem_uncorrectable.next;
+            end
+        end
+    end
+    assign hwif_out.sys.IRQ_EN.sem_uncorrectable.value = field_storage.sys.IRQ_EN.sem_uncorrectable.value;
     // Field: hpdp_regs.sys.IRQ_STATUS.scene_done
     always_comb begin
         automatic logic [0:0] next_c;
@@ -1671,6 +1836,58 @@ module hpdp_regs (
         end
     end
     assign hwif_out.sys.IRQ_STATUS.ecc_uncorrectable.value = field_storage.sys.IRQ_STATUS.ecc_uncorrectable.value;
+    // Field: hpdp_regs.sys.IRQ_STATUS.stall
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.sys.IRQ_STATUS.stall.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.sys.IRQ_STATUS && decoded_req_is_wr) begin // SW write 1 clear
+            next_c = field_storage.sys.IRQ_STATUS.stall.value & ~(decoded_wr_data[5:5] & decoded_wr_biten[5:5]);
+            load_next_c = '1;
+        end else if(hwif_in.sys.IRQ_STATUS.stall.hwset) begin // HW Set
+            next_c = '1;
+            load_next_c = '1;
+        end
+        field_combo.sys.IRQ_STATUS.stall.next = next_c;
+        field_combo.sys.IRQ_STATUS.stall.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.sys.IRQ_STATUS.stall.value <= 1'h0;
+        end else begin
+            if(field_combo.sys.IRQ_STATUS.stall.load_next) begin
+                field_storage.sys.IRQ_STATUS.stall.value <= field_combo.sys.IRQ_STATUS.stall.next;
+            end
+        end
+    end
+    assign hwif_out.sys.IRQ_STATUS.stall.value = field_storage.sys.IRQ_STATUS.stall.value;
+    // Field: hpdp_regs.sys.IRQ_STATUS.sem_uncorrectable
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.sys.IRQ_STATUS.sem_uncorrectable.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.sys.IRQ_STATUS && decoded_req_is_wr) begin // SW write 1 clear
+            next_c = field_storage.sys.IRQ_STATUS.sem_uncorrectable.value & ~(decoded_wr_data[6:6] & decoded_wr_biten[6:6]);
+            load_next_c = '1;
+        end else if(hwif_in.sys.IRQ_STATUS.sem_uncorrectable.hwset) begin // HW Set
+            next_c = '1;
+            load_next_c = '1;
+        end
+        field_combo.sys.IRQ_STATUS.sem_uncorrectable.next = next_c;
+        field_combo.sys.IRQ_STATUS.sem_uncorrectable.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.sys.IRQ_STATUS.sem_uncorrectable.value <= 1'h0;
+        end else begin
+            if(field_combo.sys.IRQ_STATUS.sem_uncorrectable.load_next) begin
+                field_storage.sys.IRQ_STATUS.sem_uncorrectable.value <= field_combo.sys.IRQ_STATUS.sem_uncorrectable.next;
+            end
+        end
+    end
+    assign hwif_out.sys.IRQ_STATUS.sem_uncorrectable.value = field_storage.sys.IRQ_STATUS.sem_uncorrectable.value;
     // Field: hpdp_regs.sys.MODE.capture
     always_comb begin
         automatic logic [0:0] next_c;
@@ -3412,6 +3629,171 @@ module hpdp_regs (
         end
     end
     assign hwif_out.rad.ECC_INJECT_ADDR.addr.value = field_storage.rad.ECC_INJECT_ADDR.addr.value;
+    // Field: hpdp_regs.rad.WD_TIMEOUT.cycles
+    always_comb begin
+        automatic logic [31:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.rad.WD_TIMEOUT.cycles.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.rad.WD_TIMEOUT && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.rad.WD_TIMEOUT.cycles.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
+            load_next_c = '1;
+        end
+        field_combo.rad.WD_TIMEOUT.cycles.next = next_c;
+        field_combo.rad.WD_TIMEOUT.cycles.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.rad.WD_TIMEOUT.cycles.value <= 32'h4000000;
+        end else begin
+            if(field_combo.rad.WD_TIMEOUT.cycles.load_next) begin
+                field_storage.rad.WD_TIMEOUT.cycles.value <= field_combo.rad.WD_TIMEOUT.cycles.next;
+            end
+        end
+    end
+    assign hwif_out.rad.WD_TIMEOUT.cycles.value = field_storage.rad.WD_TIMEOUT.cycles.value;
+    // Field: hpdp_regs.rad.SEM_CTRL.grant
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.rad.SEM_CTRL.grant.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.rad.SEM_CTRL && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.rad.SEM_CTRL.grant.value & ~decoded_wr_biten[0:0]) | (decoded_wr_data[0:0] & decoded_wr_biten[0:0]);
+            load_next_c = '1;
+        end
+        field_combo.rad.SEM_CTRL.grant.next = next_c;
+        field_combo.rad.SEM_CTRL.grant.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.rad.SEM_CTRL.grant.value <= 1'h0;
+        end else begin
+            if(field_combo.rad.SEM_CTRL.grant.load_next) begin
+                field_storage.rad.SEM_CTRL.grant.value <= field_combo.rad.SEM_CTRL.grant.next;
+            end
+        end
+    end
+    assign hwif_out.rad.SEM_CTRL.grant.value = field_storage.rad.SEM_CTRL.grant.value;
+    // Field: hpdp_regs.rad.SEM_CMD.op
+    always_comb begin
+        automatic logic [3:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.rad.SEM_CMD.op.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.rad.SEM_CMD && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.rad.SEM_CMD.op.value & ~decoded_wr_biten[3:0]) | (decoded_wr_data[3:0] & decoded_wr_biten[3:0]);
+            load_next_c = '1;
+        end
+        field_combo.rad.SEM_CMD.op.next = next_c;
+        field_combo.rad.SEM_CMD.op.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.rad.SEM_CMD.op.value <= 4'h0;
+        end else begin
+            if(field_combo.rad.SEM_CMD.op.load_next) begin
+                field_storage.rad.SEM_CMD.op.value <= field_combo.rad.SEM_CMD.op.next;
+            end
+        end
+    end
+    assign hwif_out.rad.SEM_CMD.op.value = field_storage.rad.SEM_CMD.op.value;
+    // Field: hpdp_regs.rad.SEM_CMD.go
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.rad.SEM_CMD.go.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.rad.SEM_CMD && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.rad.SEM_CMD.go.value & ~decoded_wr_biten[31:31]) | (decoded_wr_data[31:31] & decoded_wr_biten[31:31]);
+            load_next_c = '1;
+        end else begin // singlepulse clears back to 0
+            next_c = '0;
+            load_next_c = '1;
+        end
+        field_combo.rad.SEM_CMD.go.next = next_c;
+        field_combo.rad.SEM_CMD.go.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.rad.SEM_CMD.go.value <= 1'h0;
+        end else begin
+            if(field_combo.rad.SEM_CMD.go.load_next) begin
+                field_storage.rad.SEM_CMD.go.value <= field_combo.rad.SEM_CMD.go.next;
+            end
+        end
+    end
+    assign hwif_out.rad.SEM_CMD.go.value = field_storage.rad.SEM_CMD.go.value;
+    // Field: hpdp_regs.rad.SEM_INJ_ADDR.bitn
+    always_comb begin
+        automatic logic [4:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.rad.SEM_INJ_ADDR.bitn.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.rad.SEM_INJ_ADDR && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.rad.SEM_INJ_ADDR.bitn.value & ~decoded_wr_biten[4:0]) | (decoded_wr_data[4:0] & decoded_wr_biten[4:0]);
+            load_next_c = '1;
+        end
+        field_combo.rad.SEM_INJ_ADDR.bitn.next = next_c;
+        field_combo.rad.SEM_INJ_ADDR.bitn.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.rad.SEM_INJ_ADDR.bitn.value <= 5'h0;
+        end else begin
+            if(field_combo.rad.SEM_INJ_ADDR.bitn.load_next) begin
+                field_storage.rad.SEM_INJ_ADDR.bitn.value <= field_combo.rad.SEM_INJ_ADDR.bitn.next;
+            end
+        end
+    end
+    assign hwif_out.rad.SEM_INJ_ADDR.bitn.value = field_storage.rad.SEM_INJ_ADDR.bitn.value;
+    // Field: hpdp_regs.rad.SEM_INJ_ADDR.word
+    always_comb begin
+        automatic logic [6:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.rad.SEM_INJ_ADDR.word.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.rad.SEM_INJ_ADDR && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.rad.SEM_INJ_ADDR.word.value & ~decoded_wr_biten[11:5]) | (decoded_wr_data[11:5] & decoded_wr_biten[11:5]);
+            load_next_c = '1;
+        end
+        field_combo.rad.SEM_INJ_ADDR.word.next = next_c;
+        field_combo.rad.SEM_INJ_ADDR.word.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.rad.SEM_INJ_ADDR.word.value <= 7'h0;
+        end else begin
+            if(field_combo.rad.SEM_INJ_ADDR.word.load_next) begin
+                field_storage.rad.SEM_INJ_ADDR.word.value <= field_combo.rad.SEM_INJ_ADDR.word.next;
+            end
+        end
+    end
+    assign hwif_out.rad.SEM_INJ_ADDR.word.value = field_storage.rad.SEM_INJ_ADDR.word.value;
+    // Field: hpdp_regs.rad.SEM_INJ_ADDR.lfa
+    always_comb begin
+        automatic logic [17:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.rad.SEM_INJ_ADDR.lfa.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.rad.SEM_INJ_ADDR && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.rad.SEM_INJ_ADDR.lfa.value & ~decoded_wr_biten[29:12]) | (decoded_wr_data[29:12] & decoded_wr_biten[29:12]);
+            load_next_c = '1;
+        end
+        field_combo.rad.SEM_INJ_ADDR.lfa.next = next_c;
+        field_combo.rad.SEM_INJ_ADDR.lfa.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.rad.SEM_INJ_ADDR.lfa.value <= 18'h0;
+        end else begin
+            if(field_combo.rad.SEM_INJ_ADDR.lfa.load_next) begin
+                field_storage.rad.SEM_INJ_ADDR.lfa.value <= field_combo.rad.SEM_INJ_ADDR.lfa.next;
+            end
+        end
+    end
+    assign hwif_out.rad.SEM_INJ_ADDR.lfa.value = field_storage.rad.SEM_INJ_ADDR.lfa.value;
+    assign hwif_out.rad.SEM_MON.data.swacc = decoded_reg_strb.rad.SEM_MON;
     // Field: hpdp_regs.rad.CNT_CLEAR.clear
     always_comb begin
         automatic logic [0:0] next_c;
@@ -3478,6 +3860,8 @@ module hpdp_regs (
             readback_data_var[2] = field_storage.sys.IRQ_EN.link_lock_loss.value;
             readback_data_var[3] = field_storage.sys.IRQ_EN.sync_loss.value;
             readback_data_var[4] = field_storage.sys.IRQ_EN.ecc_uncorrectable.value;
+            readback_data_var[5] = field_storage.sys.IRQ_EN.stall.value;
+            readback_data_var[6] = field_storage.sys.IRQ_EN.sem_uncorrectable.value;
         end
         if(rd_mux_addr == 20'h10) begin
             readback_data_var[0] = field_storage.sys.IRQ_STATUS.scene_done.value;
@@ -3485,6 +3869,8 @@ module hpdp_regs (
             readback_data_var[2] = field_storage.sys.IRQ_STATUS.link_lock_loss.value;
             readback_data_var[3] = field_storage.sys.IRQ_STATUS.sync_loss.value;
             readback_data_var[4] = field_storage.sys.IRQ_STATUS.ecc_uncorrectable.value;
+            readback_data_var[5] = field_storage.sys.IRQ_STATUS.stall.value;
+            readback_data_var[6] = field_storage.sys.IRQ_STATUS.sem_uncorrectable.value;
         end
         if(rd_mux_addr == 20'h40) begin
             readback_data_var[31:0] = hwif_in.sys.BUILD_ID.build_id.next;
@@ -3856,6 +4242,7 @@ module hpdp_regs (
         end
         if(rd_mux_addr == 20'hf0008) begin
             readback_data_var[2:0] = hwif_in.rad.STATUS.inj_pending.next;
+            readback_data_var[6:4] = hwif_in.rad.STATUS.wd_stalled.next;
         end
         if(rd_mux_addr == 20'hf0040) begin
             readback_data_var[1:0] = field_storage.rad.ECC_INJECT.memory.value;
@@ -3864,6 +4251,30 @@ module hpdp_regs (
         end
         if(rd_mux_addr == 20'hf0044) begin
             readback_data_var[17:0] = field_storage.rad.ECC_INJECT_ADDR.addr.value;
+        end
+        if(rd_mux_addr == 20'hf0048) begin
+            readback_data_var[31:0] = field_storage.rad.WD_TIMEOUT.cycles.value;
+        end
+        if(rd_mux_addr == 20'hf004c) begin
+            readback_data_var[0] = field_storage.rad.SEM_CTRL.grant.value;
+        end
+        if(rd_mux_addr == 20'hf0050) begin
+            readback_data_var[3:0] = field_storage.rad.SEM_CMD.op.value;
+            readback_data_var[31] = field_storage.rad.SEM_CMD.go.value;
+        end
+        if(rd_mux_addr == 20'hf0054) begin
+            readback_data_var[4:0] = field_storage.rad.SEM_INJ_ADDR.bitn.value;
+            readback_data_var[11:5] = field_storage.rad.SEM_INJ_ADDR.word.value;
+            readback_data_var[29:12] = field_storage.rad.SEM_INJ_ADDR.lfa.value;
+        end
+        if(rd_mux_addr == 20'hf0058) begin
+            readback_data_var[9:0] = hwif_in.rad.SEM_STATUS.state.next;
+            readback_data_var[12] = hwif_in.rad.SEM_STATUS.busy.next;
+            readback_data_var[13] = hwif_in.rad.SEM_STATUS.icap_avail.next;
+        end
+        if(rd_mux_addr == 20'hf005c) begin
+            readback_data_var[7:0] = hwif_in.rad.SEM_MON.data.next;
+            readback_data_var[8] = hwif_in.rad.SEM_MON.valid.next;
         end
         if(rd_mux_addr == 20'hf007c) begin
             readback_data_var[0] = field_storage.rad.CNT_CLEAR.clear.value;
@@ -3885,6 +4296,27 @@ module hpdp_regs (
         end
         if(rd_mux_addr == 20'hf0094) begin
             readback_data_var[31:0] = hwif_in.rad.LB_DBE.count.next;
+        end
+        if(rd_mux_addr == 20'hf0098) begin
+            readback_data_var[31:0] = hwif_in.rad.WD_CMP.count.next;
+        end
+        if(rd_mux_addr == 20'hf009c) begin
+            readback_data_var[31:0] = hwif_in.rad.WD_DL.count.next;
+        end
+        if(rd_mux_addr == 20'hf00a0) begin
+            readback_data_var[31:0] = hwif_in.rad.WD_GR.count.next;
+        end
+        if(rd_mux_addr == 20'hf00a4) begin
+            readback_data_var[31:0] = hwif_in.rad.SEM_CORRECTIONS.count.next;
+        end
+        if(rd_mux_addr == 20'hf00a8) begin
+            readback_data_var[31:0] = hwif_in.rad.SEM_UNCORRECTABLE.count.next;
+        end
+        if(rd_mux_addr == 20'hf00ac) begin
+            readback_data_var[31:0] = hwif_in.rad.SEM_HEARTBEATS.count.next;
+        end
+        if(rd_mux_addr == 20'hf00b0) begin
+            readback_data_var[31:0] = hwif_in.rad.SEM_MON_DROPPED.count.next;
         end
         readback_data = readback_data_var;
         readback_done = decoded_req & ~decoded_req_is_wr;

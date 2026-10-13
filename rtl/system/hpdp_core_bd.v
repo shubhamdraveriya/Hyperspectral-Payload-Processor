@@ -95,6 +95,19 @@ module hpdp_core_bd #(
     input  wire [3:0]   gt_rxclkcorcnt,
     input  wire [5:0]   gt_rxbufstatus,
 
+    // Soft error mitigation controller (RAD-01, in hpdp_top)
+    (* X_INTERFACE_INFO = "xilinx.com:signal:clock:1.0 clk_sem CLK" *)
+    (* X_INTERFACE_PARAMETER = "FREQ_HZ 31250000" *)
+    input  wire         clk_sem,
+    input  wire [9:0]   sem_status,
+    input  wire         sem_cmd_busy,
+    input  wire         sem_icap_avail,
+    input  wire [7:0]   sem_mon_data,
+    input  wire         sem_mon_write,
+    output wire         sem_cmd_strobe,
+    output wire [43:0]  sem_cmd_code,
+    output wire         sem_grant,
+
     (* X_INTERFACE_INFO = "xilinx.com:signal:interrupt:1.0 irq INTERRUPT" *)
     (* X_INTERFACE_PARAMETER = "SENSITIVITY LEVEL_HIGH" *)
     output wire         irq
@@ -170,6 +183,15 @@ module hpdp_core_bd #(
         .gt_rxprbslocked    (gt_rxprbslocked),
         .gt_rxclkcorcnt     (gt_rxclkcorcnt),
         .gt_rxbufstatus     (gt_rxbufstatus),
+        .clk_sem            (clk_sem),
+        .sem_status         (sem_status),
+        .sem_cmd_busy       (sem_cmd_busy),
+        .sem_icap_avail     (sem_icap_avail),
+        .sem_mon_data       (sem_mon_data),
+        .sem_mon_write      (sem_mon_write),
+        .sem_cmd_strobe     (sem_cmd_strobe),
+        .sem_cmd_code       (sem_cmd_code),
+        .sem_grant          (sem_grant),
         .irq                (irq)
     );
 endmodule
