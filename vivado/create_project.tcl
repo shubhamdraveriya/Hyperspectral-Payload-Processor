@@ -32,7 +32,7 @@ source [file join $repo vivado ip gt_link.tcl]
 set ibert [expr {[info exists ::env(HPDP_IBERT)] && $::env(HPDP_IBERT) eq "1"}]
 if {$ibert} {
     source [file join $repo vivado ip isib_link.tcl]
-    add_files -fileset constrs_1 -norecurse [file join $repo vivado ibert ibert_debug.xdc]
+    add_files -fileset constrs_1 -norecurse [list [file join $repo vivado ibert ibert_debug.xdc]]
     set_property USED_IN_SYNTHESIS false [get_files ibert_debug.xdc]
     puts "In-System IBERT included (HPDP_IBERT=1)"
 }
