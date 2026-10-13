@@ -20,8 +20,10 @@
 // does not decode real bit flips); an upset in one copy of a TMR memory
 // (coder state, neighbourhood memories) or of a TMR state machine register;
 // an upset in an unprotected pipeline or control register (what is left).
-// Plusargs: +DIR, +TRIALS=<per class> (default 4), +SEED. PASS when no
-// protected class has a silent outcome; results also in fault_results.csv.
+// Plusargs: +DIR, +TRIALS=<per class> (default 4), +SEED, +CLASS=<n> (only
+// that class). PASS when no protected class has a silent outcome; results also
+// in fault_results.csv, and per target (TMR memory, TMR state register,
+// unprotected register) in fault_targets.csv.
 module tb_fault;
     import frontend_pkg::*;
     import c123_pkg::*;
@@ -37,6 +39,45 @@ module tb_fault;
         "TMR memory copy (coder, neighbourhood)", "TMR state machine copy",
         "unprotected register"};
     localparam bit PROTECTED [NCLASS] = '{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0};
+    localparam int NTGT = 14;                   // targets of a class (fault_what), at most
+
+    // the target of a fault (classes 8 - 10: flip_tmr_ram, flip_tmr_fsm, flip_unprotected)
+    function automatic string tgt_name(int c, int m);
+        case (c)
+            8: case (m)
+                   0: return "coder state (accumulator, counter)";
+                   1: return "neighbourhood: west sample";
+                   2: return "neighbourhood: north sample";
+                   3: return "neighbourhood: north-west sample";
+                   4: return "neighbourhood: first-column sample";
+               endcase
+            9: case (m)
+                   0: return "corner turn: wb";
+                   1: return "corner turn: full";
+                   2: return "corner turn: rd_on";
+                   3: return "scene guard: pad";
+                   4: return "compressor packer: state (copy 0)";
+                   5: return "compressor packer: state (copy 2)";
+               endcase
+            10: case (m)
+                   0:  return "coder: accumulator (pipeline)";
+                   1:  return "coder: counter (pipeline)";
+                   2:  return "coder: mapped residual";
+                   3:  return "neighbourhood: sample (S1)";
+                   4:  return "neighbourhood: band index (S1)";
+                   5:  return "neighbourhood: line buffer address (S1)";
+                   6:  return "radiometric: difference";
+                   7:  return "radiometric: sum";
+                   8:  return "radiometric: corrected sample";
+                   9:  return "compressor packer: bit accumulator";
+                   10: return "corner turn: read address";
+                   11: return "corner turn: read band";
+                   12: return "corner turn: write count";
+                   13: return "scene guard: sample count";
+               endcase
+        endcase
+        return "";
+    endfunction
 
     logic clk_sys = 1'b0, clk_sensor = 1'b0;
     logic rst_sys = 1'b1, rst_sensor = 1'b1;
@@ -363,12 +404,14 @@ module tb_fault;
     // Campaign
     // -----------------------------------------------------------------
     initial begin
-        int trials, seed, fd, errors, burn;
+        int trials, seed, fd, errors, burn, only, n_run;
         int count [NCLASS][4];
+        int tcount [NCLASS][NTGT][4];
         outcome_t o;
         logic done_ok, same;
         if (!$value$plusargs("DIR=%s", dir)) $fatal(1, "+DIR=<test directory> missing");
         if (!$value$plusargs("TRIALS=%d", trials)) trials = 4;
+        if (!$value$plusargs("CLASS=%d", only)) only = -1;
         if ($value$plusargs("SEED=%d", seed)) repeat (seed) burn = $urandom;   // (xsim: no seeding call)
         read_cfg({dir, "/cfg.txt"});
         read128({dir, "/tbl.hex"}, tbl);
@@ -376,6 +419,7 @@ module tb_fault;
         dma_n = scene_len / 8;
         timeout_cycles = fe.ny * period * 10 / 4 * 3 + 20000;
         foreach (count[c, k]) count[c][k] = 0;
+        foreach (tcount[c, m, k]) tcount[c][m][k] = 0;
         $display("tb_fault: %s, %0dx%0dx%0d, %0d trials per class", dir, fe.nx, fe.ny, fe.nz, trials);
 
         // reference
@@ -386,13 +430,17 @@ module tb_fault;
         $display("  reference: %0d bytes", ref_q.size());
 
         errors = 0;
+        n_run  = 0;
         for (int t = 0; t < trials; t++)
             for (int c = 0; c < NCLASS; c++) begin
+                if (only >= 0 && c != only) continue;
                 trial(c, o, done_ok, same);
                 count[c][o]++;
+                n_run++;
+                if (fault_what >= 0) tcount[c][fault_what][o]++;
                 if (o == SILENT && PROTECTED[c]) begin
                     errors++;
-                    $display("  silent corruption: class %s, target %0d", CLASS_NAME[c], fault_what);
+                    $display("  silent corruption: class %s, target %s", CLASS_NAME[c], tgt_name(c, fault_what));
                 end
             end
 
@@ -400,14 +448,30 @@ module tb_fault;
         $fdisplay(fd, "class,trials,masked,corrected,detected,silent");
         $display("  %-40s %6s %7s %9s %8s %6s", "class", "trials", "masked", "corrected", "detected", "silent");
         for (int c = 0; c < NCLASS; c++) begin
+            if (only >= 0 && c != only) continue;
             $display("  %-40s %6d %7d %9d %8d %6d", CLASS_NAME[c], trials, count[c][MASKED], count[c][CORRECTED],
                      count[c][DETECTED], count[c][SILENT]);
             $fdisplay(fd, "%s,%0d,%0d,%0d,%0d,%0d", CLASS_NAME[c], trials, count[c][MASKED], count[c][CORRECTED],
                       count[c][DETECTED], count[c][SILENT]);
         end
         $fclose(fd);
+        // per target
+        fd = $fopen("fault_targets.csv", "w");
+        $fdisplay(fd, "class,target,trials,masked,corrected,detected,silent");
+        $display("  %-40s %6s %7s %9s %8s %6s", "target", "trials", "masked", "corrected", "detected", "silent");
+        for (int c = 8; c < NCLASS; c++)
+            for (int m = 0; m < NTGT; m++) begin
+                int n;
+                n = tcount[c][m][MASKED] + tcount[c][m][CORRECTED] + tcount[c][m][DETECTED] + tcount[c][m][SILENT];
+                if (n == 0) continue;
+                $display("  %-40s %6d %7d %9d %8d %6d", tgt_name(c, m), n, tcount[c][m][MASKED],
+                         tcount[c][m][CORRECTED], tcount[c][m][DETECTED], tcount[c][m][SILENT]);
+                $fdisplay(fd, "%s,%s,%0d,%0d,%0d,%0d,%0d", CLASS_NAME[c], tgt_name(c, m), n, tcount[c][m][MASKED],
+                          tcount[c][m][CORRECTED], tcount[c][m][DETECTED], tcount[c][m][SILENT]);
+            end
+        $fclose(fd);
         if (errors == 0)
-            $display("PASS: tb_fault, %0d trials, no silent corruption in a protected class", trials * NCLASS);
+            $display("PASS: tb_fault, %0d trials, no silent corruption in a protected class", n_run);
         else
             $display("FAIL: tb_fault: %0d silent corruptions in protected classes", errors);
         $finish;

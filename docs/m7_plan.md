@@ -1,6 +1,6 @@
 # M7: Radiation mitigation and robustness: plan
 
-Status: **in progress** (2026-10-12). SPEC.md 10 (RAD-01 .. RAD-07); done when RAD-01 ..
+Status: **in progress** (2026-10-13). SPEC.md 10 (RAD-01 .. RAD-07); done when RAD-01 ..
 RAD-07 are met and the fault-injection report is written.
 
 ## Progress
@@ -11,9 +11,10 @@ RAD-07 are met and the fault-injection report is written.
 | 1 | UltraRAM ECC (below): regression passes; build met timing (WNS +0.100 ns; 28.7 k LUT, 33.9 k FF, 32.5 BRAM36, 56 URAM): all 56 URAM288 have ECC on (encode on the write port, decode on the read port). Board (build m7c, job/result v4, `run_m5.py --ecc`): single-bit errors in all three memories, 4 scenes 128×64×64: counts 1 / 4 / 4 as in simulation, capture and ground bit-exact |
 | 2 | Uncorrectable errors flag the scenes and raise an interrupt (below): regression passes; since 2026-10-13 table and corner-turn errors are attributed exactly (marks on the samples). Board (m7c): double-bit error in table entry 4100, correction bypassed: `CAL_DBE` 256 (4 scenes × 64 lines, not written back), data bit-exact, all 4 scenes flagged "internal error" by the ground station (`hpdp_gs.py decode`) |
 | 3 | Watchdogs (RAD-05, below): PL pipeline watchdogs (regression passes; mutation-checked; commit 1a0397f) and the PS watchdog in `hpdp_run` (written; board test pending: `run_m5.py --wdt-test`) |
-| LNK-10 | In-System IBERT on both channels, optional (`HPDP_IBERT=1`), after the user's JSB MARK 1 setup; build and eye scans pending (board: `sw/host/ibert_scan.tcl`) |
-| 4 | SEM controller (RAD-01, below): `sem_ultra` with ICAPE3 / FRAME_ECCE4 in `hpdp_top` on clk_fr; RAD registers, monitor FIFO, counters, interrupt; `hpdp_run` hands the configuration logic to the ICAP and grants it. Register path tested with a controller stand-in (regression 67 tests). Build and board test pending (`run_m5.py --sem-inject`) |
-| 5 | SECDED / TMR (RAD-03) and triplicated state machines (RAD-04), below: regression passes (tests of every mechanism with forced upsets, mutation-checked); build pending |
+| LNK-10 | In-System IBERT on both channels, optional (`HPDP_IBERT=1`), after the user's JSB MARK 1 setup; built (`build/m7f_ibert`); eye scans pending (board: `sw/host/ibert_scan.tcl`) |
+| 4 | SEM controller (RAD-01, below): `sem_ultra` with ICAPE3 / FRAME_ECCE4 in `hpdp_top` on clk_fr; RAD registers, monitor FIFO, counters, interrupt; `hpdp_run` hands the configuration logic to the ICAP and grants it. Register path tested with a controller stand-in (regression 67 tests). Built (m7f, WNS +0.054 ns); board test pending (`run_m5.py --sem-inject`, `--sem-campaign`) |
+| 5 | SECDED / TMR (RAD-03) and triplicated state machines (RAD-04), below: regression passes (tests of every mechanism with forced upsets, mutation-checked); build m7g |
+| 6 | Fault-injection campaign (RAD-07), report `docs/m7_fault_injection.md`. (a) Simulation done (`tb_fault`, 1 080 trials): protected classes 600 trials, 0 silent (343 corrected, 238 detected, 19 masked); unprotected pipeline registers and counters 22 % silent, accepted as residual risk (decision in the report). (b) ECC injection on the board done (m7c, rows 1 and 2); SEM campaign tool ready (job/result v7, `run_m5.py --sem-campaign`), board runs pending |
 
 ### Item 1: memory ECC (RAD-02)
 
