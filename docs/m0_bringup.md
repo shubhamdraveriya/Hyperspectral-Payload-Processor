@@ -78,4 +78,14 @@ rst -system
 
 Vitis 2025.2 reports "invalid os, valid OSes are []" when the XSA path contains a
 space (the repository lives under `Linux Boot`). `sw/baremetal/build.py` copies the
-XSA into a workspace outside the repository (`~/hpdp_vitis` by default).
+XSA into the workspace, and the workspace has no space in its path.
+
+Since 2026-10-13 everything stays inside the repository (so the folder can move to
+another machine as it is). The workspace's files are in `vitis/` (git-ignored), and
+Vitis sees them through a directory junction without spaces, `~/hpdp_vitis_ws`, which
+`build.py` creates if it is missing (junctions need no administrator rights).
+XSDB has the same limit; board-run directories are in `build/runs/`, through the
+junction `~/hpdp_runs` (`run_m4.py` / `run_m5.py --work <name>`). On a new machine
+nothing needs setting up: the scripts make the junctions. Only the Python venv for
+the ground station (`.venv/`, git-ignored) must be made again (docs/m6), because a
+venv is tied to the Python installation it was made with.

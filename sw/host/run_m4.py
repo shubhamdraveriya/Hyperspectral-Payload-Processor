@@ -20,6 +20,7 @@
 
 import argparse
 import math
+import os
 import shutil
 import struct
 import subprocess
@@ -124,10 +125,34 @@ def write_inputs(work, raws, cal, dims, a, cfg, ctx, expect):
     return job
 
 
+RUNS = REPO / "build" / "runs"                 # board-run work directories (git-ignored)
+RUNS_LINK = Path.home() / "hpdp_runs"           # how XSDB sees them (no spaces)
+
+
+def work_dir(arg):
+    """--work: a plain name is a run directory in the repository's build/runs/,
+    reached through a directory junction without spaces, ~/hpdp_runs (XSDB fails
+    on the space in "Linux Boot"; created here if missing, junctions need no
+    administrator rights); a path is used as given and must not contain spaces."""
+    if any(c in arg for c in "/\\:~"):
+        work = Path(arg).expanduser().absolute()
+    else:
+        RUNS.mkdir(parents=True, exist_ok=True)
+        if not os.path.lexists(RUNS_LINK):
+            subprocess.run(["cmd", "/c", "mklink", "/J", str(RUNS_LINK), str(RUNS)], check=True,
+                           capture_output=True)
+        if os.path.realpath(RUNS_LINK) != os.path.realpath(RUNS):
+            sys.exit(f"{RUNS_LINK} exists but does not lead to {RUNS}")
+        work = RUNS_LINK / arg          # not resolved: XSDB must see the path without spaces
+    if " " in str(work):
+        sys.exit(f"the work directory must not contain spaces (XSDB): {work}")
+    return work
+
+
 def find_elf(a):
     if a.elf:
         return Path(a.elf)
-    return Path.home() / "hpdp_vitis" / "hpdp_run" / "build" / "hpdp_run.elf"
+    return REPO / "vitis" / "hpdp_run" / "build" / "hpdp_run.elf"   # sw/baremetal/build.py
 
 
 def write_xsdb(work, job, a, run_seconds):
@@ -292,9 +317,10 @@ def main():
     p.add_argument("--cfg", nargs="*", default=[], metavar="KEY=VALUE",
                    help="compressor settings (ccsds123.Config fields, e.g. bands=15 omega=16)")
     p.add_argument("--seq", type=int, default=1, help="job sequence number")
-    p.add_argument("--work", default=str(Path.home() / "hpdp_m4"), help="work directory (no spaces)")
+    p.add_argument("--work", default="m4",
+                   help="run name (a directory in build/runs/ of the repository, default m4) or a path without spaces")
     p.add_argument("--xsa", default=str(REPO / "build" / "hpdp.xsa"))
-    p.add_argument("--elf", help="hpdp_run.elf (default ~/hpdp_vitis/hpdp_run/build/hpdp_run.elf)")
+    p.add_argument("--elf", help="hpdp_run.elf (default vitis/hpdp_run/build/hpdp_run.elf in the repository)")
     p.add_argument("--xsdb", default=str(XSDB))
     mode = p.add_mutually_exclusive_group()
     mode.add_argument("--dry-run", action="store_true", help="write the files and the XSDB script only")
@@ -302,9 +328,7 @@ def main():
     mode.add_argument("--fake-board", action="store_true", help="use the model's output as the board's")
     a = p.parse_args()
 
-    work = Path(a.work)
-    if " " in str(work.resolve()):
-        sys.exit("the work directory must not contain spaces (XSDB)")
+    work = work_dir(a.work)
     raws, cal, dims = build_inputs(a)
     nx, ny, nz, depth = dims
     if len(raws) > MAX_SCENES:

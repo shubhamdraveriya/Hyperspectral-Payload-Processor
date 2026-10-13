@@ -227,7 +227,7 @@ The sequence used for the runs above:
 
 ```
 vivado -mode batch -source vivado/build.tcl                # HPDP_BUILD_DIR=build/m5 -> build/m5/hpdp.xsa
-vitis -s sw/baremetal/build.py build/m5/hpdp.xsa           # HPDP_VITIS_WS=~/hpdp_vitis_m5
+vitis -s sw/baremetal/build.py build/m5/hpdp.xsa           # workspace: vitis/ (docs/m0, issue 3)
 python sw/host/run_m5.py --loopback fabric                 # chain without transceivers
 python sw/host/run_m5.py --loopback pma                    # GTH near-end PMA loopback
 python sw/host/run_m5.py --prbs 60 --loopback pma          # PRBS checker sanity

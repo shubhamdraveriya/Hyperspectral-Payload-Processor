@@ -1,7 +1,7 @@
 # Ground station (sw/ground). Decoding and reports need only the standard library
 # and model/; the display needs numpy and matplotlib; reedsolo for --crosscheck.
-#   python -m venv ~/hpdp_gs_venv
-#   ~/hpdp_gs_venv/Scripts/python -m pip install -r sw/ground/requirements.txt
+#   python -m venv .venv                       (in the repository root; git-ignored)
+#   .venv/Scripts/python -m pip install -r sw/ground/requirements.txt
 numpy>=2.0
 matplotlib>=3.8
 reedsolo>=1.7

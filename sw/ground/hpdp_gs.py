@@ -19,7 +19,7 @@ Options:
   --show             interactive display (GS-05), filled while decoding
 
 Needs numpy and matplotlib only for --show, --png and view (the venv
-~/hpdp_gs_venv has them). Exit status 0 when every scene with a reference is
+the repository's .venv has them, sw/ground/requirements.txt). Exit status 0 when every scene with a reference is
 bit-exact and none is missing.
 """
 

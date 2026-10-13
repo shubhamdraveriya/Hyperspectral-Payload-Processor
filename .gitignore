@@ -1,5 +1,7 @@
-# Build outputs (Vivado project, simulation, Vitis workspace)
+# Build outputs (Vivado project, simulation)
 build/
+# Vitis workspace (sw/baremetal/build.py; Vitis reaches it via the junction ~/hpdp_vitis_ws)
+vitis/
 
 # Vivado / xsim / Vitis droppings
 .Xil/
@@ -18,6 +20,7 @@ _ide/
 .analytics
 
 # Python
+.venv/
 __pycache__/
 .pytest_cache/
 *.pyc

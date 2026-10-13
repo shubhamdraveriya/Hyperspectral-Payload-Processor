@@ -595,10 +595,12 @@ def main():
     d.add_argument("--wdt-test", action="store_true",
                    help="no scenes: hpdp_run arms the watchdog and hangs; the board must reset")
     p.add_argument("--seq", type=int, default=1, help="job sequence number")
-    p.add_argument("--work", default=str(Path.home() / "hpdp_m5"), help="work directory (no spaces)")
-    p.add_argument("--xsa", default=str(REPO / "build" / "m5" / "hpdp.xsa"))
-    p.add_argument("--elf", default=str(Path.home() / "hpdp_vitis_m5" / "hpdp_run" / "build" / "hpdp_run.elf"),
-                   help="hpdp_run.elf (default ~/hpdp_vitis_m5/hpdp_run/build/hpdp_run.elf)")
+    p.add_argument("--work", default="m5",
+                   help="run name (a directory in build/runs/ of the repository, default m5) or a path without spaces")
+    p.add_argument("--xsa", default=str(REPO / "build" / "m7h" / "hpdp.xsa"))
+    p.add_argument("--elf", default=str(REPO / "vitis" / "hpdp_run" / "build" / "hpdp_run.elf"),
+                   help="hpdp_run.elf (default vitis/hpdp_run/build/hpdp_run.elf in the repository, "
+                        "written by sw/baremetal/build.py)")
     p.add_argument("--xsdb", default=str(m4.XSDB))
     mode = p.add_mutually_exclusive_group()
     mode.add_argument("--dry-run", action="store_true", help="write the files and the XSDB script only")
@@ -606,9 +608,7 @@ def main():
     mode.add_argument("--fake-board", action="store_true", help="use the model's output as the board's")
     a = p.parse_args()
 
-    work = Path(a.work)
-    if " " in str(work.resolve()):
-        sys.exit("the work directory must not contain spaces (XSDB)")
+    work = m4.work_dir(a.work)
 
     if a.wdt_test:
         return wdt_test(work, a)

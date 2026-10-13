@@ -18,10 +18,10 @@ Ethernet is not connected yet).
 ## Use
 
 ```
-python -m venv ~/hpdp_gs_venv
-~/hpdp_gs_venv/Scripts/python -m pip install -r sw/ground/requirements.txt
+python -m venv .venv
+.venv/Scripts/python -m pip install -r sw/ground/requirements.txt
 
-python sw/ground/hpdp_gs.py decode ~/hpdp_m5_fiber_ber1e-3/gr.bin --ref ~/hpdp_m5_fiber_ber1e-3 \
+python sw/ground/hpdp_gs.py decode build/runs/hpdp_m5_fiber_ber1e-3/gr.bin --ref build/runs/hpdp_m5_fiber_ber1e-3 \
     --report report.md --out scenes --png png --crosscheck
 python sw/ground/hpdp_gs.py decode CAPTURE.cap --show            # interactive display
 python sw/ground/hpdp_gs.py decode --tcp HOST:5001 --show        # live from the board (SW-05)

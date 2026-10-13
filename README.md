@@ -69,7 +69,8 @@ in `build/reports/`):
 vivado -mode batch -source vivado/build.tcl
 ```
 
-Bare-metal software (platform + applications, workspace in `~/hpdp_vitis`):
+Bare-metal software (platform + applications, workspace in `vitis/`, which Vitis reaches
+through the junction `~/hpdp_vitis_ws` because of the space in the path; docs/m0, issue 3):
 
 ```
 vitis -s sw/baremetal/build.py
