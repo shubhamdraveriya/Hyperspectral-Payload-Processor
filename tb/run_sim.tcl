@@ -72,7 +72,7 @@ proc wanted {prefix} {
 
 set selected $argv
 foreach {prefix gen top} $suites {
-    if {![wanted $prefix] && !($prefix eq "fe" && [wanted sys])} continue
+    if {![wanted $prefix] && !($prefix eq "fe" && ([wanted sys] || [wanted fault]))} continue
     run python ../../$gen $prefix
     if {![wanted $prefix]} continue
     set fh [open $prefix/tests.txt]
@@ -83,6 +83,11 @@ foreach {prefix gen top} $suites {
 }
 if {[wanted sys]} {
     foreach t $sys_tests { lappend tests sys_$t tb_hpdp_core [list DIR=fe/$t] }
+}
+# Fault-injection campaign (RAD-07), a few trials per class in the regression;
+# the full campaign: run_sim.tcl -tclargs fault_campaign with TRIALS raised here
+if {[wanted fault]} {
+    lappend tests fault_campaign tb_fault [list DIR=fe/dma_basic TRIALS=3 SEED=1]
 }
 
 file copy -force [file join $::env(XILINX_VIVADO) data verilog src glbl.v] .
