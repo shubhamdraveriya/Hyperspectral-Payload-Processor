@@ -64,7 +64,8 @@ else:
         sys.exit(f"{LINK} exists but does not lead to {REPO_WS}: remove it or set HPDP_VITIS_WS")
     if " " in str(LINK):
         sys.exit(f"junction path contains a space: {LINK} (set HPDP_VITIS_WS)")
-    _clear(REPO_WS)
+    _clear(LINK)                 # through the junction: some BSP paths are too long under the
+                                 # repository's own path (260-character limit)
     ws = LINK                    # not resolved: Vitis must see the path without spaces
 print(f"workspace {ws}" + (f" (files in {REPO_WS})" if ws == LINK else ""))
 client = vitis.create_client()
@@ -100,6 +101,11 @@ domain.set_lib(lib_name=LWIP)
 for param, value in LWIP_CONFIG.items():
     domain.set_config(option="lib", param=param, value=value, lib_name=LWIP)
 domain.set_config(option="lib", param="XILTIMER_en_interval_timer", value="true", lib_name="xiltimer")
+# FatFs for the console's SD card loading (hpdp_run/src/console.c, SW-02): long
+# file names (.hpdp is not an 8.3 name), read-only so the card is never written
+domain.set_lib(lib_name="xilffs")
+domain.set_config(option="lib", param="XILFFS_use_lfn", value="1", lib_name="xilffs")
+domain.set_config(option="lib", param="XILFFS_read_only", value="true", lib_name="xilffs")
 platform.build()
 xpfm = ws / PLATFORM / "export" / PLATFORM / f"{PLATFORM}.xpfm"
 

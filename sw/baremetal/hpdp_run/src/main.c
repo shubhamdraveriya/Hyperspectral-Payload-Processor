@@ -19,6 +19,10 @@
  * With no job present after a few seconds, it runs a self-test instead: two
  * identical LFSR-pattern scenes must compress to identical bitstreams.
  *
+ * The UART also takes console commands (console.c, SPEC SW-04): scenes and
+ * calibration tables from the SD card (SW-02), settings, run, PRBS, status. A
+ * console run is a job block like the host's, run by the same code.
+ *
  * UART: PS UART0, 115200 8N1. Lines starting "PASS:" / "FAIL:" / "DONE:" summarize.
  */
 #include <stddef.h>
@@ -37,6 +41,7 @@
 #include "hpdp_regs.h"
 #include "hpdp_job.h"
 #include "net.h"
+#include "console.h"
 
 #define HPDP_BASE       0xA0000000u                 /* SPEC.md 8.1 */
 #define DMA_BASE        0xA0100000u                 /* MM2S + compressor capture S2MM */
@@ -876,6 +881,36 @@ static void print_summary(const run_t *r, volatile result_t *o, u64 ticks)
     }
 }
 
+/* Status dump for the console's "status" (SW-04) */
+void hpdp_status(void)
+{
+    static result_t st;                         /* not the host's result block */
+
+    fill_counters(&st);
+    xil_printf("SYS.STATUS 0x%08x, build 0x%08x, LNK.STATUS 0x%08x (locked %d)\r\n",
+               (unsigned)rd(REG(sys.STATUS)), (unsigned)rd(REG(sys.BUILD_ID)), (unsigned)st.lnk_status,
+               (int)((st.lnk_status >> 3) & 1u));
+    xil_printf("  emulator: %d lines, %d underruns, %d overruns, %d dropped; corner turn: %d lines, %d dropped, "
+               "%d unfilled\r\n", (int)st.se_lines, (int)st.se_underrun, (int)st.se_overruns, (int)st.se_dropped,
+               (int)st.ct_lines, (int)st.ct_dropped, (int)st.ct_unfilled);
+    xil_printf("  compressor: %d samples in, %d bytes out, %d output stalls\r\n", (int)st.cmp_samples,
+               (int)st.cmp_bytes, (int)st.cmp_stalls);
+    xil_printf("  downlink: %d packets, %d scenes, %d science / %d idle frames, %d CADUs, %d bits injected\r\n",
+               (int)st.pkt_packets, (int)st.pkt_scenes, (int)st.aos_science, (int)st.aos_idle, (int)st.aos_cadus,
+               (int)st.ei_bits);
+    xil_printf("  link: %d code errors, %d lock losses, %d RX words; ground: %d CADUs, %d sync losses, "
+               "%d captured\r\n", (int)st.lnk_code_errors, (int)st.lnk_lock_losses, (int)st.lnk_rx_words,
+               (int)st.gr_cadus, (int)st.gr_sync_losses, (int)st.gr_captured);
+    xil_printf("  ECC corrected / uncorrectable: table %d / %d, corner turn %d / %d, line buffer %d / %d, "
+               "weights %d / %d\r\n", (int)st.ecc_cal_sbe, (int)st.ecc_cal_dbe, (int)st.ecc_ct_sbe,
+               (int)st.ecc_ct_dbe, (int)st.ecc_lb_sbe, (int)st.ecc_lb_dbe, (int)st.ecc_w_sbe, (int)st.ecc_w_dbe);
+    xil_printf("  TMR disagreements: memories %d, registers %d, state %d; watchdog stalls %d / %d / %d\r\n",
+               (int)st.tmr_cmp, (int)st.tmr_regs, (int)st.tmr_fsm, (int)st.wd_cmp, (int)st.wd_dl, (int)st.wd_gr);
+    xil_printf("  SEM: status 0x%03x (%s), %d corrections, %d uncorrectable\r\n",
+               (unsigned)(st.sem_status & 0x3FFu), (st.sem_status & 4u) ? "observing" : "NOT observing",
+               (int)st.sem_corrections, (int)st.sem_uncorrectable);
+}
+
 static int run_job(void)
 {
     run_t r;
@@ -1143,18 +1178,22 @@ int main(void)
     sem_echo();
     if (poll(REG(sys.STATUS), HPDP_SYS__STATUS__SENSOR_LOCKED_bm, HPDP_SYS__STATUS__SENSOR_LOCKED_bm, 100000))
         xil_printf("warning: clk_sensor MMCM not locked\r\n");
+    console_init();
 
     start = now();
     for (;;) {
+        console_poll();                             /* commands; "run" / "prbs" post a job */
         Xil_DCacheInvalidateRange(JOB_ADDR, sizeof(job_t));
         if (job->magic == JOB_MAGIC && (!have_job || job->seq != last_seq)) {
             have_job = 1;
             last_seq = job->seq;
             run_job();
+            console_prompt();
         } else if (!have_job && now() - start > us_to_ticks(3000000u)) {
             self_test();
             have_job = 1;                           /* self-test once, then wait for jobs */
             last_seq = 0xFFFFFFFFu;
+            console_prompt();
         }
         idle_us(1000);                              /* serves late upload clients */
     }
