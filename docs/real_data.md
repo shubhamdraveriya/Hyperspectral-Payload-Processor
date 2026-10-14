@@ -108,9 +108,9 @@ python -I model/hpdp_datasets.py export aviris/f090710t01p00r09rdn_b_crop19   # 
 
 ## Not done yet
 
-Real scenes through the board: export a few scenes to `.hpdp`, copy them to the SD
-card and run them from the UART console (SW-02 / SW-04 board test). The board was in
-use during this work.
+Real scenes through the board, over JTAG (`run_m5.py --scene`) and from the SD card
+through the UART console: [post_m7_board_tests.md](post_m7_board_tests.md) §2 and §4.
+Rehearsed with the model in place of the board; the board was in use.
 
 ## Full results
 

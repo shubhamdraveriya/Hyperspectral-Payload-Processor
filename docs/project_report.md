@@ -169,7 +169,7 @@ triplicates them (+0.7 k LUT); after that, all 220 simulated upsets in them were
 | Level | What |
 |---|---|
 | Python models | 150 pytest tests: CCSDS 123 encoder / decoder round trips over 20 configurations and D ∈ {2 … 16}, RS against `reedsolo`, framing, frame sync, end-to-end chain |
-| RTL regression | 86 self-checking xsim tests from model vectors with random stalls, run headless by `tb/run_sim.tcl` in 9 minutes (VER-01, VER-10): 28 chosen compressor configurations, the corner-case images (all zero, all maximum at D 12 and 16; VER-03) and 6 random configurations of the matrix (seed printed); front end, also with the calibration table in pairs; downlink and ground blocks; link layer; system tests through the registers (VER-05); ECC, TMR, watchdog and SEM-path tests; the fault campaign (3 trials per class, and 10 per table ECC class in pairs) |
+| RTL regression | 87 self-checking xsim tests from model vectors with random stalls, run headless by `tb/run_sim.tcl` in 9 minutes (VER-01, VER-10): 28 chosen compressor configurations, the corner-case images (all zero, all maximum at D 12 and 16; VER-03) and 6 random configurations of the matrix (seed printed); front end, also with the calibration table in pairs; downlink and ground blocks; link layer; system tests through the registers (VER-05), one at the 1024 build's size; ECC, TMR, watchdog and SEM-path tests; the fault campaign (3 trials per class, and 10 per table ECC class in pairs) |
 | Configuration matrix (VER-02) | all 864 compressor configurations of SPEC VER-02 (local sum 4 × prediction mode 2 × P 4 × D 3 × Ω 3 × U_max 3), `HPDP_C123_MATRIX=all`: **864 of 864 bit-exact**, 57 minutes (2026-10-14) |
 | Fault campaign | `tb_fault`, 1 300 trials on m7h (`docs/m7_fault_injection.md`) |
 | Ground station | `pytest sw/ground` (decoder, reports) and three board captures decoded |
@@ -226,9 +226,9 @@ Other items:
 | Item | Needs | Effort |
 |---|---|---|
 | SW-05 board test (Ethernet upload) | the board's Ethernet connected | about an hour |
-| SW-02 / SW-04 board test (SD card, UART console), with real scenes | the board, an SD card with `.hpdp` / `.cal` files (`hpdp_datasets.py export` for real scenes), the app rebuilt (`hpdp_run` with the console) | about an hour |
-| m7i_1024b on the board (SYS-04) | the board; the app built against its XSA; a 1024-pixel scene through the chain | about an hour |
-| CMP-02 / MDL-02 / O-5: independent CCSDS 123 decoder | access to ESA WhiteDwarf 2.0 or the CNES tools | half a day once available |
+| SW-02 / SW-04 board test (SD card, UART console), and real scenes on the board | the board and an SD card; files, app and commands ready ([runbook](post_m7_board_tests.md) §2, §4) | about an hour |
+| m7i_1024b on the board (SYS-04) | the board; a 1024-pixel real scene through the chain ([runbook](post_m7_board_tests.md) §3) | about half an hour |
+| CMP-02 / MDL-02 / O-5: independent CCSDS 123 decoder | an account: ESA's WhiteDwarf 2.0 (ESSR, essr.esa.int/project/whitedwarf-2-0) includes a 123.0-B-2 decompressor in source, ESA Community Licence v2.4 permissive (type 3); or CNES's object-code compressor and decompressor (connectbycnes.fr). Then decode the RTL test vectors and the real-data scenes with it | half a day once available |
 
 Stretch goals (SPEC §15) are untouched. The return channel is now possible: the cable
 is duplex (O-1).
@@ -238,7 +238,7 @@ is duplex (O-1).
 ```
 python -m pytest model                                   # Python models
 python -I model/hpdp_datasets.py experiment -j 5         # real-data compression (data: docs/real_data.md)
-vivado -mode batch -source tb/run_sim.tcl                # RTL regression (86 tests)
+vivado -mode batch -source tb/run_sim.tcl                # RTL regression (87 tests)
 vivado -mode batch -source tb/run_sim.tcl -tclargs "c123_mx_*"   # with HPDP_C123_MATRIX=all: the VER-02 matrix
 vivado -mode batch -source vivado/build.tcl              # bitstream + XSA (HPDP_BUILD_DIR, default build/;
                                                          #   HPDP_NX_MAX=1024 for the SYS-04 build)

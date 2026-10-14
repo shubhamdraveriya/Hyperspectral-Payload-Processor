@@ -577,7 +577,8 @@ def main():
     n.add_argument("--board-mask", default="", help="netmask for --board-ip (default 255.255.255.0)")
     p.add_argument("--ecc", action="append", default=[], metavar="MEMORY:ADDR[:dbe]",
                    help="RAD-02: inject an ECC error before the scenes into the word that holds ADDR "
-                        "(MEMORY cal: table entry z*Nx+x; ct: corner-turn sample buffer*2^17+z*Nx+x; "
+                        "(MEMORY cal: table entry z*Nx+x; ct: corner-turn sample buffer*2^k+z*Nx+x, "
+                        "2^k = 2^17 at NX_MAX 512, 2^18 at 1024; "
                         "lb: line buffer sample x*Nz+z); single-bit unless ':dbe'; up to 3, one per memory")
     d = p.add_argument_group("PS watchdog (RAD-05)")
     d.add_argument("--wdt", action="store_true", help="arm the PS watchdog (10 s) during the job")

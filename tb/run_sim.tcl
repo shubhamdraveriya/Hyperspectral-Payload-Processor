@@ -95,6 +95,8 @@ foreach {prefix gen top} $suites {
 }
 if {[wanted sys]} {
     foreach t $sys_tests { lappend tests sys_$t tb_hpdp_core [list DIR=fe/$t] }
+    # at the NX_MAX 1024 build's size (SYS-04): table in pairs, 1024-pixel lines
+    lappend tests sys_nx1024 tb_hpdp_core_1024 [list DIR=fe/nx1024]
 }
 # Fault-injection campaign (RAD-07), a few trials per class in the regression;
 # the full campaign: run_sim.tcl -tclargs fault_campaign with TRIALS raised here

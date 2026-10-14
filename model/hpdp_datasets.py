@@ -4,7 +4,7 @@ docs/real_data.md).
 
     python model/hpdp_datasets.py list                   # the scenes of each dataset
     python model/hpdp_datasets.py experiment [-j N]      # results -> build/real_data_results.md
-    python model/hpdp_datasets.py export SCENE [OUT]     # one scene -> .hpdp (BIL), e.g. for the SD card
+    python model/hpdp_datasets.py export SCENE [OUT] [--lines N]   # -> .hpdp (BIL): SD card, run_m5 --scene
 
 indian_pines  AVIRIS Indian Pines Site 3, 145 x 145 x 220 (Purdue University Research
               Repository, doi:10.4231/R7RX991C, CC0): a baseline TIFF, one plane per band
@@ -293,9 +293,27 @@ def report(rows, out):
     out.write_text("\n".join(md) + "\n")
 
 
+def transpose(scene):
+    """the scene with its pixel and line axes swapped (a 1024-pixel line from a
+    1024-line Hyperion scene, for the NX_MAX 1024 build)"""
+    nx, ny, nz, s = scene.nx, scene.ny, scene.nz, scene.samples
+    t = array("H")
+    for x in range(nx):                 # new line x: old column x, every band
+        for z in range(nz):
+            t.extend(s[z * nx + x::nz * nx])
+    return f.Scene(ny, nx, nz, scene.depth, t)
+
+
 def cmd_export(a):
     scene, clipped, _ = load(a.scene)
-    out = Path(a.out) if a.out else DATA / "export" / (a.scene.replace("/", "_") + ".hpdp")
+    name = a.scene.replace("/", "_")
+    if a.transpose:
+        scene = transpose(scene)
+        name += "_t"
+    if a.lines:
+        scene = sub_scene(scene, a.y0, min(a.lines, scene.ny - a.y0))
+        name += f"_y{a.y0}_{scene.ny}"
+    out = Path(a.out) if a.out else DATA / "export" / (name + ".hpdp")
     out.parent.mkdir(parents=True, exist_ok=True)
     f.write_scene(out, scene)
     print(f"{a.scene}: {scene.nx} x {scene.ny} x {scene.nz}, D = {scene.depth}, "
@@ -314,6 +332,9 @@ def main():
     x = sub.add_parser("export")
     x.add_argument("scene")
     x.add_argument("out", nargs="?")
+    x.add_argument("--lines", type=int, default=0, help="only N lines (a board run in minutes)")
+    x.add_argument("--y0", type=int, default=0, help="first line")
+    x.add_argument("--transpose", action="store_true", help="swap pixels and lines (before --lines)")
     x.set_defaults(func=cmd_export)
     a = p.parse_args()
     a.func(a)

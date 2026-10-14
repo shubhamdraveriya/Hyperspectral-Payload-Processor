@@ -38,11 +38,12 @@
 // behaviour (initialization once granted, Observation with heartbeats, Idle,
 // error injection, the correction found in Observation, status reports on the
 // monitor interface); the test drives it through the RAD registers.
-module tb_hpdp_core;
+module tb_hpdp_core #(
+    parameter int NX_MAX = 64,          // 1024 x 256: tb_hpdp_core_1024.sv (SYS-04)
+    parameter int NZ_MAX = 64
+);
     import hpdp_regs_addr_pkg::*;
 
-    localparam int          NX_MAX   = 64;
-    localparam int          NZ_MAX   = 64;
     localparam logic [31:0] BUILD_ID = 32'hC0DE_1234;
     localparam int          PASSES   = 2;
 
@@ -554,6 +555,7 @@ module tb_hpdp_core;
         expect_reg("LNK.ID", LNK_ID, 32'h0008_0100);
         expect_reg("GR.ID", GR_ID, 32'h0009_0100);
         expect_reg("SYS.BUILD_ID", SYS_BUILD_ID, BUILD_ID);
+        expect_reg("SYS.LIMITS", SYS_LIMITS, {16'(NZ_MAX), 16'(NX_MAX)});
         expect_reg("SE.LINE_PERIOD reset", SE_LINE_PERIOD, 1000);
         expect_reg("RAD.WD_TIMEOUT reset", RAD_WD_TIMEOUT, 32'h0400_0000);
         poll("sensor clock locked", SYS_STATUS, 32'h4, 32'h4, 5);
@@ -685,7 +687,9 @@ module tb_hpdp_core;
         expect_reg("RAD.CAL_SBE after clear", RAD_CAL_SBE, 0);
         expect_reg("RAD.CAL_DBE after clear", RAD_CAL_DBE, 0);
         rd(CMP_LAST_CYCLES, v);
-        if (v < nx * ny * nz || v > 4 * nx * ny * nz * period / (nx * nz) + 10000) begin
+        // at most 4 line periods per line (written without nx * nz * period, which
+        // overflows 32 bits at 1024-pixel lines)
+        if (v < nx * ny * nz || v > 4 * ny * period + 10000) begin
             errors++;
             $display("  CMP.LAST_CYCLES = %0d, implausible", v);
         end

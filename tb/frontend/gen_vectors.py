@@ -235,14 +235,21 @@ def write_test(out, name, spec):
     return len(raw), len(expected), stats
 
 
+# Vectors for system tests only, beyond tb_frontend's NX_MAX (not in tests.txt):
+# a 1024-pixel line for tb_hpdp_core_1024 (SYS-04)
+SYS_ONLY = {
+    "nx1024":     dict(dims=(1024, 3, 24), scenes=1, slack=0),
+}
+
+
 def main():
     out = Path(sys.argv[1] if len(sys.argv) > 1 else "build/sim/fe")
-    names = sys.argv[2:] or list(TESTS)
+    names = sys.argv[2:] or list(TESTS) + list(SYS_ONLY)
     for name in names:
-        n, b, st = write_test(out, name, TESTS[name])
+        n, b, st = write_test(out, name, TESTS[name] if name in TESTS else SYS_ONLY[name])
         print(f"{name:12} {n:6} samples -> {b:6} bytes, last scene: "
               f"{st['clamped']} clamped, {st['replaced']} replaced")
-    (out / "tests.txt").write_text("\n".join(names) + "\n")
+    (out / "tests.txt").write_text("\n".join(n for n in names if n in TESTS) + "\n")
 
 
 if __name__ == "__main__":

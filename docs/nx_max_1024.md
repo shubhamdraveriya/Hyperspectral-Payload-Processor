@@ -38,7 +38,13 @@ address above.
   table debug port included) and the table's ECC classes of the fault campaign,
   `fault_pairs_sbe` (10 single-bit trials, all corrected) and `fault_pairs_dbe`
   (10 double-bit trials, all detected and flagged).
-- The full regression passes on the commit: 86 of 86 tests.
+- `sys_nx1024` (`tb/system/tb_hpdp_core_1024.sv`): the system test with `hpdp_core`
+  at the build's own size, `NX_MAX` 1024 and `NZ_MAX` 256 (table in pairs, full-size
+  corner-turn and line buffers), on a 1024 × 3 × 24 scene through the registers, the
+  compressor and the downlink to the ground records; it also reads `SYS.LIMITS`
+  (1024 / 256; the other system tests read their 64 / 64). Writing it found a 32-bit
+  overflow in the testbench's cycle-count bound at 1024-pixel lines (testbench only).
+- The full regression passes: 87 tests (86 on d2eda42, then `sys_nx1024`).
 
 ## Build m7i_1024b (`NX_MAX` 1024, `NZ_MAX` 256)
 
@@ -61,6 +67,7 @@ script's limit (2¹⁸ table entries) allows 1024 × 256 and 512 × 512.
 
 ## Not done yet
 
-A board run of the 1024 bitstream (a 1024-pixel scene through the chain, and
-`SYS.LIMITS` reading 1024 / 256). The board is in use; this needs the app rebuilt
-against this XSA (`vitis -s sw/baremetal/build.py build/m7i_1024b/hpdp.xsa`).
+A board run of the 1024 bitstream: a 1024-pixel real scene through the chain, the
+table in pairs on the hardware, an ECC injection above 2¹⁸ in the corner turn, and
+`SYS.LIMITS` reading 1024 / 256. Commands and expected results:
+[post_m7_board_tests.md](post_m7_board_tests.md) §3.
