@@ -25,7 +25,7 @@ Project report (results, requirements compliance, open items):
 | M5 | Downlink chain and optical link | **done**: PRBS-31 3.4 × 10¹² bits error-free over the fiber (VER-06); scenes bit-exact at BER 0 / 10⁻⁴ / 10⁻³ (VER-07); 76.8 Msamples/s for 10 min without a dropped line (VER-08) ([notes](docs/m5_downlink.md)) |
 | M6 | PC ground station | **done** except the Ethernet upload board test (SW-05, needs the board's Ethernet): decodes, verifies and displays captures and live streams ([notes](docs/m6_ground_station.md)) |
 | M7 | Radiation mitigation | **done**: SEM scrubbing (upsets corrected in ≤ 153 ms on the board), ECC, TMR, watchdogs; fault campaign with no silent corruption in protected state; final build m7h ([plan](docs/m7_plan.md), [report](docs/m7_fault_injection.md)) |
-| After M7 | Remaining requirements | `NX_MAX` 1024 build m7i_1024b: 80 of 96 URAM, 250 MHz met ([SYS-04](docs/nx_max_1024.md)); SD card and UART console written and built, board test pending ([console](docs/console.md)); VER-02 matrix and VER-03 corner cases in the regression; real hyperspectral data ([results](docs/real_data.md)) |
+| After M7 | Remaining requirements | `NX_MAX` 1024 build m7i_1024b: 80 of 96 URAM, 250 MHz met, tested on the board ([SYS-04](docs/nx_max_1024.md)); SD card and UART console tested on the board ([console](docs/console.md)); VER-02 matrix and VER-03 corner cases in the regression; real hyperspectral data ([results](docs/real_data.md)) |
 
 ## Layout
 

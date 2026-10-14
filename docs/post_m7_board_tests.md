@@ -7,8 +7,14 @@ and passes; the expected figures come from those rehearsals.
 
 ## Before starting
 
-- The board is free (ask first), powered, USB (JTAG + UART) connected.
-- The fiber loops SFP0 ↔ SFP1, as for VER-07 (`run_m5` receives on SFP1 by default).
+Connections (tell the user before the session which step needs which):
+
+| Steps | Needs |
+|---|---|
+| all | the board free (ask first), powered; USB (JTAG + UART, COM18) |
+| 1 – 5 | **the OM3 fiber looping SFP0 ↔ SFP1** (`run_m5` receives on SFP1); without it the link does not lock (LNK.STATUS 0xF07, millions of code errors); `--loopback pma` runs without it |
+| 4 | an SD card (FAT32) in the board's slot, with the files of `data/sdcard/` (a card reader, or `sw/host/sd_put.py` through the board) |
+| 5 | an Ethernet cable from the board's RJ45 to a PC port (link-local 169.254.x.x, no setup) or to the office network (DHCP) |
 - The app: `hpdp_run` built after commit d2eda42 (`SYS.LIMITS`, 20-bit ECC injection
   address), in a workspace of its own so that the soak test's ELF in `vitis/` stayed
   untouched. It works with both bitstreams (it reads `SYS.LIMITS`; m7h, which predates
@@ -73,7 +79,10 @@ python sw/host/run_m5.py --elf $ELF --xsa $X --size 1024 16 64 12 --scenes 2 --e
 ## 4. SD card and UART console (SW-02, SW-04)
 
 1. Copy the files of `data/sdcard/` to the root of a FAT32 SD card and put it in the
-   ZCU106's SD slot. `EXPECTED.txt` there lists the expected compressed sizes.
+   ZCU106's SD slot. `EXPECTED.txt` there lists the expected compressed sizes. Without
+   a card reader, put the card in the board and write them through it:
+   `vitis -s sw/baremetal/build_sd_put.py`, then `python sw/host/sd_put.py data/sdcard/*`
+   (resets the board; adds or replaces files, reads each back).
 2. Load bitstream and app: step 1 (any `run_m5` job); the app then keeps polling the
    console.
 3. On COM18:
@@ -83,7 +92,7 @@ ls
 cal table.cal
 load scene0.hpdp
 mode both
-run                         -> 1 scene, 385 860 bytes (5.888 bits/sample)
+run                         -> 1 scene, 387 331 bytes (5.91 bits/sample), 80 clamped, 1472 replaced
 correction off
 load avi64.hpdp avi64b.hpdp
 run                         -> 3 898 952 and 7 063 902 bytes
@@ -95,6 +104,18 @@ status
 Needs the board's Ethernet connected to the PC (docs/m6): `run_m5.py --upload
 --board-ip <ip>` and `python sw/ground/hpdp_gs.py decode --tcp <ip>:5001 --show`.
 
-## Results
+## Results (2026-10-14, after the user's soak test)
 
-To fill in after the session.
+| Step | Result |
+|---|---|
+| 1 | First attempt: link not locked (the fiber was not connected after the soak test); with `--loopback pma` PASS; with the fiber connected: **PASS**, 4 scenes bit-exact at the ground, 0 code errors |
+| 2 | **PASS** on m7h over the fiber: AVIRIS 3 898 952 and 7 063 902 bytes, Hyperion 4 985 044, Indian Pines 3 476 350, each identical to the model and rebuilt bit-exactly at the ground; 99.3 – 99.6 Msamples/s; 0 code errors |
+| 3 | **PASS** on m7i_1024b (build 0x9018F99A): the 1024 × 32 × 242 real scene, 4 905 137 bytes; 1024 × 32 × 64 with the correction on (the table in pairs on the hardware); the ECC injection at corner-turn address 2¹⁸ + 8: 4 corrected reads, 0 uncorrectable, scenes intact; `status`: `NX_MAX 1024, NZ_MAX 256` |
+| 4 | **PASS** on m7h: no card reader, so `sd_put` wrote the 6 files to an empty card (each read back and compared); `ls` lists them; `cal` + `load` + `run`: 387 331 bytes (the model's, with the correction: 80 clamped, 1472 replaced); `correction off`, the two real scenes: 3 898 952 and 7 063 902 bytes; `prbs 10`: 12 Gbit, 0 errors; `help`, `show`, `mode`, `ei`, `seed`, `status` |
+| 5 | not run: no Ethernet cable connected yet (planned for the next session) |
+
+Found and fixed: the per-scene bits/sample print overflowed 32 bits above 5 MB per scene
+(7 063 902 bytes printed as 1.84; data unaffected), and the RX word counter printed
+signed; `hpdp_run` fixed and re-checked on the board (7.69). `EXPECTED.txt` and
+docs/console.md had the synthetic scene's reference wrong (the clean scene instead of
+the correction of the raw one); corrected.

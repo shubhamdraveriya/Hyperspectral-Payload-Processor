@@ -106,11 +106,23 @@ python -I model/hpdp_datasets.py experiment -j 5     # build/real_data_results.m
 python -I model/hpdp_datasets.py export aviris/f090710t01p00r09rdn_b_crop19   # .hpdp for the SD card
 ```
 
-## Not done yet
+## On the board (2026-10-14)
 
-Real scenes through the board, over JTAG (`run_m5.py --scene`) and from the SD card
-through the UART console: [post_m7_board_tests.md](post_m7_board_tests.md) §2 and §4.
-Rehearsed with the model in place of the board; the board was in use.
+[post_m7_board_tests.md](post_m7_board_tests.md) §2 – §4: parts of real scenes,
+exported with `hpdp_datasets.py export --lines` (correction off, so the compressor sees
+the data as stored), compressed by the board exactly as by the model and rebuilt
+bit-exactly at the ground over the fiber:
+
+| Scene | Build | Compressed bytes (bits/sample) |
+|---|---|---|
+| AVIRIS f090710t01p00r09rdn_b_crop19, lines 0 – 63 (512 × 64 × 224) | m7h | 3 898 952 (4.25) |
+| AVIRIS f090705t01p00r07rdn_14, lines 0 – 63 (a hard flight) | m7h | 7 063 902 (7.70) |
+| Hyperion EO1H2230682017070110KF_2, lines 0 – 127 (256 × 128 × 242) | m7h | 4 985 044 (5.03) |
+| Indian Pines (145 × 145 × 220) | m7h | 3 476 350 (6.01) |
+| Hyperion EO1H2230682017070110KF_2 with pixels and lines swapped, 1024 × 32 × 242 | m7i_1024b | 4 905 137 (4.95) |
+
+The two AVIRIS parts also ran from the SD card through the UART console, with the same
+sizes.
 
 ## Full results
 

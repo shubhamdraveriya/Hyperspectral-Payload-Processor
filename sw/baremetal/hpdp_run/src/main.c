@@ -830,10 +830,11 @@ static void print_summary(const run_t *r, volatile result_t *o, u64 ticks)
 
     if (r->mode & MODE_CAPTURE) {
         for (u32 s = 0; s < o->scenes_done && s < r->scenes; s++) {
+            /* hundredths of a bit per sample, in 64 bits (800 x bytes overflows 32 bits above 5 MB) */
+            u32 bps100 = (u32)(800ull * o->scene_bytes[s] / ((u64)r->nx * r->ny * r->nz));
             total += o->scene_bytes[s];
             xil_printf("  scene %d: %d bytes, %d.%02d bits/sample\r\n", (int)s, (int)o->scene_bytes[s],
-                       (int)(800u * o->scene_bytes[s] / (r->nx * r->ny * r->nz) / 100u),
-                       (int)(800u * o->scene_bytes[s] / (r->nx * r->ny * r->nz) % 100u));
+                       (int)(bps100 / 100u), (int)(bps100 % 100u));
         }
     }
     if (total == 0xFFFFFFFFu) {
@@ -872,8 +873,8 @@ static void print_summary(const run_t *r, volatile result_t *o, u64 ticks)
         xil_printf("  downlink: %d packets, %d scenes, %d science / %d idle frames, %d CADUs, %d bits injected\r\n",
                    (int)o->pkt_packets, (int)o->pkt_scenes, (int)o->aos_science, (int)o->aos_idle,
                    (int)o->aos_cadus, (int)o->ei_bits);
-        xil_printf("  link: %d code errors, %d lock losses, %d RX words, %d clock corrections, %d buffer errors\r\n",
-                   (int)o->lnk_code_errors, (int)o->lnk_lock_losses, (int)o->lnk_rx_words,
+        xil_printf("  link: %d code errors, %d lock losses, %u RX words, %d clock corrections, %d buffer errors\r\n",
+                   (int)o->lnk_code_errors, (int)o->lnk_lock_losses, (unsigned)o->lnk_rx_words,
                    (int)o->lnk_clk_corr, (int)o->lnk_buf_errors);
         xil_printf("  ground: %d CADUs, %d sync losses, %d ASM bit errors, %d dropped, %d idle skipped, %d captured (%d bytes)\r\n",
                    (int)o->gr_cadus, (int)o->gr_sync_losses, (int)o->gr_asm_errors, (int)o->gr_dropped,
@@ -912,8 +913,8 @@ void hpdp_status(void)
     xil_printf("  downlink: %d packets, %d scenes, %d science / %d idle frames, %d CADUs, %d bits injected\r\n",
                (int)st.pkt_packets, (int)st.pkt_scenes, (int)st.aos_science, (int)st.aos_idle, (int)st.aos_cadus,
                (int)st.ei_bits);
-    xil_printf("  link: %d code errors, %d lock losses, %d RX words; ground: %d CADUs, %d sync losses, "
-               "%d captured\r\n", (int)st.lnk_code_errors, (int)st.lnk_lock_losses, (int)st.lnk_rx_words,
+    xil_printf("  link: %d code errors, %d lock losses, %u RX words; ground: %d CADUs, %d sync losses, "
+               "%d captured\r\n", (int)st.lnk_code_errors, (int)st.lnk_lock_losses, (unsigned)st.lnk_rx_words,
                (int)st.gr_cadus, (int)st.gr_sync_losses, (int)st.gr_captured);
     xil_printf("  ECC corrected / uncorrectable: table %d / %d, corner turn %d / %d, line buffer %d / %d, "
                "weights %d / %d\r\n", (int)st.ecc_cal_sbe, (int)st.ecc_cal_dbe, (int)st.ecc_ct_sbe,

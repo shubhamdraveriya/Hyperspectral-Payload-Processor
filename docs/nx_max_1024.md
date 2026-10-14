@@ -65,9 +65,15 @@ The 250 MHz margin is thin (+12 ps) but met; the same RTL at 512 closes with +87
 A 1024 × 512 build would need 160 UltraRAMs and does not fit the XCZU7EV; the build
 script's limit (2¹⁸ table entries) allows 1024 × 256 and 512 × 512.
 
-## Not done yet
+## On the board (2026-10-14)
 
-A board run of the 1024 bitstream: a 1024-pixel real scene through the chain, the
-table in pairs on the hardware, an ECC injection above 2¹⁸ in the corner turn, and
-`SYS.LIMITS` reading 1024 / 256. Commands and expected results:
-[post_m7_board_tests.md](post_m7_board_tests.md) §3.
+[post_m7_board_tests.md](post_m7_board_tests.md) §3, all over the fiber and rebuilt
+bit-exactly at the ground:
+
+- a real 1024-pixel line: a Hyperion scene with pixels and lines swapped, 1024 × 32 ×
+  242, D 15: 4 905 137 bytes, identical to the model;
+- 1024 × 32 × 64 with the radiometric correction on, so the table in pairs corrects
+  every sample on the hardware: identical to the model;
+- a single-bit ECC error injected into corner-turn buffer 1 at 2¹⁸ + 8, the address bit
+  the 20-bit field added: 4 corrected reads, 0 uncorrectable, the scenes intact;
+- the UART console's `status`: `NX_MAX 1024, NZ_MAX 256` (`SYS.LIMITS`).

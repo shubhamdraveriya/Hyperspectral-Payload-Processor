@@ -6,7 +6,7 @@ hyperspectral Earth-observation satellite, on the AMD ZCU106 (Zynq UltraScale+ X
 | | |
 |---|---|
 | Report date | 2026-10-14 |
-| Final builds | **m7h** (commit b506d30), `NX_MAX` 512: the board-tested build; **m7i_1024b** (commit d2eda42), `NX_MAX` 1024 (SYS-04, not yet on the board) |
+| Final builds | **m7h** (commit b506d30), `NX_MAX` 512: the board-tested build; **m7i_1024b** (commit d2eda42), `NX_MAX` 1024 (SYS-04, board-tested) |
 | Specification | [SPEC.md](../SPEC.md) v1.0 |
 | Milestone notes | [m0](m0_bringup.md), [m1](m1_models.md), [m2](m2_compressor.md), [m3](m3_frontend.md), [m4](m4_board_run.md), [m5](m5_downlink.md), [m6](m6_ground_station.md), [m7 plan](m7_plan.md), [m7 runbook](m7_board_runbook.md), [fault injection](m7_fault_injection.md); after M7: [UART console](console.md), [`NX_MAX` 1024](nx_max_1024.md), [real data](real_data.md) |
 
@@ -32,7 +32,8 @@ Results on the board:
   compressor alone runs at up to 250 Msamples/s.
 - **Bit-exact end to end:** every scene reconstructed bit-exactly at the ground at
   injected BER 0, 10⁻⁴ and 10⁻³ (VER-07). The Reed-Solomon code holds to 2 × 10⁻³.
-- **Compression on real data** (the RTL-exact model, not yet on the board): 63 public
+- **Compression on real data** (the RTL-exact model; five of the scenes also through the
+  board, bit-exact at the ground): 63 public
   AVIRIS and Hyperion scenes, all lossless, at 4.4 – 6.0 bits per sample on average
   per dataset (2.3 – 3.1:1); at the mission rate the worst scene uses 71 % of the
   link (docs/real_data.md).
@@ -48,11 +49,10 @@ Results on the board:
 
 Status:
 
-- 97 of 102 v1.0 *shall* / *should* requirements are met; none is unmet.
-- **5 are pending:** the SD card loading and UART console (SW-02, SW-04) and the
-  Ethernet upload (SW-05) are written and built, but not yet tested on the board; the
-  independent CCSDS 123 decoder check (CMP-02, MDL-02) needs ESA / CNES tools (O-5).
-  See §5.
+- 99 of 102 v1.0 *shall* / *should* requirements are met; none is unmet.
+- **3 are pending:** the Ethernet upload (SW-05) is written and built, and its board
+  test waits for an Ethernet cable; the independent CCSDS 123 decoder check (CMP-02,
+  MDL-02) needs ESA / CNES tools (O-5). See §5.
 
 ## 2. System
 
@@ -115,6 +115,10 @@ and compared (63 of 63 lossless). Default settings; link use at the reference ra
   without spectral prediction (P = 0) scenes need 12 – 67 % more bits.
 - Scene length (O-7): 256-line scenes cost 0.3 % against whole images, 16-line scenes
   2 – 4 %; the default of 256 lines stands and O-7 is closed.
+- On the board (2026-10-14, [post_m7_board_tests.md](post_m7_board_tests.md)): parts of
+  two AVIRIS scenes, a Hyperion scene and Indian Pines on m7h, and a 1024-pixel Hyperion
+  scene on m7i_1024b, compressed exactly as the model and rebuilt bit-exactly at the
+  ground over the fiber; the AVIRIS ones also from the SD card through the console.
 
 **Synthetic scenes** (bit-exact and decoded at the ground):
 
@@ -159,7 +163,7 @@ triplicates them (+0.7 k LUT); after that, all 220 simulated upsets in them were
 | | Result |
 |---|---|
 | Utilization | 38.2 k LUT (16.6 %), 39.2 k FF (8.5 %), 38.5 BRAM36 (12.3 %), 56 URAM (58.3 %), 24 DSP (1.4 %), 2 GTHE4 |
-| m7i_1024b (`NX_MAX` 1024, SYS-04; [note](nx_max_1024.md)) | 38.9 k LUT, 40.1 k FF, 46.5 BRAM36, **80 URAM (83.3 %)**, 24 DSP; timing met on all clocks, setup WNS +0.012 ns (`clk_sys`), hold WHS +0.010 ns, bus skew worst +2.85 ns; `report_cdc` and `report_methodology` identical to m7h |
+| m7i_1024b (`NX_MAX` 1024, SYS-04; [note](nx_max_1024.md); board-tested) | 38.9 k LUT, 40.1 k FF, 46.5 BRAM36, **80 URAM (83.3 %)**, 24 DSP; timing met on all clocks, setup WNS +0.012 ns (`clk_sys`), hold WHS +0.010 ns, bus skew worst +2.85 ns; `report_cdc` and `report_methodology` identical to m7h |
 | Timing (VER-09) | met on all 11 clocks: setup WNS +0.087 ns (`clk_sys` 250 MHz), hold WHS +0.010 ns; 36 `set_bus_skew` constraints met (worst slack +2.94 ns); `check_timing` clean apart from the two static SFP `TX_DISABLE_B` outputs (false path) |
 | `report_cdc` | 0 unsafe, 0 unknown crossings. Waived: CDC-11 in the GTH wizard (2 endpoints, one monotonic "active" flag into two reset synchronizers; `vivado/constraints/waivers.xdc`). The remaining Warning rows are safe (the wizard's CPLL-calibration false paths; `clk_sensor` → `clk_pl_1` with max-delay constraints) |
 | `report_methodology` | 5 × LUTAR-1 waived (GTH wizard reset structure, as AMD's example design); 2 advisories on the `clk_sensor` MMCM (CLKC-40 / CLKC-56, could be a PLL; no LOC) |
@@ -173,7 +177,7 @@ triplicates them (+0.7 k LUT); after that, all 220 simulated upsets in them were
 | Configuration matrix (VER-02) | all 864 compressor configurations of SPEC VER-02 (local sum 4 × prediction mode 2 × P 4 × D 3 × Ω 3 × U_max 3), `HPDP_C123_MATRIX=all`: **864 of 864 bit-exact**, 57 minutes (2026-10-14) |
 | Fault campaign | `tb_fault`, 1 300 trials on m7h (`docs/m7_fault_injection.md`) |
 | Ground station | `pytest sw/ground` (decoder, reports) and three board captures decoded |
-| Board | M0 DMA loopback (3 865 MB/s); M4 15 scenes; M5 VER-06 / 07 / 08 and SYS-09; M7 runbook (`docs/m7_board_runbook.md`, results section); all JTAG-only, flash untouched |
+| Board | M0 DMA loopback (3 865 MB/s); M4 15 scenes; M5 VER-06 / 07 / 08 and SYS-09; M7 runbook (`docs/m7_board_runbook.md`, results section); post-M7: real scenes, the 1024 build, SD card and console (`docs/post_m7_board_tests.md`); all JTAG-only, flash untouched |
 
 ## 5. Requirements compliance
 
@@ -193,7 +197,7 @@ separately.
 | Link (LNK-01 … 10) | all, including LNK-10 (*should*) | – |
 | Ground receiver (GR-01, 03 … 05; GR-02 byte-aligned) | all | – |
 | Data movement (DM-01 … 03) | all | – |
-| PS software (SW-01 … 06) | 01, 03, 06 | **SW-02, SW-04**: SD card loading (FatFs, read-only) and the UART console written and built ([console.md](console.md)), board test pending. **SW-05**: TCP upload written and built, board test pending (Ethernet not connected) |
+| PS software (SW-01 … 06) | 01 … 04, 06; SW-02 and SW-04 on the board 2026-10-14 ([console.md](console.md)) | **SW-05**: TCP upload written and built, board test pending (Ethernet not connected) |
 | Ground station (GS-01 … 06) | all; GS-02 cross-checked with `reedsolo` instead of libfec | – |
 | Models (MDL-01 … 04) | 01, 03, 04 | **MDL-02**: cross-validation against an independent decoder (O-5) |
 | Radiation (RAD-01 … 07) | all | – |
@@ -226,8 +230,6 @@ Other items:
 | Item | Needs | Effort |
 |---|---|---|
 | SW-05 board test (Ethernet upload) | the board's Ethernet connected | about an hour |
-| SW-02 / SW-04 board test (SD card, UART console), and real scenes on the board | the board and an SD card; files, app and commands ready ([runbook](post_m7_board_tests.md) §2, §4) | about an hour |
-| m7i_1024b on the board (SYS-04) | the board; a 1024-pixel real scene through the chain ([runbook](post_m7_board_tests.md) §3) | about half an hour |
 | CMP-02 / MDL-02 / O-5: independent CCSDS 123 decoder | an account: ESA's WhiteDwarf 2.0 (ESSR, essr.esa.int/project/whitedwarf-2-0) includes a 123.0-B-2 decompressor in source, ESA Community Licence v2.4 permissive (type 3); or CNES's object-code compressor and decompressor (connectbycnes.fr). Then decode the RTL test vectors and the real-data scenes with it | half a day once available |
 
 Stretch goals (SPEC §15) are untouched. The return channel is now possible: the cable

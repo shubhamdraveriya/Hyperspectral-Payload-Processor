@@ -27,7 +27,15 @@ The files are:
 
 - `scene0.hpdp`: raw detector counts, the input;
 - `table.cal`: its calibration table;
-- `scene_c.hpdp`: the corrected scene, the reference for the ground station (`--ref`).
+- `scene_c.hpdp`: the clean scene the raw counts were made from. It is **not** what the
+  compressor sees: the correction of `scene0.hpdp` differs from it where pixels are
+  bad (replaced from neighbours) or clamped. The reference for the decoded scenes is
+  the model's correction of the raw scene (`hpdp_model.radiometric.correct`), as
+  `run_m5.py` writes it (`ref_NNNN.hpdp`).
+
+Without a card reader, `sw/host/sd_put.py` writes files to the card through the board
+(JTAG, a separate writer app, `sw/baremetal/build_sd_put.py`; it adds or replaces files
+in the card's root and reads each back to check it).
 
 Several scenes in one run must have the same size and depth, and use one table. Scenes
 must be in BIL order (the default).
@@ -78,4 +86,10 @@ or read over JTAG.
 
 ## Status
 
-Written and built (2026-10-14). The board test, with an SD card, is still to do.
+Tested on the board (2026-10-14, m7h; docs/post_m7_board_tests.md §4): files written
+to an empty card with `sd_put`; `ls`, `cal`, `load` (the synthetic scene and two real
+AVIRIS scenes), `mode`, `correction`, `ei`, `seed`, `show`, `run`, `prbs` and `status`
+work; every scene's compressed size equals the model's (387 331 bytes with correction;
+3 898 952 and 7 063 902 bytes for the real scenes), the ground capture complete, 0 link
+errors; PRBS-31 10 s, 12 Gbit, 0 errors. The test found an overflow in the printed bits
+per sample above 5 MB per scene (data unaffected), fixed.
