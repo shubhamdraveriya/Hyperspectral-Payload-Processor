@@ -61,7 +61,7 @@ def ecc_inject_word(spec):
     if len(parts) not in (2, 3) or parts[0] not in ECC_MEMORIES or (len(parts) == 3 and parts[2] != "dbe"):
         raise ValueError(f"ECC injection {spec!r}: expected MEMORY:ADDR[:dbe], MEMORY cal, ct or lb")
     addr = int(parts[1], 0)
-    if not 0 <= addr < 1 << 18:
+    if not 0 <= addr < 1 << 20:
         raise ValueError(f"ECC injection address {addr} out of range")
     return 0x8000_0000 | (0x4000_0000 if len(parts) == 3 else 0) | (ECC_MEMORIES[parts[0]] << 28) | addr
 

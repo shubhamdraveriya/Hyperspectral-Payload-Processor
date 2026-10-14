@@ -101,6 +101,18 @@ if {[wanted sys]} {
 if {[wanted fault]} {
     lappend tests fault_campaign tb_fault [list DIR=fe/dma_basic TRIALS=3 SEED=1]
 }
+# The calibration table in pairs (the layout above NX_MAX * NZ_MAX = 512 * 256,
+# SYS-04): front-end tests (including the table debug port) and the table's ECC
+# classes of the fault campaign
+if {[wanted fe]} {
+    foreach t {dma_basic dma_stalls clamp max_dims drop} {
+        lappend tests fe_pairs_$t tb_frontend_pairs [list DIR=fe/$t]
+    }
+}
+if {[wanted fault]} {
+    lappend tests fault_pairs_sbe tb_fault_pairs [list DIR=fe/dma_basic TRIALS=10 SEED=3 CLASS=0]
+    lappend tests fault_pairs_dbe tb_fault_pairs [list DIR=fe/dma_basic TRIALS=10 SEED=4 CLASS=1]
+}
 
 file copy -force [file join $::env(XILINX_VIVADO) data verilog src glbl.v] .
 run [tool xvlog] --sv {*}[sources rtl] {*}[sources tb]

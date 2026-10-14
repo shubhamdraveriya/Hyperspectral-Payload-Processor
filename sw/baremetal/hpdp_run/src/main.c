@@ -881,15 +881,29 @@ static void print_summary(const run_t *r, volatile result_t *o, u64 ticks)
     }
 }
 
+/* Build-time maxima of the bitstream (SYS.LIMITS, SYS-04); bitstreams before
+   the register read 0 there: 512 x 256 */
+static u32 nx_max(void)
+{
+    u32 v = rd(REG(sys.LIMITS)) & HPDP_SYS__LIMITS__NX_MAX_bm;
+    return v ? v : 512u;
+}
+
+static u32 nz_max(void)
+{
+    u32 v = (rd(REG(sys.LIMITS)) & HPDP_SYS__LIMITS__NZ_MAX_bm) >> HPDP_SYS__LIMITS__NZ_MAX_bp;
+    return v ? v : 256u;
+}
+
 /* Status dump for the console's "status" (SW-04) */
 void hpdp_status(void)
 {
     static result_t st;                         /* not the host's result block */
 
     fill_counters(&st);
-    xil_printf("SYS.STATUS 0x%08x, build 0x%08x, LNK.STATUS 0x%08x (locked %d)\r\n",
-               (unsigned)rd(REG(sys.STATUS)), (unsigned)rd(REG(sys.BUILD_ID)), (unsigned)st.lnk_status,
-               (int)((st.lnk_status >> 3) & 1u));
+    xil_printf("SYS.STATUS 0x%08x, build 0x%08x, NX_MAX %d, NZ_MAX %d, LNK.STATUS 0x%08x (locked %d)\r\n",
+               (unsigned)rd(REG(sys.STATUS)), (unsigned)rd(REG(sys.BUILD_ID)), (int)nx_max(), (int)nz_max(),
+               (unsigned)st.lnk_status, (int)((st.lnk_status >> 3) & 1u));
     xil_printf("  emulator: %d lines, %d underruns, %d overruns, %d dropped; corner turn: %d lines, %d dropped, "
                "%d unfilled\r\n", (int)st.se_lines, (int)st.se_underrun, (int)st.se_overruns, (int)st.se_dropped,
                (int)st.ct_lines, (int)st.ct_dropped, (int)st.ct_unfilled);
@@ -975,7 +989,8 @@ static int run_job(void)
                    (int)job->seq, (int)r.nx, (int)r.ny, (int)r.nz, (int)r.depth, (int)r.scenes,
                    (int)r.line_period, (int)r.source, r.rc_enable ? "on" : "off",
                    (r.mode & MODE_CAPTURE) ? "capture " : "", (r.mode & MODE_DOWNLINK) ? "downlink" : "");
-        if (r.scenes == 0 || r.scenes > MAX_SCENES || r.nx == 0 || r.nx > 512 || r.nz < 16 || r.nz > 256 ||
+        if (r.scenes == 0 || r.scenes > MAX_SCENES || r.nx == 0 || r.nx > nx_max() || r.nz < 16 ||
+            r.nz > nz_max() ||
             r.ny == 0 || r.depth < 2 || r.depth > 16 || r.line_period < r.nx * r.nz + 1 ||
             !(r.mode & (MODE_CAPTURE | MODE_DOWNLINK)) ||
             (r.source == 0 && (r.raw_bytes % 16 || r.raw_bytes < 2u * r.nx * r.ny * r.nz * r.scenes)) ||

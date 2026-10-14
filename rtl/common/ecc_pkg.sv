@@ -10,7 +10,7 @@ package ecc_pkg;
     typedef struct packed {
         logic        arm;
         logic        dbe;
-        logic [17:0] addr;
+        logic [19:0] addr;             // corner-turn buffers: 2 * 2^18 samples at NX_MAX 1024
     } ecc_inj_t;
 
     // Events: sbe / dbe pulse once per read that returned a corrected word /

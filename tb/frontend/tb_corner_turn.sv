@@ -193,7 +193,7 @@ module tb_corner_turn;
         rst <= 1'b0;
         // a double-bit error into buffer 0, word 0 (at the first line written)
         @(posedge clk);
-        inj <= '{arm: 1'b1, dbe: 1'b1, addr: 18'd0};
+        inj <= '{arm: 1'b1, dbe: 1'b1, addr: 20'd0};
         @(posedge clk);
         inj <= '0;
         while (!(n_lines == LINES && got == sent.size())) @(posedge clk);

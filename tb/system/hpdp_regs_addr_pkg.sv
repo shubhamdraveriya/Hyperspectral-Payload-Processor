@@ -14,6 +14,7 @@ package hpdp_regs_addr_pkg;
     localparam logic [31:0] SYS_NY                           = 32'h00054;
     localparam logic [31:0] SYS_NZ                           = 32'h00058;
     localparam logic [31:0] SYS_DEPTH                        = 32'h0005C;
+    localparam logic [31:0] SYS_LIMITS                       = 32'h00060;
     localparam logic [31:0] SE_ID                            = 32'h10000;
     localparam logic [31:0] SE_CTRL                          = 32'h10004;
     localparam logic [31:0] SE_STATUS                        = 32'h10008;

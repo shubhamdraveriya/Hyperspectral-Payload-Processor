@@ -10,7 +10,8 @@
 // comes in once per clock domain (the same values, synchronized by the caller).
 module sensor_frontend import frontend_pkg::*, ecc_pkg::*; #(
     parameter int NX_MAX = 512,
-    parameter int NZ_MAX = 256
+    parameter int NZ_MAX = 256,
+    parameter bit TABLE_PAIRS = (NX_MAX * NZ_MAX > 131072)   // calibration table layout (radiometric_corr)
 ) (
     input  logic         clk_sys,
     input  logic         rst_sys,
@@ -72,7 +73,7 @@ module sensor_frontend import frontend_pkg::*, ecc_pkg::*; #(
         .status        (se_status)
     );
 
-    radiometric_corr #(.NX_MAX(NX_MAX), .NZ_MAX(NZ_MAX)) u_rc (
+    radiometric_corr #(.NX_MAX(NX_MAX), .NZ_MAX(NZ_MAX), .TABLE_PAIRS(TABLE_PAIRS)) u_rc (
         .clk            (clk_sys),
         .rst            (rst_sys),
         .cfg            (cfg_sys),

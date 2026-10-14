@@ -27,7 +27,9 @@
 // that class). PASS when no protected class has a silent outcome; results also
 // in fault_results.csv, and per target (TMR memory, TMR state register,
 // unprotected register) in fault_targets.csv.
-module tb_fault;
+module tb_fault #(
+    parameter bit TABLE_PAIRS = 1'b0       // the calibration table in pairs (tb_frontend_pairs.sv)
+);
     import frontend_pkg::*;
     import c123_pkg::*;
     import ecc_pkg::*;
@@ -134,7 +136,7 @@ module tb_fault;
     logic         ct_mm, sg_mm, w_sbe, w_dbe, cmp_mm, pk_mm;
     logic [31:0]  padded_scenes, padded_samples;
 
-    sensor_frontend #(.NX_MAX(NX_MAX), .NZ_MAX(NZ_MAX)) u_fe (
+    sensor_frontend #(.NX_MAX(NX_MAX), .NZ_MAX(NZ_MAX), .TABLE_PAIRS(TABLE_PAIRS)) u_fe (
         .clk_sys, .rst_sys, .clk_sensor, .rst_sensor,
         .cfg_sys (fe), .cfg_sensor (fe), .cnt_clr_sys (1'b0), .cnt_clr_sensor (1'b0),
         .tbl_cmd ('0), .tbl_rdata, .tbl_done,
@@ -421,7 +423,7 @@ module tb_fault;
         // the table: an error armed before the load goes into its entry
         if (cls == 0 || cls == 1) begin
             @(posedge clk_sys);
-            tbl_inj <= '{arm: 1'b1, dbe: dbe, addr: 18'($urandom_range(0, line_len - 1))};
+            tbl_inj <= '{arm: 1'b1, dbe: dbe, addr: 20'($urandom_range(0, line_len - 1))};
             @(posedge clk_sys);
             tbl_inj <= '0;
         end
@@ -435,13 +437,13 @@ module tb_fault;
         if (cls == 2 || cls == 3) begin
             @(posedge clk_sys);
             ct_inj <= '{arm: 1'b1, dbe: dbe,
-                        addr: 18'($urandom_range(0, 1) * NX_MAX * NZ_MAX + $urandom_range(0, line_len - 1))};
+                        addr: 20'($urandom_range(0, 1) * NX_MAX * NZ_MAX + $urandom_range(0, line_len - 1))};
             @(posedge clk_sys);
             ct_inj <= '0;
         end
         if (cls == 4 || cls == 5) begin
             @(posedge clk_sys);
-            lb_inj <= '{arm: 1'b1, dbe: dbe, addr: 18'($urandom_range(0, line_len - 1))};
+            lb_inj <= '{arm: 1'b1, dbe: dbe, addr: 20'($urandom_range(0, line_len - 1))};
             @(posedge clk_sys);
             lb_inj <= '0;
         end

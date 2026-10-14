@@ -169,7 +169,7 @@ module tb_sample_ram;
                 if (!armed && !inj.arm && $urandom_range(0, 999) < 20) begin
                     inj.arm  <= 1'b1;
                     inj.dbe  <= ($urandom_range(0, 3) == 0);
-                    inj.addr <= 18'((cur < DEPTH && run_left > 4) ? cur + 4 : $urandom_range(0, DEPTH - 1));
+                    inj.addr <= 20'((cur < DEPTH && run_left > 4) ? cur + 4 : $urandom_range(0, DEPTH - 1));
                 end
             end
         end

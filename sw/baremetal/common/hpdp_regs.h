@@ -145,6 +145,14 @@ extern "C" {
 #define HPDP_SYS__DEPTH__DEPTH_bw 5
 #define HPDP_SYS__DEPTH__DEPTH_reset 0xc
 
+// reg - hpdp_sys::LIMITS
+#define HPDP_SYS__LIMITS__NX_MAX_bm 0xffff
+#define HPDP_SYS__LIMITS__NX_MAX_bp 0
+#define HPDP_SYS__LIMITS__NX_MAX_bw 16
+#define HPDP_SYS__LIMITS__NZ_MAX_bm 0xffff0000
+#define HPDP_SYS__LIMITS__NZ_MAX_bp 16
+#define HPDP_SYS__LIMITS__NZ_MAX_bw 16
+
 // regfile - hpdp_sys
 typedef struct __attribute__ ((__packed__)) {
     uint32_t ID;
@@ -161,6 +169,7 @@ typedef struct __attribute__ ((__packed__)) {
     uint32_t NY;
     uint32_t NZ;
     uint32_t DEPTH;
+    uint32_t LIMITS;
 } hpdp_sys_t;
 
 // reg - block_id_BLOCK_1
@@ -966,9 +975,9 @@ typedef struct __attribute__ ((__packed__)) {
 #define HPDP_RAD__ECC_INJECT__GO_reset 0x0
 
 // reg - hpdp_rad::ECC_INJECT_ADDR
-#define HPDP_RAD__ECC_INJECT_ADDR__ADDR_bm 0x3ffff
+#define HPDP_RAD__ECC_INJECT_ADDR__ADDR_bm 0xfffff
 #define HPDP_RAD__ECC_INJECT_ADDR__ADDR_bp 0
-#define HPDP_RAD__ECC_INJECT_ADDR__ADDR_bw 18
+#define HPDP_RAD__ECC_INJECT_ADDR__ADDR_bw 20
 #define HPDP_RAD__ECC_INJECT_ADDR__ADDR_reset 0x0
 
 // reg - hpdp_rad::WD_TIMEOUT
@@ -1155,7 +1164,7 @@ typedef struct __attribute__ ((__packed__)) {
 // addrmap - hpdp_regs
 typedef struct __attribute__ ((__packed__)) {
     hpdp_sys_t sys;
-    uint8_t RESERVED_60_ffff[0xffa0];
+    uint8_t RESERVED_64_ffff[0xff9c];
     hpdp_se_t se;
     uint8_t RESERVED_1009c_1ffff[0xff64];
     hpdp_rc_t rc;

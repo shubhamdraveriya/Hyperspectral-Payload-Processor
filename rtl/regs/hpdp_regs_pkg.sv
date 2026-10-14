@@ -77,9 +77,23 @@ package hpdp_regs_pkg;
     } hpdp_sys__BUILD_ID__in_t;
 
     typedef struct {
+        logic [15:0] next;
+    } hpdp_sys__LIMITS__nx_max__in_t;
+
+    typedef struct {
+        logic [15:0] next;
+    } hpdp_sys__LIMITS__nz_max__in_t;
+
+    typedef struct {
+        hpdp_sys__LIMITS__nx_max__in_t nx_max;
+        hpdp_sys__LIMITS__nz_max__in_t nz_max;
+    } hpdp_sys__LIMITS__in_t;
+
+    typedef struct {
         hpdp_sys__STATUS__in_t STATUS;
         hpdp_sys__IRQ_STATUS__in_t IRQ_STATUS;
         hpdp_sys__BUILD_ID__in_t BUILD_ID;
+        hpdp_sys__LIMITS__in_t LIMITS;
     } hpdp_sys__in_t;
 
     typedef struct {
@@ -1378,7 +1392,7 @@ package hpdp_regs_pkg;
     } hpdp_rad__ECC_INJECT__out_t;
 
     typedef struct {
-        logic [17:0] value;
+        logic [19:0] value;
     } hpdp_rad__ECC_INJECT_ADDR__addr__out_t;
 
     typedef struct {

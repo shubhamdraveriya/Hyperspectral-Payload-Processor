@@ -124,6 +124,13 @@ regfile hpdp_sys {
         name = "Sample depth";
         field { sw = rw; hw = r; desc = "D, 2..16"; } depth[4:0] = 12;
     } DEPTH @ 0x5C;
+
+    reg {
+        name = "Build limits";
+        desc = "Build-time maxima of this bitstream (SYS-04): software checks image sizes against them";
+        field { sw = r; hw = w; desc = "NX_MAX"; } nx_max[15:0];
+        field { sw = r; hw = w; desc = "NZ_MAX"; } nz_max[31:16];
+    } LIMITS @ 0x60;
 };
 
 // ---------------------------------------------------------------------------
@@ -564,7 +571,7 @@ regfile hpdp_rad {
     } ECC_INJECT @ 0x40;
     reg {
         name = "ECC error injection address";
-        field { sw = rw; hw = r; desc = "Calibration table: entry z*Nx + x. Corner-turn buffers: buffer * 2^17 + z*Nx + x (sample in the BIL line). Compressor line buffer: x*Nz + z (sample in the BIP row). The error goes into the 64-bit word that holds it (one table entry, four samples)."; } addr[17:0] = 0;
+        field { sw = rw; hw = r; desc = "Calibration table: entry z*Nx + x. Corner-turn buffers: buffer * 2^k + z*Nx + x (sample in the BIL line; 2^k: NX_MAX * NZ_MAX rounded up to a power of 2, 2^17 at 512 x 256, 2^18 at 1024 x 256). Compressor line buffer: x*Nz + z (sample in the BIP row). The error goes into the 64-bit word that holds it (one table entry or two in pairs, four samples)."; } addr[19:0] = 0;
     } ECC_INJECT_ADDR @ 0x44;
     reg {
         name = "Pipeline watchdog timeout";

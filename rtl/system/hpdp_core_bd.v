@@ -6,7 +6,9 @@
 // clk_link, sfp_tx_enable) become block design ports, wired to the GTH wizard in
 // hpdp_top.
 module hpdp_core_bd #(
-    parameter [31:0] BUILD_ID = 32'h0
+    parameter [31:0] BUILD_ID = 32'h0,
+    parameter integer NX_MAX  = 512,        // build-time maxima (SYS-04): set by
+    parameter integer NZ_MAX  = 256         // vivado/bd/system.tcl from HPDP_NX_MAX / HPDP_NZ_MAX
 ) (
     (* X_INTERFACE_INFO = "xilinx.com:signal:clock:1.0 clk_ctrl CLK" *)
     (* X_INTERFACE_PARAMETER = "ASSOCIATED_BUSIF s_axil, ASSOCIATED_RESET rst_ctrl_n" *)
@@ -113,8 +115,8 @@ module hpdp_core_bd #(
     output wire         irq
 );
     hpdp_core #(
-        .NX_MAX   (512),
-        .NZ_MAX   (256),
+        .NX_MAX   (NX_MAX),
+        .NZ_MAX   (NZ_MAX),
         .BUILD_ID (BUILD_ID)
     ) u_core (
         .clk_ctrl           (clk_ctrl),

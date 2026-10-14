@@ -167,7 +167,7 @@ module hpdp_core
         logic [7:0]  rad_clr_seq, inj_seq;      // ECC: counter clears, injections
         logic [1:0]  inj_mem;
         logic        inj_dbe;
-        logic [17:0] inj_addr;
+        logic [19:0] inj_addr;
         logic [31:0] wd_timeout;                // pipeline watchdogs (RAD-05)
     } sys_cfg_t;
 
@@ -1290,6 +1290,8 @@ module hpdp_core
         hwif_in.sys.IRQ_STATUS.stall.hwset             = wd_sum > wd_prev;
         hwif_in.sys.IRQ_STATUS.sem_uncorrectable.hwset = sem_stat.uncorrectable > sem_unc_prev;
         hwif_in.sys.BUILD_ID.build_id.next    = BUILD_ID;
+        hwif_in.sys.LIMITS.nx_max.next        = 16'(NX_MAX);
+        hwif_in.sys.LIMITS.nz_max.next        = 16'(NZ_MAX);
 
         hwif_in.se.STATUS.busy.next             = se_stat.busy;
         hwif_in.se.STATUS.done.next             = se_stat.done;

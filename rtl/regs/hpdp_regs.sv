@@ -263,6 +263,7 @@ module hpdp_regs (
             logic NY;
             logic NZ;
             logic DEPTH;
+            logic LIMITS;
         } sys;
         struct {
             logic ID;
@@ -439,6 +440,7 @@ module hpdp_regs (
         decoded_reg_strb.sys.NY = cpuif_req_masked & (cpuif_addr == 20'h54);
         decoded_reg_strb.sys.NZ = cpuif_req_masked & (cpuif_addr == 20'h58);
         decoded_reg_strb.sys.DEPTH = cpuif_req_masked & (cpuif_addr == 20'h5c);
+        decoded_reg_strb.sys.LIMITS = cpuif_req_masked & (cpuif_addr == 20'h60) & !cpuif_req_is_wr;
         decoded_reg_strb.se.ID = cpuif_req_masked & (cpuif_addr == 20'h10000) & !cpuif_req_is_wr;
         decoded_reg_strb.se.CTRL = cpuif_req_masked & (cpuif_addr == 20'h10004);
         decoded_reg_strb.se.STATUS = cpuif_req_masked & (cpuif_addr == 20'h10008) & !cpuif_req_is_wr;
@@ -1055,7 +1057,7 @@ module hpdp_regs (
             } ECC_INJECT;
             struct {
                 struct {
-                    logic [17:0] next;
+                    logic [19:0] next;
                     logic load_next;
                 } addr;
             } ECC_INJECT_ADDR;
@@ -1491,7 +1493,7 @@ module hpdp_regs (
             } ECC_INJECT;
             struct {
                 struct {
-                    logic [17:0] value;
+                    logic [19:0] value;
                 } addr;
             } ECC_INJECT_ADDR;
             struct {
@@ -3618,12 +3620,12 @@ module hpdp_regs (
     assign hwif_out.rad.ECC_INJECT.go.value = field_storage.rad.ECC_INJECT.go.value;
     // Field: hpdp_regs.rad.ECC_INJECT_ADDR.addr
     always_comb begin
-        automatic logic [17:0] next_c;
+        automatic logic [19:0] next_c;
         automatic logic load_next_c;
         next_c = field_storage.rad.ECC_INJECT_ADDR.addr.value;
         load_next_c = '0;
         if(decoded_reg_strb.rad.ECC_INJECT_ADDR && decoded_req_is_wr) begin // SW write
-            next_c = (field_storage.rad.ECC_INJECT_ADDR.addr.value & ~decoded_wr_biten[17:0]) | (decoded_wr_data[17:0] & decoded_wr_biten[17:0]);
+            next_c = (field_storage.rad.ECC_INJECT_ADDR.addr.value & ~decoded_wr_biten[19:0]) | (decoded_wr_data[19:0] & decoded_wr_biten[19:0]);
             load_next_c = '1;
         end
         field_combo.rad.ECC_INJECT_ADDR.addr.next = next_c;
@@ -3631,7 +3633,7 @@ module hpdp_regs (
     end
     always_ff @(posedge clk) begin
         if(rst) begin
-            field_storage.rad.ECC_INJECT_ADDR.addr.value <= 18'h0;
+            field_storage.rad.ECC_INJECT_ADDR.addr.value <= 20'h0;
         end else begin
             if(field_combo.rad.ECC_INJECT_ADDR.addr.load_next) begin
                 field_storage.rad.ECC_INJECT_ADDR.addr.value <= field_combo.rad.ECC_INJECT_ADDR.addr.next;
@@ -3903,6 +3905,10 @@ module hpdp_regs (
         end
         if(rd_mux_addr == 20'h5c) begin
             readback_data_var[4:0] = field_storage.sys.DEPTH.depth.value;
+        end
+        if(rd_mux_addr == 20'h60) begin
+            readback_data_var[15:0] = hwif_in.sys.LIMITS.nx_max.next;
+            readback_data_var[31:16] = hwif_in.sys.LIMITS.nz_max.next;
         end
         if(rd_mux_addr == 20'h10000) begin
             readback_data_var[15:0] = 16'h100;
@@ -4260,7 +4266,7 @@ module hpdp_regs (
             readback_data_var[31] = field_storage.rad.ECC_INJECT.go.value;
         end
         if(rd_mux_addr == 20'hf0044) begin
-            readback_data_var[17:0] = field_storage.rad.ECC_INJECT_ADDR.addr.value;
+            readback_data_var[19:0] = field_storage.rad.ECC_INJECT_ADDR.addr.value;
         end
         if(rd_mux_addr == 20'hf0048) begin
             readback_data_var[31:0] = field_storage.rad.WD_TIMEOUT.cycles.value;

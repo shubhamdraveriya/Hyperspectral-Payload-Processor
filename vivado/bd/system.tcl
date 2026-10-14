@@ -118,6 +118,18 @@ set_property -dict [list \
 # ---------------------------------------------------------------------------
 set core [create_bd_cell -type module -reference hpdp_core_bd hpdp]
 set_property CONFIG.BUILD_ID $::build_id $core
+# Build-time maxima (SYS-04): NX_MAX 512 by default; HPDP_NX_MAX=1024 scales the
+# line and table memories (the calibration table goes to pairs above 512 x 256)
+foreach {param var} {NX_MAX HPDP_NX_MAX NZ_MAX HPDP_NZ_MAX} {
+    if {[info exists ::env($var)]} {
+        set_property CONFIG.$param $::env($var) $core
+        puts "$param = $::env($var) ($var)"
+    }
+}
+# RC.TBL_ADDR (18 bits) addresses up to 2^18 table entries
+if {[get_property CONFIG.NX_MAX $core] * [get_property CONFIG.NZ_MAX $core] > 262144} {
+    error "NX_MAX * NZ_MAX above 2^18 (the table address RC.TBL_ADDR is 18 bits)"
+}
 
 connect_bd_intf_net [get_bd_intf_pins dma/M_AXIS_MM2S] [get_bd_intf_pins hpdp/s_axis_dma]
 connect_bd_intf_net [get_bd_intf_pins hpdp/m_axis_cmp] [get_bd_intf_pins dma/S_AXIS_S2MM]

@@ -66,7 +66,7 @@
 #define ECC_INJ_ENABLE  0x80000000u     /* ecc_inject[]: arm this injection */
 #define ECC_INJ_DBE     0x40000000u     /*   double-bit error (else single-bit) */
 #define ECC_INJ_MEM_SH  28u             /*   memory [29:28]: 0 table, 1 corner turn, 2 line buffer */
-#define ECC_INJ_ADDR_bm 0x0003FFFFu     /*   address [17:0], as RAD.ECC_INJECT_ADDR */
+#define ECC_INJ_ADDR_bm 0x000FFFFFu     /*   address [19:0], as RAD.ECC_INJECT_ADDR */
 
 #define SEM_INJ_ENABLE  0x80000000u     /* sem_inject: inject before the scenes */
 #define SEM_INJ_ADDR_bm 0x3FFFFFFFu     /*   [29:0] as RAD.SEM_INJ_ADDR: frame, word, bit */

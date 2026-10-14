@@ -15,7 +15,9 @@
 //   - every compressed byte and tlast per scene (drop test: one tlast per scene)
 //   - status counters against the model
 // The compressor output is back-pressured randomly (out_pct % ready).
-module tb_frontend;
+module tb_frontend #(
+    parameter bit TABLE_PAIRS = 1'b0       // the calibration table in pairs (tb_frontend_pairs.sv)
+);
     import frontend_pkg::*;
     import c123_pkg::*;
     import ecc_pkg::*;
@@ -67,7 +69,7 @@ module tb_frontend;
             ecc_err++;
         end
 
-    sensor_frontend #(.NX_MAX(NX_MAX), .NZ_MAX(NZ_MAX)) u_fe (
+    sensor_frontend #(.NX_MAX(NX_MAX), .NZ_MAX(NZ_MAX), .TABLE_PAIRS(TABLE_PAIRS)) u_fe (
         .clk_sys, .rst_sys, .clk_sensor, .rst_sensor,
         .cfg_sys        (fe),
         .cfg_sensor     (fe),
