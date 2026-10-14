@@ -2,6 +2,8 @@
 build/
 # Vitis workspace (sw/baremetal/build.py; Vitis reaches it via the junction ~/hpdp_vitis_ws)
 vitis/
+# Public hyperspectral datasets (downloaded, docs/real_data.md)
+data/
 
 # Vivado / xsim / Vitis droppings
 .Xil/

@@ -18,13 +18,14 @@ Project report (results, requirements compliance, open items):
 | Milestone | Content | State |
 |---|---|---|
 | M0 | Repository, tool flow, ZCU106 base design with DMA loopback | **done**: 64 MB loopback passes on the board at 3865 MB/s ([notes](docs/m0_bringup.md)) |
-| M1 | Python reference models (CCSDS 123, framing, RS) | models done, 144 tests pass; independent CCSDS 123 check pending (O-5) ([notes](docs/m1_models.md)) |
-| M2 | CCSDS 123 compressor RTL | **done**: bit-exact on 28 configurations; 250 MHz met at 512 × 256 (13.6k LUT, 19 DSP, 8 URAM) ([notes](docs/m2_compressor.md)) |
+| M1 | Python reference models (CCSDS 123, framing, RS) | models done, 150 tests pass; independent CCSDS 123 check pending (O-5) ([notes](docs/m1_models.md)) |
+| M2 | CCSDS 123 compressor RTL | **done**: bit-exact on all 864 configurations of the VER-02 matrix; 250 MHz met at 512 × 256 (13.6k LUT, 19 DSP, 8 URAM) ([notes](docs/m2_compressor.md)) |
 | M3 | Sensor emulator, radiometric correction, corner turn | **done**: bit-exact with the models through the compressor on 12 tests (incl. line drops with fill lines); 250 MHz met at 512 × 256 (1.1k LUT, 1 DSP, 32 URAM) ([notes](docs/m3_frontend.md)) |
 | M4 | On-board compression run | **done**: 15 scenes from the board identical to the model and decoded bit-exactly; 99.8 Msamples/s; 250 MHz met on the full chip, CDC clean ([notes](docs/m4_board_run.md)) |
 | M5 | Downlink chain and optical link | **done**: PRBS-31 3.4 × 10¹² bits error-free over the fiber (VER-06); scenes bit-exact at BER 0 / 10⁻⁴ / 10⁻³ (VER-07); 76.8 Msamples/s for 10 min without a dropped line (VER-08) ([notes](docs/m5_downlink.md)) |
 | M6 | PC ground station | **done** except the Ethernet upload board test (SW-05, needs the board's Ethernet): decodes, verifies and displays captures and live streams ([notes](docs/m6_ground_station.md)) |
 | M7 | Radiation mitigation | **done**: SEM scrubbing (upsets corrected in ≤ 153 ms on the board), ECC, TMR, watchdogs; fault campaign with no silent corruption in protected state; final build m7h ([plan](docs/m7_plan.md), [report](docs/m7_fault_injection.md)) |
+| After M7 | Remaining requirements | `NX_MAX` 1024 build m7i_1024b: 80 of 96 URAM, 250 MHz met ([SYS-04](docs/nx_max_1024.md)); SD card and UART console written and built, board test pending ([console](docs/console.md)); VER-02 matrix and VER-03 corner cases in the regression; real hyperspectral data ([results](docs/real_data.md)) |
 
 ## Layout
 
@@ -59,14 +60,17 @@ python model/hpdp_tool.py gen hyperspectral 64 32 50 scene.hpdp
 python model/hpdp_tool.py compress scene.hpdp scene.c123
 ```
 
-RTL regression (xsim, no project needed):
+RTL regression (xsim, no project needed; a random 6 of the 864 compressor
+configurations each run, `HPDP_C123_SEED` repeats them; `HPDP_C123_MATRIX=all` with
+`-tclargs "c123_mx_*"` runs the whole VER-02 matrix, about an hour):
 
 ```
 vivado -mode batch -source tb/run_sim.tcl
 ```
 
 FPGA build (creates `build/vivado/hpdp.xpr`, then writes `build/hpdp.xsa` and reports
-in `build/reports/`):
+in `build/reports/`; `HPDP_BUILD_DIR` builds elsewhere, `HPDP_NX_MAX=1024` makes the
+1024-pixel build of [docs/nx_max_1024.md](docs/nx_max_1024.md)):
 
 ```
 vivado -mode batch -source vivado/build.tcl

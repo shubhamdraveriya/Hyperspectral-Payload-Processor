@@ -551,7 +551,9 @@ overflow, sync loss, link lock loss, uncorrectable ECC error, watchdog.
 512 × 217 pixels; Pavia University, 610 × 340 pixels, 103 bands, cropped to `NX_MAX`), plus
 synthetic images. These datasets are already calibrated, so raw sensor counts are emulated
 by applying synthetic dark, gain and bad-pixel maps in reverse. The correction stage can then
-be checked against the known original.
+be checked against the known original. Used for the compression results (2026-10-14,
+docs/real_data.md): Indian Pines, and the GICI test sets of 49 AVIRIS and 13 Hyperion
+scenes in place of Salinas and Pavia University, which could not be obtained.
 
 ---
 
@@ -564,7 +566,10 @@ Rows marked * are measured (out-of-context implementation at `NX_MAX` = 512,
 (PS, DMA, interconnect, registers, front end, compressor) measures 21.3 k LUT, 20.4 k FF,
 21 BRAM36, 40 URAM and 20 DSP in total; the M5 design (adding the downlink chain, error
 injector, link layer with two GTH channels, ground receiver and ground DMA) measures
-28.0 k LUT, 32.3 k FF, 32.5 BRAM36, 40 URAM and 20 DSP.
+28.0 k LUT, 32.3 k FF, 32.5 BRAM36, 40 URAM and 20 DSP. At `NX_MAX` = 1024 (`SYS-04`,
+build m7i_1024b, docs/nx_max_1024.md) the calibration table holds two entries per word,
+and the full design measures 38.9 k LUT, 40.1 k FF, 46.5 BRAM36, 80 URAM (83 %) and
+24 DSP, with 250 MHz met.
 
 | Block | LUT | FF | DSP | BRAM36 | URAM |
 |---|---|---|---|---|---|
@@ -691,7 +696,7 @@ Total about 31 weeks at 15–20 hours per week.
 | O-4 | ~~Vivado licence covering XCZU7EV (ZCU106 kit voucher)~~ Closed: every XCZU7EV build since M0 (2026-10-10) ran with the installed licence | M0 |
 | O-5 | Access to ESA WhiteDwarf 2.0 / CNES CCSDS 123.0-B-2 tools | M1 |
 | O-6 | ~~`NZ_MIN` from the final compressor pipeline depth~~ Closed: `NZ_MIN` = 16 (docs/m2_compressor.md; tested in `c123_min_bands`) | M2 |
-| O-7 | Default scene length (256 lines) and packet size (2048 bytes), to revisit after compression experiments | M4 |
+| O-7 | ~~Default scene length (256 lines) and packet size (2048 bytes), to revisit after compression experiments~~ Closed (2026-10-14, docs/real_data.md): on real AVIRIS and Hyperion scenes, 256-line scenes cost 0.3 % against whole images (16 lines: 2 – 4 %), so the default stands; the packet size does not affect compression and stays at 2048 bytes (99.3 % packet efficiency, §12.2) | M4 |
 | O-8 | ~~SEM IP availability and licence for ZU7EV in Vivado 2025.2~~ Closed: `sem_ultra` 3.1 supports the XCZU7EV in Vivado 2025.2 with no licence key; running on the board since build m7f (docs/m7_plan.md) | M7 |
 
 ---

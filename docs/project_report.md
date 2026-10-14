@@ -5,10 +5,10 @@ hyperspectral Earth-observation satellite, on the AMD ZCU106 (Zynq UltraScale+ X
 
 | | |
 |---|---|
-| Report date | 2026-10-13 |
-| Final build | **m7h** (commit b506d30; documentation up to 4a0d164) |
+| Report date | 2026-10-14 |
+| Final builds | **m7h** (commit b506d30), `NX_MAX` 512: the board-tested build; **m7i_1024b** (commit d2eda42), `NX_MAX` 1024 (SYS-04, not yet on the board) |
 | Specification | [SPEC.md](../SPEC.md) v1.0 |
-| Milestone notes | [m0](m0_bringup.md), [m1](m1_models.md), [m2](m2_compressor.md), [m3](m3_frontend.md), [m4](m4_board_run.md), [m5](m5_downlink.md), [m6](m6_ground_station.md), [m7 plan](m7_plan.md), [m7 runbook](m7_board_runbook.md), [fault injection](m7_fault_injection.md) |
+| Milestone notes | [m0](m0_bringup.md), [m1](m1_models.md), [m2](m2_compressor.md), [m3](m3_frontend.md), [m4](m4_board_run.md), [m5](m5_downlink.md), [m6](m6_ground_station.md), [m7 plan](m7_plan.md), [m7 runbook](m7_board_runbook.md), [fault injection](m7_fault_injection.md); after M7: [UART console](console.md), [`NX_MAX` 1024](nx_max_1024.md), [real data](real_data.md) |
 
 ## 1. Summary
 
@@ -32,6 +32,10 @@ Results on the board:
   compressor alone runs at up to 250 Msamples/s.
 - **Bit-exact end to end:** every scene reconstructed bit-exactly at the ground at
   injected BER 0, 10⁻⁴ and 10⁻³ (VER-07). The Reed-Solomon code holds to 2 × 10⁻³.
+- **Compression on real data** (the RTL-exact model, not yet on the board): 63 public
+  AVIRIS and Hyperion scenes, all lossless, at 4.4 – 6.0 bits per sample on average
+  per dataset (2.3 – 3.1:1); at the mission rate the worst scene uses 71 % of the
+  link (docs/real_data.md).
 - **Link:** PRBS-31 over the fiber, 3.4 × 10¹² bits with 0 errors, so BER < 8.9 × 10⁻¹³
   at 95 % (VER-06). The eye scans are open in both directions (LNK-10).
 - **Radiation mitigation:** SEM configuration scrubbing, ECC on every RAM, TMR on
@@ -44,12 +48,11 @@ Results on the board:
 
 Status:
 
-- 94 of 102 v1.0 *shall* / *should* requirements are met.
-- **2 are not met:** SW-02 (load scenes from the SD card) and SW-04 (UART command
-  console). The application takes jobs over JTAG instead.
-- **6 are partly met or pending:** see §6. The largest are the independent CCSDS 123
-  decoder check (needs ESA / CNES tools) and the Ethernet upload board test (needs the
-  board's Ethernet connected).
+- 97 of 102 v1.0 *shall* / *should* requirements are met; none is unmet.
+- **5 are pending:** the SD card loading and UART console (SW-02, SW-04) and the
+  Ethernet upload (SW-05) are written and built, but not yet tested on the board; the
+  independent CCSDS 123 decoder check (CMP-02, MDL-02) needs ESA / CNES tools (O-5).
+  See §5.
 
 ## 2. System
 
@@ -75,9 +78,9 @@ PS DDR4 ─► AXI DMA ─► sensor emulator ─► radiometric ─► corner t
 |---|---|
 | Device / board | XCZU7EV-2 on the ZCU106; PS DDR4 SODIMM (x16, needs the DDR override of docs/m0) |
 | Clocks | `clk_sys` 250 MHz (data path), `clk_sensor` 100 MHz (emulator), `clk_ctrl` 100 MHz (registers), `clk_link` 62.5 MHz (GTH user clock), `clk_fr` 31.25 MHz (free-running: GTH, SEM, debug hub) |
-| Build-time maxima | `NX_MAX` 512, `NZ_MAX` 256, `NZ_MIN` 16, `D_MAX` 16 |
+| Build-time maxima | `NX_MAX` 512 (1024 with `HPDP_NX_MAX`, SYS-04), `NZ_MAX` 256, `NZ_MIN` 16, `D_MAX` 16; `SYS.LIMITS` reports them |
 | Registers | SystemRDL (`regs/hpdp.rdl`) → PeakRDL AXI4-Lite block in three voted copies; C, Python and SV headers generated |
-| Software | `hpdp_run` (A53 #0, standalone, Vitis 2025.2) runs job blocks loaded over JTAG (job / result format v7); host tools `run_m4.py`, `run_m5.py`; ground station `hpdp_gs.py` |
+| Software | `hpdp_run` (A53 #0, standalone, Vitis 2025.2) runs job blocks loaded over JTAG (job / result format v7), or scenes and tables from the SD card through a UART console ([console.md](console.md)); host tools `run_m4.py`, `run_m5.py`; ground station `hpdp_gs.py` |
 | Models | `model/hpdp_model/`: bit-exact Python models of every block, which generate the RTL test vectors |
 
 ## 3. Results
@@ -94,8 +97,26 @@ PS DDR4 ─► AXI DMA ─► sensor emulator ─► radiometric ─► corner t
 
 ### 3.2 Compression
 
-All measured on **synthetic** scenes, bit-exact and decoded at the ground. SPEC's public
-AVIRIS / ROSIS test data were not used (see §7).
+**Real data** ([real_data.md](real_data.md)): 63 public scenes through the compressor
+model, which is bit-exact with the RTL on the whole VER-02 matrix; every scene decoded
+and compared (63 of 63 lossless). Default settings; link use at the reference rate of
+76.8 Msamples/s against 857 Mbit/s of packet capacity.
+
+| Dataset | Scenes | Bits / sample, mean (range) | Ratio (D / bits) | Link use, mean (worst scene) |
+|---|---|---|---|---|
+| AVIRIS, airborne, 512 × 512 × 224, 2008 – 2017 | 49 | 4.43 (2.99 – 7.93) | 3.12:1 | 40 % (71 %) |
+| Hyperion, EO-1 satellite, 256 × 1024 × 242, 2017 | 13 | 4.95 (4.74 – 5.16) | 2.86:1 | 44 % (46 %) |
+| Indian Pines, AVIRIS, 145 × 145 × 220, 1992 | 1 | 6.01 | 2.33:1 | 54 % |
+
+- CCSDS 123 needs 1.6 – 2.0 times fewer bits than deflate on the same samples.
+- AVIRIS falls into two groups: 42 scenes at 3.91 bits/sample on average, and the 7
+  scenes of three flights at 7.53.
+- The default settings are within 1 % of the best setting tried on each dataset;
+  without spectral prediction (P = 0) scenes need 12 – 67 % more bits.
+- Scene length (O-7): 256-line scenes cost 0.3 % against whole images, 16-line scenes
+  2 – 4 %; the default of 256 lines stands and O-7 is closed.
+
+**Synthetic scenes** (bit-exact and decoded at the ground):
 
 | Scene | Bits / sample | Ratio |
 |---|---|---|
@@ -133,11 +154,12 @@ The campaign drove a design change. In m7g, upsets in the corner turn's, packeti
 framer's address and count registers were silent 93–100 % of the time. Build m7h
 triplicates them (+0.7 k LUT); after that, all 220 simulated upsets in them were corrected.
 
-### 3.5 Implementation (m7h)
+### 3.5 Implementation (m7h; m7i_1024b)
 
 | | Result |
 |---|---|
 | Utilization | 38.2 k LUT (16.6 %), 39.2 k FF (8.5 %), 38.5 BRAM36 (12.3 %), 56 URAM (58.3 %), 24 DSP (1.4 %), 2 GTHE4 |
+| m7i_1024b (`NX_MAX` 1024, SYS-04; [note](nx_max_1024.md)) | 38.9 k LUT, 40.1 k FF, 46.5 BRAM36, **80 URAM (83.3 %)**, 24 DSP; timing met on all clocks, setup WNS +0.012 ns (`clk_sys`), hold WHS +0.010 ns, bus skew worst +2.85 ns; `report_cdc` and `report_methodology` identical to m7h |
 | Timing (VER-09) | met on all 11 clocks: setup WNS +0.087 ns (`clk_sys` 250 MHz), hold WHS +0.010 ns; 36 `set_bus_skew` constraints met (worst slack +2.94 ns); `check_timing` clean apart from the two static SFP `TX_DISABLE_B` outputs (false path) |
 | `report_cdc` | 0 unsafe, 0 unknown crossings. Waived: CDC-11 in the GTH wizard (2 endpoints, one monotonic "active" flag into two reset synchronizers; `vivado/constraints/waivers.xdc`). The remaining Warning rows are safe (the wizard's CPLL-calibration false paths; `clk_sensor` → `clk_pl_1` with max-delay constraints) |
 | `report_methodology` | 5 × LUTAR-1 waived (GTH wizard reset structure, as AMD's example design); 2 advisories on the `clk_sensor` MMCM (CLKC-40 / CLKC-56, could be a PLL; no LOC) |
@@ -146,8 +168,9 @@ triplicates them (+0.7 k LUT); after that, all 220 simulated upsets in them were
 
 | Level | What |
 |---|---|
-| Python models | 144 pytest tests: CCSDS 123 encoder / decoder round trips over 20 configurations and D ∈ {2 … 16}, RS against `reedsolo`, framing, frame sync, end-to-end chain |
-| RTL regression | 70 self-checking xsim tests from model vectors with random stalls, run headless by `tb/run_sim.tcl` (VER-01, VER-10): 28 compressor configurations; front end; downlink and ground blocks; link layer; system tests through the registers (VER-05); ECC, TMR, watchdog and SEM-path tests; the fault campaign (3 trials per class per regression) |
+| Python models | 150 pytest tests: CCSDS 123 encoder / decoder round trips over 20 configurations and D ∈ {2 … 16}, RS against `reedsolo`, framing, frame sync, end-to-end chain |
+| RTL regression | 86 self-checking xsim tests from model vectors with random stalls, run headless by `tb/run_sim.tcl` in 9 minutes (VER-01, VER-10): 28 chosen compressor configurations, the corner-case images (all zero, all maximum at D 12 and 16; VER-03) and 6 random configurations of the matrix (seed printed); front end, also with the calibration table in pairs; downlink and ground blocks; link layer; system tests through the registers (VER-05); ECC, TMR, watchdog and SEM-path tests; the fault campaign (3 trials per class, and 10 per table ECC class in pairs) |
+| Configuration matrix (VER-02) | all 864 compressor configurations of SPEC VER-02 (local sum 4 × prediction mode 2 × P 4 × D 3 × Ω 3 × U_max 3), `HPDP_C123_MATRIX=all`: **864 of 864 bit-exact**, 57 minutes (2026-10-14) |
 | Fault campaign | `tb_fault`, 1 300 trials on m7h (`docs/m7_fault_injection.md`) |
 | Ground station | `pytest sw/ground` (decoder, reports) and three board captures decoded |
 | Board | M0 DMA loopback (3 865 MB/s); M4 15 scenes; M5 VER-06 / 07 / 08 and SYS-09; M7 runbook (`docs/m7_board_runbook.md`, results section); all JTAG-only, flash untouched |
@@ -159,7 +182,7 @@ separately.
 
 | Area | Met | Not fully met |
 |---|---|---|
-| System (SYS-01 … 10) | 01, 02, 03, 05, 06, 07, 08, 09, 10 | **SYS-04**: the `NX_MAX` = 1024 scaling was never built |
+| System (SYS-01 … 10) | all; SYS-04 by build m7i_1024b ([note](nx_max_1024.md)) | – |
 | Sensor emulator (SE-01 … 06) | all | – |
 | Radiometric correction (RC-01 … 05) | all | – |
 | Corner turn (CT-01 … 04) | all | – |
@@ -170,11 +193,11 @@ separately.
 | Link (LNK-01 … 10) | all, including LNK-10 (*should*) | – |
 | Ground receiver (GR-01, 03 … 05; GR-02 byte-aligned) | all | – |
 | Data movement (DM-01 … 03) | all | – |
-| PS software (SW-01 … 06) | 01, 03, 06 | **SW-02** not met: scenes and tables come over JTAG, not from the SD card. **SW-04** not met: no UART command console; the app runs job blocks loaded by the host scripts over JTAG. **SW-05**: TCP upload written and built, board test pending (Ethernet not connected) |
+| PS software (SW-01 … 06) | 01, 03, 06 | **SW-02, SW-04**: SD card loading (FatFs, read-only) and the UART console written and built ([console.md](console.md)), board test pending. **SW-05**: TCP upload written and built, board test pending (Ethernet not connected) |
 | Ground station (GS-01 … 06) | all; GS-02 cross-checked with `reedsolo` instead of libfec | – |
 | Models (MDL-01 … 04) | 01, 03, 04 | **MDL-02**: cross-validation against an independent decoder (O-5) |
 | Radiation (RAD-01 … 07) | all | – |
-| Verification (VER-01 … 10) | 01, 04 (with `reedsolo`), 05 … 10 | **VER-02**: 28 chosen configurations, not a random subset per regression plus a nightly full matrix. **VER-03**: all-zero and all-maximum images not in the RTL tests (random, Nx = 1, `NZ_MIN`, `NX_MAX` and `NZ_MAX` are, the last two on the board) |
+| Verification (VER-01 … 10) | all; VER-04 with `reedsolo`; VER-02: a random subset in every regression and the full matrix by one command (no scheduler runs it nightly) | – |
 
 Other items:
 
@@ -187,9 +210,10 @@ Other items:
 
 | Item | What and why |
 |---|---|
-| Job interface instead of SD card and UART console (SW-02, SW-04) | Since M4 the host builds each job (scenes, tables, settings) and loads it over JTAG together with the bitstream and the app; the app prints a summary and returns a result block that the host checks bit for bit. This made every board run reproducible and self-checking, but leaves SW-02 and SW-04 open. It was not recorded as a decision at the time; it is recorded here |
+| Job interface first, console later (SW-02, SW-04) | Since M4 the host builds each job (scenes, tables, settings) and loads it over JTAG together with the bitstream and the app; the app prints a summary and returns a result block that the host checks bit for bit. This made every board run reproducible and self-checking. The SD card loading and UART console came after M7 (2026-10-14): the console posts the same job block, so both paths share the app's checks |
 | `reedsolo` instead of libfec (CC-06, GS-02, VER-04) | An independent RS implementation in Python, with the same field and roots, available without building libfec on Windows |
-| Calibration table layout A (M7) | One entry per 64-bit word (the user's choice) |
+| Calibration table layouts (M7, SYS-04) | Layout A, one entry per 64-bit word, up to 512 × 256 (the user's choice); layout B, two entries' dark and gain per word and the bad flags apart, above it, so that `NX_MAX` 1024 fits in 80 of 96 UltraRAMs |
+| Test data (SPEC §11) | Indian Pines, and the GICI (Universitat Autònoma de Barcelona) test sets of 49 AVIRIS and 13 Hyperion scenes in place of Salinas and Pavia University: their usual source refuses this network and has no official mirror, and the CCSDS corpus is behind a login |
 | SYS-09 RAW overload: option (a) | RAW mode shows that raw data exceeds the link; whole scenes are not dropped on purpose (docs/m7_plan.md decision 1) |
 | Scene guard | A scene cut short is padded and ended, so one lost line cannot merge scenes (found in M5) |
 | PS watchdog per job | Armed by a job flag, so debugging that halts the processor is not reset |
@@ -202,12 +226,9 @@ Other items:
 | Item | Needs | Effort |
 |---|---|---|
 | SW-05 board test (Ethernet upload) | the board's Ethernet connected | about an hour |
-| SW-02 SD card loading, SW-04 UART console | implementation in `hpdp_run` (FatFs from the BSP, a command parser), then a board test with an SD card | 1–2 days |
+| SW-02 / SW-04 board test (SD card, UART console), with real scenes | the board, an SD card with `.hpdp` / `.cal` files (`hpdp_datasets.py export` for real scenes), the app rebuilt (`hpdp_run` with the console) | about an hour |
+| m7i_1024b on the board (SYS-04) | the board; the app built against its XSA; a 1024-pixel scene through the chain | about an hour |
 | CMP-02 / MDL-02 / O-5: independent CCSDS 123 decoder | access to ESA WhiteDwarf 2.0 or the CNES tools | half a day once available |
-| VER-02 matrix, VER-03 all-zero / all-maximum images | more test vectors and a nightly run; no board | a few hours |
-| SYS-04: `NX_MAX` = 1024 | one build with the parameter changed, timing check | a few hours |
-| Real hyperspectral data (SPEC test data, O-7) | the public AVIRIS / ROSIS scenes; compression ratios so far are on synthetic data | half a day |
-| SPEC open items O-4 (licence, in use), O-6 (`NZ_MIN` = 16, settled in M2) | mark as closed | minutes |
 
 Stretch goals (SPEC §15) are untouched. The return channel is now possible: the cable
 is duplex (O-1).
@@ -216,8 +237,11 @@ is duplex (O-1).
 
 ```
 python -m pytest model                                   # Python models
-vivado -mode batch -source tb/run_sim.tcl                # RTL regression (70 tests)
-vivado -mode batch -source vivado/build.tcl              # bitstream + XSA (HPDP_BUILD_DIR, default build/)
+python -I model/hpdp_datasets.py experiment -j 5         # real-data compression (data: docs/real_data.md)
+vivado -mode batch -source tb/run_sim.tcl                # RTL regression (86 tests)
+vivado -mode batch -source tb/run_sim.tcl -tclargs "c123_mx_*"   # with HPDP_C123_MATRIX=all: the VER-02 matrix
+vivado -mode batch -source vivado/build.tcl              # bitstream + XSA (HPDP_BUILD_DIR, default build/;
+                                                         #   HPDP_NX_MAX=1024 for the SYS-04 build)
 vitis -s sw/baremetal/build.py build/m7h/hpdp.xsa        # app, workspace vitis/
 python sw/host/run_m5.py --work <name>                   # a board run, JTAG only (build/runs/<name>)
 python sw/ground/hpdp_gs.py decode build/runs/<name>/gr.bin --ref build/runs/<name> --show
