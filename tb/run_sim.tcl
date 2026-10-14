@@ -2,6 +2,12 @@
 #
 #   vivado -mode batch -source tb/run_sim.tcl
 #   vivado -mode batch -source tb/run_sim.tcl -tclargs skid_buffer c123_basic
+#   vivado -mode batch -source tb/run_sim.tcl -tclargs c123_mx_*   (with HPDP_C123_MATRIX=all:
+#                                                    the whole VER-02 matrix, the nightly run)
+#
+# Every run includes a random subset of the compressor configuration matrix
+# (VER-02, tb/ccsds123/gen_vectors.py); the seed is printed, and HPDP_C123_SEED
+# repeats a subset.
 #
 # Compiles every rtl/**/*.sv and tb/**/*.sv (packages first), generates the
 # vectors from the Python model (CCSDS 123 core: c123_<name>; sensor front end
@@ -70,6 +76,12 @@ proc wanted {prefix} {
     expr {![llength $::selected] || [llength [lsearch -all -glob $::selected ${prefix}_*]]}
 }
 
+# A selected name may be a glob pattern, e.g. c123_mx_* (the VER-02 matrix)
+proc selected_has {name} {
+    foreach p $::selected { if {[string match $p $name]} { return 1 } }
+    return 0
+}
+
 set selected $argv
 foreach {prefix gen top} $suites {
     if {![wanted $prefix] && !($prefix eq "fe" && ([wanted sys] || [wanted fault]))} continue
@@ -98,7 +110,7 @@ set results {}
 set failed 0
 set built {}
 foreach {name top plusargs} $tests {
-    if {[llength $selected] && [lsearch -exact $selected $name] < 0} continue
+    if {[llength $selected] && ![selected_has $name]} continue
 
     if {[lsearch -exact $built $top] < 0} {
         run [tool xelab] -L unisims_ver -L xpm -s $top work.$top work.glbl

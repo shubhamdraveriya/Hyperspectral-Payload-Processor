@@ -6,6 +6,7 @@ from scenes import constant, noise, smooth
 
 from hpdp_model import ccsds123 as c
 from hpdp_model import formats as f
+from hpdp_model import synth
 
 CONFIGS = {
     "default": {},
@@ -46,6 +47,15 @@ def test_noise_round_trip_and_bounded_expansion(depth):
     assert c.decompress(data).samples == scene.samples
     raw_bytes = depth * len(scene.samples) / 8
     assert len(data) < 1.5 * raw_bytes + c.HEADER_BYTES
+
+
+@pytest.mark.parametrize("depth", [8, 12, 16])
+@pytest.mark.parametrize("pattern", ["zero", "full_scale"])
+def test_synth_corner_patterns(pattern, depth):
+    """the VER-03 corner-case images of the RTL test vectors"""
+    scene = synth.PATTERNS[pattern](6, 3, 18, depth)
+    assert set(scene.samples) == {0 if pattern == "zero" else (1 << depth) - 1}
+    assert c.decompress(c.compress(scene, c.Config(bands=15))).samples == scene.samples
 
 
 @pytest.mark.parametrize("value", [0, 4095])

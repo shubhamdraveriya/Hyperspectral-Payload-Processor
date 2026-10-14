@@ -42,4 +42,15 @@ def noise(nx, ny, nz, depth=12, seed=1):
     return Scene(nx, ny, nz, depth, array("H", [rng.randrange(1 << depth) for _ in range(nx * ny * nz)]))
 
 
-PATTERNS = {"hyperspectral": hyperspectral, "textured": textured, "noise": noise}
+def zero(nx, ny, nz, depth=12, seed=1):
+    """Every sample 0 (corner case, SPEC VER-03)."""
+    return Scene(nx, ny, nz, depth, array("H", [0] * (nx * ny * nz)))
+
+
+def full_scale(nx, ny, nz, depth=12, seed=1):
+    """Every sample at the maximum, 2^D - 1 (corner case, SPEC VER-03)."""
+    return Scene(nx, ny, nz, depth, array("H", [(1 << depth) - 1] * (nx * ny * nz)))
+
+
+PATTERNS = {"hyperspectral": hyperspectral, "textured": textured, "noise": noise,
+            "zero": zero, "full_scale": full_scale}

@@ -5,9 +5,20 @@
 For each test: <outdir>/<test>/cfg.txt, input.hex (samples, BIP order),
 expected.hex (compressed bytes), delta.hex (mapped residuals, for debugging).
 <outdir>/tests.txt lists the tests.
+
+Besides the named tests, the configuration matrix of SPEC VER-02 (MATRIX, 864
+configurations, tests mx_*): environment variable HPDP_C123_MATRIX picks how many
+go into a run, a random subset (default 6) or "all" (the nightly run);
+HPDP_C123_SEED fixes the subset (default: a new seed each run). The seed and the
+chosen tests are printed and written to <outdir>/matrix.txt, so a failing subset
+can be run again.
 """
 
+import itertools
+import os
+import random
 import sys
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "model"))
@@ -51,7 +62,34 @@ TESTS = {
     "min_bands":    dict(dims=(24, 5, 16)),
     "one_column":   dict(dims=(1, 12, 20), cfg=dict(local_sum="column_wide")),
     "one_row":      dict(dims=(40, 1, 20)),
+    # corner-case images (VER-03); random, incompressible ones are the noise tests
+    "all_zero":     dict(pattern="zero", cfg=dict(bands=15)),
+    "all_max":      dict(pattern="full_scale", cfg=dict(bands=15)),
+    "all_max_d16":  dict(pattern="full_scale", depth=16, cfg=dict(omega=19, u_max=32)),
 }
+
+# VER-02: local sum (4) x prediction mode (2) x P x D x omega x U_max, one scene each
+LS_CODE = {"neighbor_wide": "nw", "neighbor_narrow": "nn", "column_wide": "cw", "column_narrow": "cn"}
+MATRIX = {
+    f"mx_{LS_CODE[ls]}{'f' if full else 'r'}_p{p}_d{d}_o{om}_u{u}":
+        dict(depth=d, scenes=1, cfg=dict(local_sum=ls, full_prediction=full, bands=p, omega=om, u_max=u))
+    for ls, full, p, d, om, u in itertools.product(
+        c.LOCAL_SUMS, (True, False), (0, 1, 3, 15), (8, 12, 16), (4, 13, 19), (8, 18, 32))
+}
+
+
+def matrix_selection(out):
+    """the matrix tests of this run (HPDP_C123_MATRIX, HPDP_C123_SEED)"""
+    want = os.environ.get("HPDP_C123_MATRIX", "6").strip().lower()
+    seed = int(os.environ.get("HPDP_C123_SEED", str(int(time.time()) % 1000000)))
+    names = list(MATRIX)
+    if want != "all":
+        names = sorted(random.Random(seed).sample(names, min(int(want), len(names))))
+    print(f"VER-02 matrix: {len(names)} of {len(MATRIX)} configurations, seed {seed}"
+          + ("" if want == "all" else f" (again: HPDP_C123_SEED={seed})"))
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "matrix.txt").write_text(f"seed {seed}\n" + "".join(f"{n}\n" for n in names))
+    return names
 
 
 def raw_image(scene, word_bytes):
@@ -95,9 +133,9 @@ def write_test(out, name, spec):
 
 def main():
     out = Path(sys.argv[1] if len(sys.argv) > 1 else "build/sim/c123")
-    names = sys.argv[2:] or list(TESTS)
+    names = sys.argv[2:] or list(TESTS) + matrix_selection(out)
     for name in names:
-        n, b = write_test(out, name, TESTS[name])
+        n, b = write_test(out, name, {**TESTS, **MATRIX}[name])
         print(f"{name:14} {n:6} samples -> {b:6} bytes")
     (out / "tests.txt").write_text("\n".join(names) + "\n")
 
