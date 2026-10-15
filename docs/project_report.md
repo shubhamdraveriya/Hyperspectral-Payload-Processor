@@ -5,7 +5,7 @@ hyperspectral Earth-observation satellite, on the AMD ZCU106 (Zynq UltraScale+ X
 
 | | |
 |---|---|
-| Report date | 2026-10-14 |
+| Report date | 2026-10-15 |
 | Final builds | **m7h** (commit b506d30), `NX_MAX` 512: the board-tested build; **m7i_1024b** (commit d2eda42), `NX_MAX` 1024 (SYS-04, board-tested) |
 | Specification | [SPEC.md](../SPEC.md) v1.0 |
 | Milestone notes | [m0](m0_bringup.md), [m1](m1_models.md), [m2](m2_compressor.md), [m3](m3_frontend.md), [m4](m4_board_run.md), [m5](m5_downlink.md), [m6](m6_ground_station.md), [m7 plan](m7_plan.md), [m7 runbook](m7_board_runbook.md), [fault injection](m7_fault_injection.md); after M7: [UART console](console.md), [`NX_MAX` 1024](nx_max_1024.md), [real data](real_data.md) |
@@ -32,6 +32,10 @@ Results on the board:
   compressor alone runs at up to 250 Msamples/s.
 - **Bit-exact end to end:** every scene reconstructed bit-exactly at the ground at
   injected BER 0, 10⁻⁴ and 10⁻³ (VER-07). The Reed-Solomon code holds to 2 × 10⁻³.
+- **Standard conformance:** byte-identical to an independent CCSDS 123.0-B-2
+  implementation (NTNU SmallSat Lab) in 947 of 949 runs: the RTL compressor tests, the
+  whole 864-configuration VER-02 matrix and Indian Pines crops (§4, §6). The other two
+  are a configuration the standard appears to forbid (O-9, §7).
 - **Compression on real data** (the RTL-exact model; five of the scenes also through the
   board, bit-exact at the ground): 63 public
   AVIRIS and Hyperion scenes, all lossless, at 4.4 – 6.0 bits per sample on average
@@ -49,12 +53,15 @@ Results on the board:
 
 Status:
 
-- 99 of 102 v1.0 *shall* / *should* requirements are met; none is unmet.
+- 101 of 102 v1.0 *shall* / *should* requirements are met; none is unmet. CMP-02 and
+  MDL-02 are met with a documented deviation: the independent CCSDS 123 check used an
+  independent compressor, not the ESA / CNES decoders the SPEC names (§6).
 - **1 is partly met, as a documented deviation:** SW-05, the ground-record upload over
   Ethernet, is written and builds but is not tested on the board (no Ethernet port free
   on the PC); the records reach the PC over JTAG instead (§6).
-- **2 are pending:** the independent CCSDS 123 decoder check (CMP-02, MDL-02) needs ESA /
-  CNES tools (O-5). See §5.
+- **1 open finding:** the compressor accepts full prediction mode at Nx = 1, which the
+  independent model refuses under CCSDS 123.0-B-2 §4.3.1 (O-9, §7). The mission
+  configuration is not affected.
 
 ## 2. System
 
@@ -177,6 +184,7 @@ triplicates them (+0.7 k LUT); after that, all 220 simulated upsets in them were
 | Python models | 150 pytest tests: CCSDS 123 encoder / decoder round trips over 20 configurations and D ∈ {2 … 16}, RS against `reedsolo`, framing, frame sync, end-to-end chain |
 | RTL regression | 87 self-checking xsim tests from model vectors with random stalls, run headless by `tb/run_sim.tcl` in 9 minutes (VER-01, VER-10): 28 chosen compressor configurations, the corner-case images (all zero, all maximum at D 12 and 16; VER-03) and 6 random configurations of the matrix (seed printed); front end, also with the calibration table in pairs; downlink and ground blocks; link layer; system tests through the registers (VER-05), one at the 1024 build's size; ECC, TMR, watchdog and SEM-path tests; the fault campaign (3 trials per class, and 10 per table ECC class in pairs) |
 | Configuration matrix (VER-02) | all 864 compressor configurations of SPEC VER-02 (local sum 4 × prediction mode 2 × P 4 × D 3 × Ω 3 × U_max 3), `HPDP_C123_MATRIX=all`: **864 of 864 bit-exact**, 57 minutes (2026-10-14) |
+| Independent implementation (O-5) | `model/xcheck_ntnu.py`: the NTNU SmallSat Lab's CCSDS 123.0-B-2 model, set up from our header, compresses the same scenes; **947 of 949 runs byte-identical**, header included (2026-10-15): 57 of 59 runs of the 30 RTL compressor tests, 864 of 864 `VER-02` configurations, 10 extra runs (BSQ, BIL, BI with M = 7; Nx = 1 in reduced mode), and two Indian Pines crops of 32 × 16 × 220 with the 8 settings of the real-data experiment. The other two are `one_column` in full prediction mode, which the NTNU model refuses (O-9) |
 | Fault campaign | `tb_fault`, 1 300 trials on m7h (`docs/m7_fault_injection.md`) |
 | Ground station | `pytest sw/ground` (decoder, reports) and three board captures decoded |
 | Board | M0 DMA loopback (3 865 MB/s); M4 15 scenes; M5 VER-06 / 07 / 08 and SYS-09; M7 runbook (`docs/m7_board_runbook.md`, results section); post-M7: real scenes, the 1024 build, SD card and console (`docs/post_m7_board_tests.md`); all JTAG-only, flash untouched |
@@ -192,7 +200,7 @@ separately.
 | Sensor emulator (SE-01 … 06) | all | – |
 | Radiometric correction (RC-01 … 05) | all | – |
 | Corner turn (CT-01 … 04) | all | – |
-| Compressor (CMP-01, 03 … 09) | all | **CMP-02**: no independent CCSDS 123 decoder yet (O-5) |
+| Compressor (CMP-01 … 09) | all; CMP-02 by byte identity with an independent compressor (deviation, §6) | – (open finding O-9: full prediction accepted at Nx = 1, §7) |
 | Packetizer, AOS framer (PKT, AOS) | all | – |
 | Channel coding (CC-01 … 06) | all; CC-06 cross-checked with `reedsolo` instead of libfec | – |
 | Error injector (EI-01 … 04) | all | – |
@@ -201,7 +209,7 @@ separately.
 | Data movement (DM-01 … 03) | all | – |
 | PS software (SW-01 … 06) | 01 … 04, 06; SW-02 and SW-04 on the board 2026-10-14 ([console.md](console.md)) | **SW-05** partly met (deviation, §6): capture into the DDR ring buffer verified on the board; the TCP upload written and built, not tested on the board |
 | Ground station (GS-01 … 06) | all; GS-02 cross-checked with `reedsolo` instead of libfec | – |
-| Models (MDL-01 … 04) | 01, 03, 04 | **MDL-02**: cross-validation against an independent decoder (O-5) |
+| Models (MDL-01 … 04) | all; MDL-02 cross-validated against an independent compressor (deviation, §6) | – |
 | Radiation (RAD-01 … 07) | all | – |
 | Verification (VER-01 … 10) | all; VER-04 with `reedsolo`; VER-02: a random subset in every regression and the full matrix by one command (no scheduler runs it nightly) | – |
 
@@ -218,6 +226,7 @@ Other items:
 |---|---|
 | Job interface first, console later (SW-02, SW-04) | Since M4 the host builds each job (scenes, tables, settings) and loads it over JTAG together with the bitstream and the app; the app prints a summary and returns a result block that the host checks bit for bit. This made every board run reproducible and self-checking. The SD card loading and UART console came after M7 (2026-10-14): the console posts the same job block, so both paths share the app's checks |
 | `reedsolo` instead of libfec (CC-06, GS-02, VER-04) | An independent RS implementation in Python, with the same field and roots, available without building libfec on Windows |
+| Independent CCSDS 123 check without the ESA / CNES tools (CMP-02, MDL-02, O-5) | Both need an account or a request (ESA's ESSR; the CNES form), and ESA's access may be limited to ESA projects. The check uses the NTNU SmallSat Lab's CCSDS 123.0-B-2 high-level model instead (Python, MIT per its README; WHISPERS 2024), which its authors verified against the CCSDS test vectors (Test1-20190201) and the CNES tool. It is a compressor, not a decoder: it reads our 19-byte header, compresses the same samples and must produce the same bytes (§4). Identical output means our header fields and coded samples are those of the standard as that implementation reads it, so a compliant decoder rebuilds the scenes; a decode with the ESA or CNES tool remains an optional further check (§7). The NTNU model is cloned outside the repository and not redistributed |
 | Calibration table layouts (M7, SYS-04) | Layout A, one entry per 64-bit word, up to 512 × 256 (the user's choice); layout B, two entries' dark and gain per word and the bad flags apart, above it, so that `NX_MAX` 1024 fits in 80 of 96 UltraRAMs |
 | Test data (SPEC §11) | Indian Pines, and the GICI (Universitat Autònoma de Barcelona) test sets of 49 AVIRIS and 13 Hyperion scenes in place of Salinas and Pavia University: their usual source refuses this network and has no official mirror, and the CCSDS corpus is behind a login |
 | SYS-09 RAW overload: option (a) | RAW mode shows that raw data exceeds the link; whole scenes are not dropped on purpose (docs/m7_plan.md decision 1) |
@@ -233,7 +242,8 @@ Other items:
 | Item | Needs | Effort |
 |---|---|---|
 | SW-05 TCP upload on the board (optional, closes the deviation) | an Ethernet cable from the board to a PC port, e.g. through a USB-Ethernet adapter ([runbook](post_m7_board_tests.md) §5) | about ten minutes |
-| CMP-02 / MDL-02 / O-5: independent CCSDS 123 decoder | an account: ESA's WhiteDwarf 2.0 (ESSR, essr.esa.int/project/whitedwarf-2-0) includes a 123.0-B-2 decompressor in source, ESA Community Licence v2.4 permissive (type 3); or CNES's object-code compressor and decompressor (connectbycnes.fr). Then decode the RTL test vectors and the real-data scenes with it | half a day once available |
+| O-9: full prediction mode at Nx = 1 | confirm the rule in CCSDS 123.0-B-2 §4.3.1; then reject the configuration in the model (`_Ctx._validate`) and in `cfg_error`, run `one_column` in reduced mode, and rerun the RTL regression and `model/xcheck_ntnu.py named`. The mission configuration (Nx = 512) is not affected | about an hour, plus the 9-minute regression |
+| CMP-02 to the letter (optional; the deviation in §6 stands meanwhile) | an account: ESA's WhiteDwarf 2.0 (ESSR, essr.esa.int/project/whitedwarf-2-0) includes a 123.0-B-2 decompressor in source, ESA Community Licence v2.4 permissive (type 3); or CNES's object-code compressor and decompressor (connectbycnes.fr). Then decode the RTL test vectors and the real-data scenes with it | half a day once available |
 
 Stretch goals (SPEC §15) are untouched. The return channel is now possible: the cable
 is duplex (O-1).
@@ -243,6 +253,8 @@ is duplex (O-1).
 ```
 python -m pytest model                                   # Python models
 python -I model/hpdp_datasets.py experiment -j 5         # real-data compression (data: docs/real_data.md)
+python model/xcheck_ntnu.py --hlm <clone> -j 6 all       # independent CCSDS 123 check (O-5; setup: the script's header)
+python model/xcheck_ntnu.py --hlm <clone> --real indian_pines --crop 0 0 32 16
 vivado -mode batch -source tb/run_sim.tcl                # RTL regression (87 tests)
 vivado -mode batch -source tb/run_sim.tcl -tclargs "c123_mx_*"   # with HPDP_C123_MATRIX=all: the VER-02 matrix
 vivado -mode batch -source vivado/build.tcl              # bitstream + XSA (HPDP_BUILD_DIR, default build/;

@@ -18,7 +18,7 @@ Project report (results, requirements compliance, open items):
 | Milestone | Content | State |
 |---|---|---|
 | M0 | Repository, tool flow, ZCU106 base design with DMA loopback | **done**: 64 MB loopback passes on the board at 3865 MB/s ([notes](docs/m0_bringup.md)) |
-| M1 | Python reference models (CCSDS 123, framing, RS) | models done, 150 tests pass; independent CCSDS 123 check pending (O-5) ([notes](docs/m1_models.md)) |
+| M1 | Python reference models (CCSDS 123, framing, RS) | **done**: 150 tests pass; byte-identical to an independent CCSDS 123.0-B-2 implementation in 947 of 949 runs, incl. the VER-02 matrix and real data (O-5); open finding O-9: full prediction at Nx = 1 ([notes](docs/m1_models.md)) |
 | M2 | CCSDS 123 compressor RTL | **done**: bit-exact on all 864 configurations of the VER-02 matrix; 250 MHz met at 512 × 256 (13.6k LUT, 19 DSP, 8 URAM) ([notes](docs/m2_compressor.md)) |
 | M3 | Sensor emulator, radiometric correction, corner turn | **done**: bit-exact with the models through the compressor on 12 tests (incl. line drops with fill lines); 250 MHz met at 512 × 256 (1.1k LUT, 1 DSP, 32 URAM) ([notes](docs/m3_frontend.md)) |
 | M4 | On-board compression run | **done**: 15 scenes from the board identical to the model and decoded bit-exactly; 99.8 Msamples/s; 250 MHz met on the full chip, CDC clean ([notes](docs/m4_board_run.md)) |
@@ -58,6 +58,13 @@ Python models:
 python -m pytest
 python model/hpdp_tool.py gen hyperspectral 64 32 50 scene.hpdp
 python model/hpdp_tool.py compress scene.hpdp scene.c123
+```
+
+Independent CCSDS 123 check (O-5; needs a clone of the NTNU SmallSat Lab's model, see
+the script's header):
+
+```
+python model/xcheck_ntnu.py --hlm <clone> -j 6 all
 ```
 
 RTL regression (xsim, no project needed; a random 6 of the 864 compressor
