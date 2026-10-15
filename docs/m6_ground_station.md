@@ -2,8 +2,9 @@
 
 Status: **in progress** (2026-10-12). The ground station decodes captures from a file or
 a TCP stream, verifies every scene and displays it (GS-01 .. GS-06). The board's upload
-over Ethernet (SW-05) is written and builds; the board test is still to do (the board's
-Ethernet is not connected yet).
+over Ethernet (SW-05) is written and builds, but is not tested on the board: skipped on
+2026-10-15 (no Ethernet port free on the PC), a documented deviation (project report
+§6). The records reach the PC over JTAG, which every board run verifies.
 
 ```
 .cap file / TCP ──► records ──► RS(255,223) I=4 ──► AOS frame checks ──► packets ──► scenes ──► CCSDS 123
@@ -87,5 +88,7 @@ DOWNLINK job sets `net_ctrl` bit 0 (`run_m5.py --upload`). `sw/baremetal/hpdp_ru
 
 `run_m5.py --upload` fetches the stream after the run and compares it byte for byte with
 the copy read over JTAG; `hpdp_gs.py decode --tcp <board>:5001 --show` decodes and
-displays it, during or after the run. Builds cleanly; the board test waits until the
-board's Ethernet can be connected.
+displays it, during or after the run. Builds cleanly; not tested on the board (a
+deviation, above). The ground station's TCP input is tested on the PC against
+`hpdp_gs.py serve` (again on 2026-10-15 with the board's Indian Pines capture of
+docs/post_m7_board_tests.md: 3 960 records over TCP, the scene bit-exact).

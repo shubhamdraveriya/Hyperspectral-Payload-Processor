@@ -50,9 +50,11 @@ Results on the board:
 Status:
 
 - 99 of 102 v1.0 *shall* / *should* requirements are met; none is unmet.
-- **3 are pending:** the Ethernet upload (SW-05) is written and built, and its board
-  test waits for an Ethernet cable; the independent CCSDS 123 decoder check (CMP-02,
-  MDL-02) needs ESA / CNES tools (O-5). See §5.
+- **1 is partly met, as a documented deviation:** SW-05, the ground-record upload over
+  Ethernet, is written and builds but is not tested on the board (no Ethernet port free
+  on the PC); the records reach the PC over JTAG instead (§6).
+- **2 are pending:** the independent CCSDS 123 decoder check (CMP-02, MDL-02) needs ESA /
+  CNES tools (O-5). See §5.
 
 ## 2. System
 
@@ -197,7 +199,7 @@ separately.
 | Link (LNK-01 … 10) | all, including LNK-10 (*should*) | – |
 | Ground receiver (GR-01, 03 … 05; GR-02 byte-aligned) | all | – |
 | Data movement (DM-01 … 03) | all | – |
-| PS software (SW-01 … 06) | 01 … 04, 06; SW-02 and SW-04 on the board 2026-10-14 ([console.md](console.md)) | **SW-05**: TCP upload written and built, board test pending (Ethernet not connected) |
+| PS software (SW-01 … 06) | 01 … 04, 06; SW-02 and SW-04 on the board 2026-10-14 ([console.md](console.md)) | **SW-05** partly met (deviation, §6): capture into the DDR ring buffer verified on the board; the TCP upload written and built, not tested on the board |
 | Ground station (GS-01 … 06) | all; GS-02 cross-checked with `reedsolo` instead of libfec | – |
 | Models (MDL-01 … 04) | 01, 03, 04 | **MDL-02**: cross-validation against an independent decoder (O-5) |
 | Radiation (RAD-01 … 07) | all | – |
@@ -222,6 +224,7 @@ Other items:
 | Scene guard | A scene cut short is padded and ended, so one lost line cannot merge scenes (found in M5) |
 | PS watchdog per job | Armed by a job flag, so debugging that halts the processor is not reset |
 | TMR on the steering state (m7h) | Found by the fault campaign (above) |
+| SW-05 upload not hardware-tested | SW-05's TCP upload is not tested on the board (decision 2026-10-15: no Ethernet port free on the PC). The capture into the DDR ring buffer is verified on every board run since M5; the ground records reach the PC over JTAG instead (`run_m5.py` reads them with XSDB, the ground station decodes them bit-exactly). The board's TCP server (`net.c`) is written and builds; the ground station's TCP input is tested on the PC against `hpdp_gs.py serve` (M6; again on 2026-10-15 with the board's Indian Pines capture: bit-exact). The test needs only a cable and about ten minutes (docs/post_m7_board_tests.md §5), e.g. with a USB-Ethernet adapter |
 | Residual risk | Upsets in datapath registers are silent about one time in four in simulation; accepted (docs/m7_fault_injection.md) |
 | Project folder self-contained | The Vitis workspace (`vitis/`), board runs (`build/runs/`) and the venv (`.venv/`) are inside the repository; tools that fail on the space in the path reach them through directory junctions (docs/m0, issue 3) |
 
@@ -229,7 +232,7 @@ Other items:
 
 | Item | Needs | Effort |
 |---|---|---|
-| SW-05 board test (Ethernet upload) | the board's Ethernet connected | about an hour |
+| SW-05 TCP upload on the board (optional, closes the deviation) | an Ethernet cable from the board to a PC port, e.g. through a USB-Ethernet adapter ([runbook](post_m7_board_tests.md) §5) | about ten minutes |
 | CMP-02 / MDL-02 / O-5: independent CCSDS 123 decoder | an account: ESA's WhiteDwarf 2.0 (ESSR, essr.esa.int/project/whitedwarf-2-0) includes a 123.0-B-2 decompressor in source, ESA Community Licence v2.4 permissive (type 3); or CNES's object-code compressor and decompressor (connectbycnes.fr). Then decode the RTL test vectors and the real-data scenes with it | half a day once available |
 
 Stretch goals (SPEC §15) are untouched. The return channel is now possible: the cable

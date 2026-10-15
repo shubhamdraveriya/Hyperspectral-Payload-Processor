@@ -112,7 +112,7 @@ Needs the board's Ethernet connected to the PC (docs/m6): `run_m5.py --upload
 | 2 | **PASS** on m7h over the fiber: AVIRIS 3 898 952 and 7 063 902 bytes, Hyperion 4 985 044, Indian Pines 3 476 350, each identical to the model and rebuilt bit-exactly at the ground; 99.3 – 99.6 Msamples/s; 0 code errors |
 | 3 | **PASS** on m7i_1024b (build 0x9018F99A): the 1024 × 32 × 242 real scene, 4 905 137 bytes; 1024 × 32 × 64 with the correction on (the table in pairs on the hardware); the ECC injection at corner-turn address 2¹⁸ + 8: 4 corrected reads, 0 uncorrectable, scenes intact; `status`: `NX_MAX 1024, NZ_MAX 256` |
 | 4 | **PASS** on m7h: no card reader, so `sd_put` wrote the 6 files to an empty card (each read back and compared); `ls` lists them; `cal` + `load` + `run`: 387 331 bytes (the model's, with the correction: 80 clamped, 1472 replaced); `correction off`, the two real scenes: 3 898 952 and 7 063 902 bytes; `prbs 10`: 12 Gbit, 0 errors; `help`, `show`, `mode`, `ei`, `seed`, `status` |
-| 5 | not run: no Ethernet cable connected yet (planned for the next session) |
+| 5 | not run: skipped (decision 2026-10-15, no Ethernet port free on the PC); SW-05 is recorded as a deviation in the project report §6. The commands of §5 stay valid for a later test |
 
 Found and fixed: the per-scene bits/sample print overflowed 32 bits above 5 MB per scene
 (7 063 902 bytes printed as 1.84; data unaffected), and the RX word counter printed
