@@ -24,7 +24,8 @@ Connections (tell the user before the session which step needs which):
 $ELF = "C:\Users\shubham.draveriya\hpdp_build\vitis_next\hpdp_run\build\hpdp_run.elf"
 ```
 
-(`~/hpdp_build` is a junction to the repository's `build/`; the workspace is
+Since 2026-10-15 the default workspace `vitis/` holds the same app again, so `--elf`
+may be left out. (`~/hpdp_build` is a junction to the repository's `build/`; the workspace is
 `build/vitis_next`, built by `HPDP_VITIS_WS=~/hpdp_build/vitis_next vitis -s
 sw/baremetal/build.py build/m7h/hpdp.xsa`. To make it the default again later, rebuild
 `vitis/` the usual way.)

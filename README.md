@@ -100,7 +100,8 @@ python regs/generate.py --html
 ```
 
 Board-specific notes (DDR4 SODIMM settings, JTAG boot override, Vitis path
-limitations) are in [docs/m0_bringup.md](docs/m0_bringup.md).
+limitations) are in [docs/m0_bringup.md](docs/m0_bringup.md). Moving the project to
+another computer: [docs/new_system_setup.md](docs/new_system_setup.md).
 
 ## Block design (M4)
 
