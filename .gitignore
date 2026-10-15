@@ -1,4 +1,5 @@
-# Build outputs (Vivado project, simulation)
+# Build outputs (Vivado project, simulation). The final builds' XSAs, reports and logs,
+# the board-test logs and the two ELFs are tracked anyway (added with git add -f; README)
 build/
 # Vitis workspace (sw/baremetal/build.py; Vitis reaches it via the junction ~/hpdp_vitis_ws)
 vitis/
