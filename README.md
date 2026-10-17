@@ -14,7 +14,7 @@ The full specification is in [SPEC.md](SPEC.md).
 
 | File | What |
 |---|---|
-| `hpdp_vivado.xpr.zip` | Vivado 2025.2 project archive (File > Project > Open Archived Project): RTL, block design, IP and constraints, `NX_MAX` 512. **Not in the repository yet**: made by `vivado -mode batch -source vivado/archive_project.tcl` on a computer with Vivado 2025.2 |
+| [`hpdp_vivado.xpr.zip`](hpdp_vivado.xpr.zip) | Vivado 2025.2 project archive (File > Project > Open Archived Project): RTL, block design, IP and constraints for the ZCU106, `NX_MAX` 512, without run results. Made from the current sources, which are those of m7i_1024b (m7h predates the SYS-04 changes; at 512 they pass the regression and meet 250 MHz, [docs/nx_max_1024.md](docs/nx_max_1024.md)). Remade by `vivado -mode batch -source vivado/archive_project.tcl` |
 | [`build/m7h/hpdp.xsa`](build/m7h) | the final board-tested build (`NX_MAX` 512): hardware platform for Vitis, bitstream included; `reports/` (timing, utilization, CDC, methodology, bus skew), `build.log`, `ver09_check.log` |
 | [`build/m7i_1024b/hpdp.xsa`](build/m7i_1024b) | the `NX_MAX` 1024 build (SYS-04), board-tested; reports and build log |
 | [`vitis/hpdp_run/build/hpdp_run.elf`](vitis/hpdp_run/build) | the A53 application (Vitis 2025.2), built against m7h; works with both builds |
