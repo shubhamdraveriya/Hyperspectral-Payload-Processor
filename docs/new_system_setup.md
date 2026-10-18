@@ -46,6 +46,12 @@ python -m venv .venv
 The first line serves the models, tests and register generator; the venv serves the
 ground station's display (numpy, matplotlib).
 
+- **MCP servers** (optional): `vivado` and `vitis` from `tools/amd_mcp`:
+  `uv tool install --python 3.11 tools/amd_mcp`, then `amd-mcp-register` (finds the tools,
+  or `--vivado <vivado.bat> --vitis <Vitis folder>`) and `amd-mcp-doctor`
+  (tools/amd_mcp/README.md). Their state (the Vivado-to-Vitis hand-off, logs) is in
+  `~/.amd-mcp`, not in the repository.
+
 ## Directory junctions
 
 Vivado's and Vitis's tools fail on paths with spaces and on very long paths

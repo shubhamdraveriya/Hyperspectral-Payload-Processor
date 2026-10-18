@@ -58,6 +58,7 @@ vivado/             project, block design, build and archive scripts
 sw/baremetal/       A53 bare-metal application (hpdp_run) and its Vitis build script
 sw/host/            PC tools for board runs (run_m4.py: JTAG loading and verification)
 sw/ground/          PC ground station (decoder, verification reports, display)
+tools/amd_mcp/      MCP servers for Vivado and Vitis/XSDB, joined by an XSA hand-off
 build/              final builds (XSA, reports), ELF of sd_put, board-test logs
 vitis/              ELF of hpdp_run
 ```

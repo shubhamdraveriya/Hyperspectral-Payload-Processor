@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "amd-mcp"
+version = "0.1.0"
+description = "MCP servers for AMD Vivado and Vitis, joined by an XSA hand-off"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp>=1.20,<2",
+    # amd_mcp.vivado_server extends this server's tool table, so the version is pinned
+    "vivado-mcp-native==0.2.1",
+]
+
+[project.scripts]
+amd-vivado-mcp = "amd_mcp.vivado_server:main"
+amd-vitis-mcp = "amd_mcp.vitis_server:main"
+amd-mcp-doctor = "amd_mcp.doctor:main"
+amd-mcp-register = "amd_mcp.register:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/amd_mcp"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
