@@ -52,6 +52,9 @@ def _register_fonts():
                 break
         if ui:
             break
+    if ui is None:
+        searched = ", ".join(f"{fam} in {', '.join(map(str, dirs))}" for fam, dirs, _ in _UI_FAMILIES)
+        raise RuntimeError(f"no complete UI font family found (looked for {searched})")
     pdfmetrics.registerFontFamily("UI", normal="UI", bold="UI-Bold", italic="UI-Italic",
                                   boldItalic="UI-BoldItalic")
     for family, dirs, f in _MONO:
@@ -63,7 +66,7 @@ def _register_fonts():
     return ui, "Courier"
 
 
-FONT_FAMILIES = _register_fonts()
+FONT_FAMILIES = _register_fonts()          # (UI family, Mono family), printed by build_docs.py
 
 INK = colors.HexColor("#0b0b0b")
 INK2 = colors.HexColor("#52514e")

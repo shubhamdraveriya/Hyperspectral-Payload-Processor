@@ -40,16 +40,13 @@ Python virtual environment (`.venv/`) and the exported test scenes (`data/hsi/ex
 ```
 python -m pip install -r requirements.txt
 python -m venv .venv
-.venv\Scripts\python -m pip install -r sw\ground\requirements.txt
-```
-
-The first line serves the models, tests and register generator; the venv serves the
-ground station's display (numpy, matplotlib). The PDF documents in `docs/pdf` also
-need reportlab in the venv:
-
-```
 .venv\Scripts\python -m pip install -r docs\pdf\requirements.txt
 ```
+
+The first line serves the models, tests and register generator. The venv serves the
+ground station's display and the PDF documents in `docs/pdf`:
+`docs/pdf/requirements.txt` includes `sw/ground/requirements.txt` (numpy, matplotlib,
+reedsolo, pytest) and adds reportlab.
 
 ## Directory junctions
 

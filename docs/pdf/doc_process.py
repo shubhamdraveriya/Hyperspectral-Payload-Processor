@@ -57,7 +57,9 @@ SATELLITE = [
     "transceiver. The transceiver uses 8b/10b coding. It sends 1.25 Gbaud through the "
     "SFP0 module into the optical fiber. When no data is ready, the link layer sends "
     "idle words."]
-SCENE_GUARD = 1 + next(k for k, t in enumerate(SATELLITE) if t.startswith("<b>Scene guard."))
+_guard = next((k for k, t in enumerate(SATELLITE) if t.startswith("<b>Scene guard.")), None)
+assert _guard is not None, "SATELLITE has no item that starts '<b>Scene guard.' (Section 5 refers to it)"
+SCENE_GUARD = 1 + _guard
 
 
 def story(doc):

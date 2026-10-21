@@ -62,14 +62,24 @@ def tidy(ax, grid_axis="x"):
 MISSION_RATE = 76.8          # Msamples/s (reference mission)
 LINK_CAPACITY = 857          # Mbit/s of packet capacity
 
+# Real-data compression (docs/real_data.md): dataset, mean, min, max bits per sample.
+# Both the link budget and the compression chart use this table.
+REAL_DATA = [
+    ("AVIRIS (49 scenes)", 4.43, 2.99, 7.93),
+    ("Hyperion (13 scenes)", 4.95, 4.74, 5.16),
+    ("Indian Pines (1 scene)", 6.01, 6.01, 6.01),
+]
+
 
 def link_budget():
     # Mbit/s = Msamples/s x bits per sample
+    aviris_mean = REAL_DATA[0][1]
+    worst = max(r[3] for r in REAL_DATA)
     rows = [
         ("Raw sensor data (12-bit)", MISSION_RATE * 12),
         ("Compressed, mission-size synthetic scene (2.10:1)", MISSION_RATE * 12 / 2.10),
-        ("Compressed, real AVIRIS scenes, mean", MISSION_RATE * 4.43),
-        ("Compressed, worst real scene", MISSION_RATE * 7.93),
+        ("Compressed, real AVIRIS scenes, mean", MISSION_RATE * aviris_mean),
+        ("Compressed, worst real scene", MISSION_RATE * worst),
     ]
     fig, ax = plt.subplots(figsize=(6.6, 2.4))
     y = np.arange(len(rows))[::-1]
@@ -94,11 +104,7 @@ def link_budget():
 # Compression on real data: mean and range of bits per sample per dataset
 # ---------------------------------------------------------------------------
 def compression():
-    data = [
-        ("AVIRIS (49 scenes)", 4.43, 2.99, 7.93),
-        ("Hyperion (13 scenes)", 4.95, 4.74, 5.16),
-        ("Indian Pines (1 scene)", 6.01, 6.01, 6.01),
-    ]
+    data = REAL_DATA
     fig, ax = plt.subplots(figsize=(6.6, 2.0))
     y = np.arange(len(data))[::-1]
     for yi, (name, mean, lo, hi) in zip(y, data):
@@ -143,6 +149,10 @@ def read_eye(path):
             if in_scan and cols:
                 vals = [float(v) for v in rec[1:len(cols) + 1]]
                 rows.append((int(rec[0]), vals))
+    missing = {"Horizontal Percentage", "Vertical Percentage"} - set(pct)
+    if missing or not rows:
+        raise ValueError(f"{path}: not an IBERT eye-scan export as expected "
+                         f"({'no ' + ', '.join(sorted(missing)) if missing else 'no scan rows'})")
     rows.sort(key=lambda r: r[0])
     vert = np.array([r[0] for r in rows])
     ber = np.array([r[1] for r in rows])

@@ -19,6 +19,7 @@ import doc_brief  # noqa: E402
 import doc_guide  # noqa: E402
 import doc_process  # noqa: E402
 import doc_report  # noqa: E402
+from hpdp_pdf import FONT_FAMILIES  # noqa: E402
 
 OUTPUTS = [
     (doc_brief, "HPDP_Project_Brief.pdf"),
@@ -28,6 +29,7 @@ OUTPUTS = [
 ]
 
 if __name__ == "__main__":
+    print("fonts: %s, %s (mono)" % FONT_FAMILIES)     # a fallback family shows on another PC
     for module, name in OUTPUTS:
         module.build(HERE / name)
         print("wrote", HERE / name)
