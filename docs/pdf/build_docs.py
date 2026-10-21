@@ -1,7 +1,9 @@
 """Build the HPDP PDF documents.
 
-    .venv/Scripts/python.exe docs/pdf/make_charts.py     # charts (matplotlib)
-    python docs/pdf/build_docs.py                         # PDFs (reportlab)
+    .venv/Scripts/python docs/pdf/make_charts.py     # charts (matplotlib)
+    .venv/Scripts/python docs/pdf/build_docs.py      # PDFs (reportlab)
+
+One interpreter for both: the project venv with docs/pdf/requirements.txt installed.
 
 Writes docs/pdf/HPDP_Project_Brief.pdf, HPDP_Process_Description_STE.pdf and
 HPDP_Results_Report.pdf.

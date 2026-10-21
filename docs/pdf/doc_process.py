@@ -3,13 +3,61 @@ Technical English (STE): procedural sentences of 20 words or fewer, descriptive
 sentences of 25 words or fewer, one instruction per step, the imperative in
 procedures, active voice, approved words and technical names."""
 
-from hpdp_pdf import (BODY, CELL, HpdpDoc, PageBreak, Spacer, bullets, caution, chain_diagram, code,
-                      drawing_figure, flow_diagram, h1, h2, h3, note, p, steps, table, warning)
+from hpdp_pdf import (HpdpDoc, PageBreak, Spacer, bullets, caution, chain_diagram, drawing_figure,
+                      flow_diagram, h1, h2, h3, note, p, steps, table, table_caption, warning)
 
 TITLE = "HPDP Process Description"
 DOC_ID = "HPDP-PRC-001"
 REV = "A"
 DATE = "2026-10-16"
+
+
+# Section 3.2: the blocks of the satellite part, in the order of the data. Section 3.3
+# continues their numbering, and Section 5 refers to the scene guard by its number.
+SATELLITE = [
+    "<b>Sensor emulator.</b> This block replaces the real camera. It reads raw scenes "
+    "from the DDR memory through a DMA controller. It sends one line of samples at a "
+    "fixed interval, as a real pushbroom camera does. It cannot wait for the blocks "
+    "after it. If a block after it is too slow, a counter records the lost data.",
+    "<b>Radiometric correction.</b> This block removes the errors of each detector "
+    "pixel. It subtracts a dark offset and multiplies by a gain. It replaces the value "
+    "of a bad pixel with the average of its two neighbours. A calibration table in "
+    "UltraRAM holds these values for each pixel and band.",
+    "<b>Corner turn.</b> The camera sends the samples band by band (BIL order). The "
+    "compressor needs them pixel by pixel (BIP order). The corner turn writes each line "
+    "into a buffer and reads it in the other order. It has two buffers, so it can write "
+    "one line while it reads the line before it.",
+    "<b>Scene guard.</b> This block makes sure that each scene has the correct number "
+    "of lines. If a line is lost, the scene guard adds a line of fill data. Because of "
+    "this, one lost line cannot mix two scenes.",
+    "<b>CCSDS 123 compressor.</b> The compressor uses the CCSDS 123.0-B-2 standard for "
+    "lossless compression. It calculates a prediction for each sample from the samples "
+    "near it, in the same band and in the previous bands. It codes only the difference "
+    "between the sample and its prediction. A good prediction gives a small difference, "
+    "and a small difference needs few bits. The compressor processes one sample in each "
+    "clock cycle at 250 MHz.",
+    "<b>Space packetizer.</b> The packetizer divides each compressed scene into CCSDS "
+    "space packets of 2048 bytes. Each packet has a header with the scene number, the "
+    "packet number and the time of the scene.",
+    "<b>AOS framer.</b> The framer puts the packets into transfer frames of 892 bytes "
+    "(CCSDS AOS standard). A packet can continue from one frame into the next frame. "
+    "When no data is ready, the framer sends idle frames. Because of this, the link "
+    "never stops.",
+    "<b>Reed-Solomon encoder.</b> The encoder adds 128 check bytes to each frame. The "
+    "result is a codeblock of 1020 bytes. The codeblock contains four interleaved "
+    "codewords. The ground station can correct up to 16 wrong bytes in each codeword.",
+    "<b>Randomizer and sync marker.</b> The randomizer mixes the bits with a fixed "
+    "pseudo-random sequence. This gives the receiver enough bit transitions to recover "
+    "the clock. A 4-byte attached sync marker (ASM) goes before each codeblock. The "
+    "result is a CADU of 1024 bytes.",
+    "<b>Error injector.</b> This block adds bit errors on purpose. It replaces the noise "
+    "of a real radio channel during the tests. It can add random errors at a set bit "
+    "error rate (BER), bursts of errors, or errors in the sync markers.",
+    "<b>Link layer and transmitter.</b> The link layer sends the bytes to a GTH "
+    "transceiver. The transceiver uses 8b/10b coding. It sends 1.25 Gbaud through the "
+    "SFP0 module into the optical fiber. When no data is ready, the link layer sends "
+    "idle words."]
+SCENE_GUARD = 1 + next(k for k, t in enumerate(SATELLITE) if t.startswith("<b>Scene guard."))
 
 
 def story(doc):
@@ -87,6 +135,7 @@ def story(doc):
                  "changes, or it marks the data that has errors."]),
           h2("2.3  The reference mission"),
           p("The project uses a scaled reference mission. Table 1 gives its data."),
+          table_caption("Table 1: The reference mission"),
           table(["Parameter", "Value"], [
               ["Pixels across the ground track (Nx)", "512"],
               ["Spectral bands (Nz)", "150"],
@@ -97,7 +146,6 @@ def story(doc):
               ["Optical link", "1.25 Gbaud; approximately 857 Mbit/s for data packets"],
               ["Scene length (Ny)", "256 lines"]],
               [2, 3]),
-          p("<i>Table 1: The reference mission</i>", CELL),
           Spacer(1, 4),
           p("The raw data rate (921.6 Mbit/s) is more than the capacity of the link "
             "(857 Mbit/s). Because of this, compression is necessary.")]
@@ -112,49 +160,7 @@ def story(doc):
                                           "the ground part are on the same board, connected by "
                                           "the optical fiber."),
           h2("3.2  The satellite part"),
-          steps([
-              "<b>Sensor emulator.</b> This block replaces the real camera. It reads raw scenes "
-              "from the DDR memory through a DMA controller. It sends one line of samples at a "
-              "fixed interval, as a real pushbroom camera does. It cannot wait for the blocks "
-              "after it. If a block after it is too slow, a counter records the lost data.",
-              "<b>Radiometric correction.</b> This block removes the errors of each detector "
-              "pixel. It subtracts a dark offset and multiplies by a gain. It replaces the value "
-              "of a bad pixel with the average of its two neighbours. A calibration table in "
-              "UltraRAM holds these values for each pixel and band.",
-              "<b>Corner turn.</b> The camera sends the samples band by band (BIL order). The "
-              "compressor needs them pixel by pixel (BIP order). The corner turn writes each line "
-              "into a buffer and reads it in the other order. It has two buffers, so it can write "
-              "one line while it reads the line before it.",
-              "<b>Scene guard.</b> This block makes sure that each scene has the correct number "
-              "of lines. If a line is lost, the scene guard adds a line of fill data. Because of "
-              "this, one lost line cannot mix two scenes.",
-              "<b>CCSDS 123 compressor.</b> The compressor uses the CCSDS 123.0-B-2 standard for "
-              "lossless compression. It calculates a prediction for each sample from the samples "
-              "near it, in the same band and in the previous bands. It codes only the difference "
-              "between the sample and its prediction. A good prediction gives a small difference, "
-              "and a small difference needs few bits. The compressor processes one sample in each "
-              "clock cycle at 250 MHz.",
-              "<b>Space packetizer.</b> The packetizer divides each compressed scene into CCSDS "
-              "space packets of 2048 bytes. Each packet has a header with the scene number, the "
-              "packet number and the time of the scene.",
-              "<b>AOS framer.</b> The framer puts the packets into transfer frames of 892 bytes "
-              "(CCSDS AOS standard). A packet can continue from one frame into the next frame. "
-              "When no data is ready, the framer sends idle frames. Because of this, the link "
-              "never stops.",
-              "<b>Reed-Solomon encoder.</b> The encoder adds 128 check bytes to each frame. The "
-              "result is a codeblock of 1020 bytes. The codeblock contains four interleaved "
-              "codewords. The ground station can correct up to 16 wrong bytes in each codeword.",
-              "<b>Randomizer and sync marker.</b> The randomizer mixes the bits with a fixed "
-              "pseudo-random sequence. This gives the receiver enough bit transitions to recover "
-              "the clock. A 4-byte attached sync marker (ASM) goes before each codeblock. The "
-              "result is a CADU of 1024 bytes.",
-              "<b>Error injector.</b> This block adds bit errors on purpose. It replaces the noise "
-              "of a real radio channel during the tests. It can add random errors at a set bit "
-              "error rate (BER), bursts of errors, or errors in the sync markers.",
-              "<b>Link layer and transmitter.</b> The link layer sends the bytes to a GTH "
-              "transceiver. The transceiver uses 8b/10b coding. It sends 1.25 Gbaud through the "
-              "SFP0 module into the optical fiber. When no data is ready, the link layer sends "
-              "idle words."]),
+          steps(SATELLITE),
           h2("3.3  The ground part"),
           steps([
               "<b>Link receiver.</b> The SFP1 module and a second GTH transceiver receive the "
@@ -167,7 +173,7 @@ def story(doc):
               "<b>PC ground station.</b> A Python program on the PC reads these records. It "
               "corrects the errors with the Reed-Solomon code and takes the packets out of the "
               "frames. It puts each scene together, decompresses it, compares it with the "
-              "reference and shows the image."], start=12),
+              "reference and shows the image."], start=len(SATELLITE) + 1),
           h2("3.4  Control and software"),
           p("The control software (hpdp_run) runs on one Arm processor in the PS. It sets the "
             "registers of the blocks, starts the DMA transfers and reads the counters. A PC script "
@@ -228,6 +234,7 @@ def story(doc):
     s += [PageBreak(), h1("5  The project phases")]
     s += [p("Table 2 gives the phases, their dates and their results. The subsections after the "
             "table give the details of each phase."),
+          table_caption("Table 2: The project phases"),
           table(["Phase", "Date (2026)", "Complete when", "Result"], [
               ["Start", "10 Oct", "Specification written", "SPEC.md v1.0 with 102 requirements"],
               ["M0", "10 Oct", "DMA loop test passes on the board", "64 MB with no error at 3865 MB/s"],
@@ -247,7 +254,6 @@ def story(doc):
               ["After M7", "14 to 15 Oct", "Real data, larger build, SD card, console",
                "63 real scenes lossless; 1024-pixel build tested on the board"]],
               [1.1, 1.3, 2.6, 3.0]),
-          p("<i>Table 2: The project phases</i>", CELL),
           Spacer(1, 4)]
 
     s += [h2("5.1  The start: from an image project to a satellite project"),
@@ -403,7 +409,7 @@ def story(doc):
           p("In the RAW test mode, the data has no compression. The data rate is then more than "
             "the link capacity, so lines are lost, as expected. But a scene with lost lines did not "
             "end, and the next scenes became part of it. The team added the scene guard (Section "
-            "3.2, item 4). Now each scene ends correctly."),
+            f"3.2, item {SCENE_GUARD}). Now each scene ends correctly."),
 
           h2("5.8  M6: The PC ground station"),
           h3("Objective"),
@@ -459,6 +465,7 @@ def story(doc):
     # ------------------------------------------------------------------ 5
     s += [PageBreak(), h1("6  Verification")]
     s += [p("The team tested the HPDP at five levels. Table 3 gives the levels."),
+          table_caption("Table 3: Verification levels"),
           table(["Level", "What the test does", "Quantity"], [
               ["Python models", "Automatic tests of each model, for example compression and "
                                 "decompression of many images", "150 tests"],
@@ -472,7 +479,6 @@ def story(doc):
               ["Board tests", "Runs through JTAG; the board output is compared with the model",
                "Each milestone from M0 to M7, and after M7"]],
               [1.4, 3.2, 2]),
-          p("<i>Table 3: Verification levels</i>", CELL),
           Spacer(1, 4),
           p("A test passes only when every output bit agrees with the model. A result that is "
             "almost correct is a failure.")]

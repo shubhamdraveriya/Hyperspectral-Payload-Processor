@@ -44,7 +44,12 @@ python -m venv .venv
 ```
 
 The first line serves the models, tests and register generator; the venv serves the
-ground station's display (numpy, matplotlib).
+ground station's display (numpy, matplotlib). The PDF documents in `docs/pdf` also
+need reportlab in the venv:
+
+```
+.venv\Scripts\python -m pip install -r docs\pdf\requirements.txt
+```
 
 ## Directory junctions
 
@@ -77,6 +82,8 @@ git log --oneline | head                                 # the history came alon
 vivado -mode batch -source vivado/build.tcl              # bitstream and XSA (HPDP_BUILD_DIR; HPDP_NX_MAX=1024)
 vitis -s sw/baremetal/build.py build/m7h/hpdp.xsa        # the app, workspace vitis/
 python -I model/hpdp_datasets.py experiment -j 5         # real-data results (needs the datasets)
+.venv\Scripts\python docs\pdf\make_charts.py             # the PDF documents' charts, then
+.venv\Scripts\python docs\pdf\build_docs.py              #   the PDFs (docs/pdf/requirements.txt)
 ```
 
 ## The board

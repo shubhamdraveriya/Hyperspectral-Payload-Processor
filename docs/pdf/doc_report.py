@@ -2,8 +2,7 @@
 compliance, deviations and open items. Numbers from docs/project_report.md and
 the milestone notes."""
 
-from hpdp_pdf import (CELL, HpdpDoc, PageBreak, Spacer, bullets, code, figure, h1, h2, h3, note, p,
-                      table)
+from hpdp_pdf import CELL, HpdpDoc, PageBreak, Spacer, bullets, code, figure, h1, h2, p, table
 
 TITLE = "HPDP Results Report"
 DOC_ID = "HPDP-RPT-001"
@@ -139,7 +138,7 @@ def story(doc):
           Spacer(1, 6),
           figure("eye_scans.png", "Figure 3: Statistical eye scans of both fiber directions. "
                                   "Light: BER at or below the 10<sup>-6</sup> dwell limit; dark: "
-                                  "high BER at the bit edges.", width=None or 400),
+                                  "high BER at the bit edges.", width=400),
           h2("4.2  End-to-end integrity with injected errors (VER-07)"),
           table(["Injected BER", "Records", "Bits injected", "RS symbols corrected", "Uncorrectable",
                  "Scenes bit-exact"], [

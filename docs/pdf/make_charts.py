@@ -1,6 +1,7 @@
-"""Charts for the HPDP documents (docs/pdf). Run with the project venv:
+"""Charts for the HPDP documents (docs/pdf). Run with the project venv, which has
+docs/pdf/requirements.txt installed (the same interpreter as build_docs.py):
 
-    .venv/Scripts/python.exe docs/pdf/make_charts.py
+    .venv/Scripts/python docs/pdf/make_charts.py
 
 Writes PNG files to docs/pdf/figures/. Numbers come from docs/project_report.md,
 docs/real_data.md and docs/lnk10/ (the eye scans).
@@ -31,7 +32,8 @@ AXIS = "#c3c2b7"
 BLUE_RAMP = ["#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5", "#256abf", "#184f95", "#0d366b"]
 
 plt.rcParams.update({
-    "font.family": "Segoe UI",
+    "font.family": "sans-serif",
+    "font.sans-serif": ["Segoe UI", "DejaVu Sans"],     # DejaVu ships with matplotlib
     "font.size": 9,
     "axes.edgecolor": AXIS,
     "axes.labelcolor": INK2,
@@ -57,12 +59,17 @@ def tidy(ax, grid_axis="x"):
 # ---------------------------------------------------------------------------
 # Link budget: data rates against the link's packet capacity
 # ---------------------------------------------------------------------------
+MISSION_RATE = 76.8          # Msamples/s (reference mission)
+LINK_CAPACITY = 857          # Mbit/s of packet capacity
+
+
 def link_budget():
+    # Mbit/s = Msamples/s x bits per sample
     rows = [
-        ("Raw sensor data (12-bit)", 921.6),
-        ("Compressed, mission-size synthetic scene (2.10:1)", 921.6 / 2.10),
-        ("Compressed, real AVIRIS scenes, mean", 0.40 * 857),
-        ("Compressed, worst real scene", 0.71 * 857),
+        ("Raw sensor data (12-bit)", MISSION_RATE * 12),
+        ("Compressed, mission-size synthetic scene (2.10:1)", MISSION_RATE * 12 / 2.10),
+        ("Compressed, real AVIRIS scenes, mean", MISSION_RATE * 4.43),
+        ("Compressed, worst real scene", MISSION_RATE * 7.93),
     ]
     fig, ax = plt.subplots(figsize=(6.6, 2.4))
     y = np.arange(len(rows))[::-1]
@@ -70,13 +77,13 @@ def link_budget():
     ax.barh(y, vals, height=0.55, color=SERIES[0], edgecolor=SURFACE, linewidth=2)
     for yi, v in zip(y, vals):
         ax.text(v + 12, yi, f"{v:.0f} Mbit/s", va="center", color=INK, fontsize=8.5)
-    ax.axvline(857, color=INK2, linewidth=1.2, linestyle=(0, (4, 3)))
-    ax.text(847, len(rows) - 0.35, "link capacity 857 Mbit/s", ha="right", va="bottom",
-            color=INK2, fontsize=8)
+    ax.axvline(LINK_CAPACITY, color=INK2, linewidth=1.2, linestyle=(0, (4, 3)))
+    ax.text(LINK_CAPACITY - 10, len(rows) - 0.35, f"link capacity {LINK_CAPACITY} Mbit/s", ha="right",
+            va="bottom", color=INK2, fontsize=8)
     ax.set_yticks(y, [r[0] for r in rows])
     ax.set_xlim(0, 1100)
     ax.set_ylim(-0.6, len(rows) - 0.1)
-    ax.set_xlabel("Mbit/s at the mission rate (76.8 Msamples/s)")
+    ax.set_xlabel(f"Mbit/s at the mission rate ({MISSION_RATE} Msamples/s)")
     tidy(ax)
     fig.tight_layout()
     fig.savefig(OUT / "link_budget.png", dpi=220)
@@ -115,10 +122,15 @@ def compression():
 # Eye scans (In-System IBERT, LNK-10)
 # ---------------------------------------------------------------------------
 def read_eye(path):
-    rows, cols, in_scan = [], None, False
+    """(horizontal codes, vertical codes, BER grid, horizontal %, vertical %) of an
+    IBERT eye-scan CSV; the opening percentages come from the file's header"""
+    rows, cols, in_scan, pct = [], None, False, {}
     with open(path, newline="") as fh:
         for rec in csv.reader(fh):
             if not rec:
+                continue
+            if rec[0] in ("Horizontal Percentage", "Vertical Percentage"):
+                pct[rec[0]] = float(rec[1])
                 continue
             if rec[0] == "Scan Start":
                 in_scan = True
@@ -131,31 +143,25 @@ def read_eye(path):
             if in_scan and cols:
                 vals = [float(v) for v in rec[1:len(cols) + 1]]
                 rows.append((int(rec[0]), vals))
-    # the file can repeat a row: keep the first of each vertical code
-    seen, uniq = set(), []
-    for v, vals in rows:
-        if v not in seen:
-            seen.add(v)
-            uniq.append((v, vals))
-    uniq.sort(key=lambda r: r[0])
-    vert = np.array([r[0] for r in uniq])
-    ber = np.array([r[1] for r in uniq])
-    return np.array(cols), vert, ber
+    rows.sort(key=lambda r: r[0])
+    vert = np.array([r[0] for r in rows])
+    ber = np.array([r[1] for r in rows])
+    return np.array(cols), vert, ber, pct["Horizontal Percentage"], pct["Vertical Percentage"]
 
 
 def eye_scans():
     files = [
-        ("SFP0 → SFP1", REPO / "docs/lnk10/hpdp_eye_sfp0_to_sfp1_20261013_1450.csv", "77.5 %", "96.8 %"),
-        ("SFP1 → SFP0", REPO / "docs/lnk10/hpdp_eye_sfp1_to_sfp0_20261013_1450.csv", "77.5 %", "90.5 %"),
+        ("SFP0 → SFP1", REPO / "docs/lnk10/hpdp_eye_sfp0_to_sfp1_20261013_1450.csv"),
+        ("SFP1 → SFP0", REPO / "docs/lnk10/hpdp_eye_sfp1_to_sfp0_20261013_1450.csv"),
     ]
     cmap = LinearSegmentedColormap.from_list("blue", ["#f4f8fd"] + BLUE_RAMP)
     fig, axes = plt.subplots(1, 2, figsize=(6.6, 2.7), sharey=True)
-    for ax, (title, path, h, v) in zip(axes, files):
-        hor, vert, ber = read_eye(path)
+    for ax, (title, path) in zip(axes, files):
+        hor, vert, ber, h, v = read_eye(path)
         logber = np.log10(np.clip(ber, 1e-7, 1))
         ui = hor / (2 * hor.max())
         im = ax.pcolormesh(ui, vert, logber, cmap=cmap, vmin=-7, vmax=0, shading="nearest")
-        ax.set_title(title + "\neye opening H " + h + ", V " + v, fontsize=8.5)
+        ax.set_title(f"{title}\neye opening H {h:.1f} %, V {v:.1f} %", fontsize=8.5)
         ax.set_xlabel("Horizontal offset (UI)")
         ax.tick_params(length=0)
         for s in ax.spines.values():
@@ -172,20 +178,26 @@ def eye_scans():
 # ---------------------------------------------------------------------------
 # FPGA utilization of the two final builds
 # ---------------------------------------------------------------------------
+# XCZU7EV resources, and what each final build uses (the builds' utilization reports,
+# docs/project_report.md section 3.5 and docs/nx_max_1024.md)
+DEVICE = {"LUT": 230400, "Flip-flops": 460800, "Block RAM": 312, "UltraRAM": 96, "DSP": 1728}
+USED = {
+    "m7h (NX_MAX 512, board-tested)": [38151, 39231, 38.5, 56, 24],
+    "m7i_1024b (NX_MAX 1024, board-tested)": [38906, 40120, 46.5, 80, 24],
+}
+
+
 def utilization():
-    res = ["LUT", "Flip-flops", "Block RAM", "UltraRAM", "DSP"]
-    m7h = [16.6, 8.5, 12.3, 58.3, 1.4]
-    b1024 = [100 * 38.9 / 230.4, 100 * 40.1 / 460.8, 100 * 46.5 / 312, 83.3, 1.4]
+    res = list(DEVICE)
+    shares = {build: [100 * u / DEVICE[r] for u, r in zip(used, res)] for build, used in USED.items()}
     fig, ax = plt.subplots(figsize=(6.6, 2.6))
     y = np.arange(len(res))[::-1]
     h = 0.36
-    ax.barh(y + h / 2, m7h, height=h, color=SERIES[0], edgecolor=SURFACE, linewidth=1.5,
-            label="m7h (NX_MAX 512, board-tested)")
-    ax.barh(y - h / 2, b1024, height=h, color=SERIES[1], edgecolor=SURFACE, linewidth=1.5,
-            label="m7i_1024b (NX_MAX 1024, board-tested)")
-    for yi, a, b in zip(y, m7h, b1024):
-        ax.text(a + 1, yi + h / 2, f"{a:.1f} %", va="center", fontsize=8, color=INK)
-        ax.text(b + 1, yi - h / 2, f"{b:.1f} %", va="center", fontsize=8, color=INK)
+    for k, (build, vals) in enumerate(shares.items()):
+        yk = y + h / 2 - k * h
+        ax.barh(yk, vals, height=h, color=SERIES[k], edgecolor=SURFACE, linewidth=1.5, label=build)
+        for yi, v in zip(yk, vals):
+            ax.text(v + 1, yi, f"{v:.1f} %", va="center", fontsize=8, color=INK)
     ax.set_yticks(y, res)
     ax.set_xlim(0, 100)
     ax.set_xlabel("Share of the XCZU7EV resource used")

@@ -1,7 +1,7 @@
 """HPDP Project Brief: a three-page overview for readers who want the essentials."""
 
-from hpdp_pdf import (CELL, HpdpDoc, PageBreak, Spacer, bullets, chain_diagram, drawing_figure,
-                      figure, h1, h2, p, table)
+from hpdp_pdf import (HpdpDoc, Spacer, bullets, chain_diagram, drawing_figure, figure, h1, h2, p,
+                      table)
 
 TITLE = "HPDP Project Brief"
 DOC_ID = "HPDP-BRF-001"

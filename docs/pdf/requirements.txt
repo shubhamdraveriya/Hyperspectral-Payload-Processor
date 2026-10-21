@@ -1,0 +1,9 @@
+# The PDF documents (docs/pdf): charts with matplotlib, pages with reportlab. One
+# interpreter for both, the project venv (git-ignored):
+#   python -m venv .venv
+#   .venv/Scripts/python -m pip install -r docs/pdf/requirements.txt
+#   .venv/Scripts/python docs/pdf/make_charts.py
+#   .venv/Scripts/python docs/pdf/build_docs.py
+reportlab>=4.0
+matplotlib>=3.8
+numpy>=2.0

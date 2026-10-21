@@ -4,6 +4,7 @@ templates with header and footer, a table of contents, admonitions
 
 from pathlib import Path
 
+import reportlab
 from reportlab.graphics.shapes import Drawing, Line, Polygon, Rect, String
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_LEFT
@@ -12,8 +13,8 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.platypus import (BaseDocTemplate, Frame, Image, KeepTogether, ListFlowable,
-                                ListItem, NextPageTemplate, PageBreak, PageTemplate,
+from reportlab.platypus import (BaseDocTemplate, CondPageBreak, Frame, Image, KeepTogether,
+                                ListFlowable, ListItem, NextPageTemplate, PageBreak, PageTemplate,
                                 Paragraph, Spacer, Table, TableStyle)
 from reportlab.platypus.tableofcontents import TableOfContents
 
@@ -23,14 +24,46 @@ FIG = HERE / "figures"
 # ---------------------------------------------------------------------------
 # Fonts and colours
 # ---------------------------------------------------------------------------
-FONTS = Path("C:/Windows/Fonts")
-pdfmetrics.registerFont(TTFont("UI", str(FONTS / "segoeui.ttf")))
-pdfmetrics.registerFont(TTFont("UI-Bold", str(FONTS / "segoeuib.ttf")))
-pdfmetrics.registerFont(TTFont("UI-Italic", str(FONTS / "segoeuii.ttf")))
-pdfmetrics.registerFont(TTFont("UI-BoldItalic", str(FONTS / "segoeuiz.ttf")))
-pdfmetrics.registerFont(TTFont("Mono", str(FONTS / "consola.ttf")))
-pdfmetrics.registerFontFamily("UI", normal="UI", bold="UI-Bold", italic="UI-Italic",
-                              boldItalic="UI-BoldItalic")
+# The documents use the names UI, UI-Bold, UI-Italic, UI-BoldItalic and Mono. They map to
+# the first font family found whole: Segoe UI and Consolas (Windows), DejaVu (most Linux
+# systems), else Bitstream Vera, which comes with reportlab, and Courier for Mono.
+_WINDOWS = Path("C:/Windows/Fonts")
+_DEJAVU = [Path("/usr/share/fonts/truetype/dejavu"), Path("/usr/share/fonts/TTF"),
+           Path("/usr/share/fonts/dejavu")]
+_RL = Path(reportlab.__file__).parent / "fonts"
+_UI_FAMILIES = [
+    ("Segoe UI", [_WINDOWS], ("segoeui.ttf", "segoeuib.ttf", "segoeuii.ttf", "segoeuiz.ttf")),
+    ("DejaVu Sans", _DEJAVU, ("DejaVuSans.ttf", "DejaVuSans-Bold.ttf", "DejaVuSans-Oblique.ttf",
+                              "DejaVuSans-BoldOblique.ttf")),
+    ("Bitstream Vera", [_RL], ("Vera.ttf", "VeraBd.ttf", "VeraIt.ttf", "VeraBI.ttf")),
+]
+_MONO = [("Consolas", [_WINDOWS], "consola.ttf"), ("DejaVu Sans Mono", _DEJAVU, "DejaVuSansMono.ttf")]
+
+
+def _register_fonts():
+    """Register the UI and Mono fonts; returns the family names used."""
+    ui = None
+    for family, dirs, files in _UI_FAMILIES:
+        for d in dirs:
+            if all((d / f).exists() for f in files):
+                ui = family
+                for name, f in zip(("UI", "UI-Bold", "UI-Italic", "UI-BoldItalic"), files):
+                    pdfmetrics.registerFont(TTFont(name, str(d / f)))
+                break
+        if ui:
+            break
+    pdfmetrics.registerFontFamily("UI", normal="UI", bold="UI-Bold", italic="UI-Italic",
+                                  boldItalic="UI-BoldItalic")
+    for family, dirs, f in _MONO:
+        for d in dirs:
+            if (d / f).exists():
+                pdfmetrics.registerFont(TTFont("Mono", str(d / f)))
+                return ui, family
+    pdfmetrics.registerFont(pdfmetrics.Font("Mono", "Courier", "WinAnsiEncoding"))
+    return ui, "Courier"
+
+
+FONT_FAMILIES = _register_fonts()
 
 INK = colors.HexColor("#0b0b0b")
 INK2 = colors.HexColor("#52514e")
@@ -63,6 +96,9 @@ H3 = ParagraphStyle("h3", fontName="UI-Bold", fontSize=10, leading=13, textColor
                     spaceBefore=6, spaceAfter=3, keepWithNext=1)
 CAPTION = ParagraphStyle("caption", parent=BODY, fontName="UI-Italic", fontSize=8.2,
                          leading=10.5, textColor=INK2, spaceBefore=2, spaceAfter=9)
+# a table's caption goes above it and stays with the table's first rows
+TABLE_CAPTION = ParagraphStyle("tcaption", parent=CAPTION, spaceBefore=4, spaceAfter=3,
+                               keepWithNext=1)
 CODE = ParagraphStyle("code", fontName="Mono", fontSize=8.2, leading=11, textColor=INK)
 TOC1 = ParagraphStyle("toc1", fontName="UI-Bold", fontSize=9.6, leading=14, leftIndent=0)
 TOC2 = ParagraphStyle("toc2", fontName="UI", fontSize=9, leading=12.5, leftIndent=14)
@@ -151,6 +187,11 @@ def table(header, rows, widths, font=CELL, head_bg=PANEL, zebra=False, align_top
             style.append(("BACKGROUND", (0, i), (-1, i), colors.HexColor("#f7f7f5")))
     t.setStyle(TableStyle(style))
     return t
+
+
+def table_caption(text):
+    """A table's caption, placed before the table: it stays with the table's first rows."""
+    return Paragraph(text, TABLE_CAPTION)
 
 
 def _admonition(label, text, bar, bg):
@@ -264,7 +305,8 @@ def chain_diagram(width=TEXT_W):
     for i, (t, s) in enumerate(row2):
         _box(d, xs[i], ys[1], bw, bh, f"{t}\n{s}", channel)
     for i, (t, s) in enumerate(row3):
-        fill = colors.white if i == 1 else ground
+        # the transmitter is still the satellite's channel side; the fiber is neither
+        fill = channel if i == 0 else colors.white if i == 1 else ground
         _box(d, xs[i], ys[2], bw, bh, f"{t}\n{s}", fill)
     for i in range(n - 1):
         _arrow(d, xs[i] + bw, ys[0] + bh / 2, xs[i + 1], ys[0] + bh / 2)
@@ -366,29 +408,58 @@ class HpdpDoc(BaseDocTemplate):
                                       level=flowable.toc_level, closed=flowable.toc_level > 0)
             self.notify("TOCEntry", (flowable.toc_level, flowable.toc_text, self.page, key))
 
+    # lines of a list (body leading) or rows of a table (with its header row) that must
+    # fit after a heading or caption, else the heading goes to the next page with them
+    KEEP_LINES, KEEP_ROWS = 3, 3
+
     def handle_keepWithNext(self, flowables):
-        # reportlab does not join a heading with a container (table, note, figure, list),
-        # so the heading can stay alone at the bottom of a page. Merge them here.
+        """Keep headings, lead-ins and table captions with what follows them.
+
+        A short block (note, figure, code: a KeepTogether) stays whole with its heading.
+        A list or table can be long, so it is not moved whole: the heading only needs
+        room for itself and the start of the list or table (a CondPageBreak), and the
+        rest continues on the next page. (reportlab itself keeps a heading with a whole
+        table, which leaves the rest of the page empty when the table is long.)"""
         i = 0
         while (i < len(flowables) and flowables[i].getKeepWithNext()
-               and not isinstance(flowables[i], (KeepTogether, ListFlowable))):
+               and not isinstance(flowables[i], (KeepTogether, ListFlowable, Table))):
             i += 1
-        if i and i < len(flowables) and isinstance(flowables[i], (KeepTogether, ListFlowable)):
-            nxt = flowables[i]
-            body = list(nxt._content) if type(nxt) is KeepTogether else [nxt]
-            heads = flowables[:i]
-            mbe = getattr(self, "_multiBuildEdits", None)
-            for f in heads:  # as in reportlab: clear the flag, restore it for the next pass
-                if mbe:
-                    if "keepWithNext" in f.__dict__:
-                        mbe((setattr, f, "keepWithNext", f.keepWithNext))
-                    else:
-                        mbe((delattr, f, "keepWithNext"))
-                f.__dict__["keepWithNext"] = 0
-            del flowables[:i + 1]
-            flowables.insert(0, KeepTogether(heads + body))
+        if not i or i == len(flowables):
+            super().handle_keepWithNext(flowables)
             return
-        super().handle_keepWithNext(flowables)
+        nxt, heads = flowables[i], flowables[:i]
+        if isinstance(nxt, (ListFlowable, Table)):
+            need = sum(self._height(f) for f in heads) + self._start_height(nxt)
+            self._clear_keep(heads)
+            del flowables[:i]
+            flowables[0:0] = [CondPageBreak(need)] + heads
+        elif isinstance(nxt, KeepTogether):
+            self._clear_keep(heads)
+            del flowables[:i + 1]
+            flowables.insert(0, KeepTogether(heads + list(nxt._content)))
+        else:
+            super().handle_keepWithNext(flowables)
+
+    def _clear_keep(self, heads):
+        mbe = getattr(self, "_multiBuildEdits", None)
+        for f in heads:  # as in reportlab: clear the flag, restore it for the next pass
+            if mbe:
+                if "keepWithNext" in f.__dict__:
+                    mbe((setattr, f, "keepWithNext", f.keepWithNext))
+                else:
+                    mbe((delattr, f, "keepWithNext"))
+            f.__dict__["keepWithNext"] = 0
+
+    def _height(self, f):
+        # wrapOn, not wrap: a ListFlowable measures its items on the canvas
+        return f.wrapOn(self.canv, TEXT_W, PAGE_H)[1] + f.getSpaceBefore() + f.getSpaceAfter()
+
+    def _start_height(self, f):
+        """height of the first KEEP_ROWS rows of a table, or KEEP_LINES lines of a list"""
+        full = self._height(f)
+        if isinstance(f, Table):
+            return min(full, sum(f._rowHeights[:self.KEEP_ROWS]) + f.getSpaceBefore())
+        return min(full, self.KEEP_LINES * BODY.leading + f.getSpaceBefore())
 
     # building ------------------------------------------------------------------
     def cover_flowables(self, rows, extra=None):
