@@ -35,6 +35,8 @@ def story(doc):
                              "the procedures to rebuild and run it (Simplified Technical English)"],
             ["HPDP-RPT-001", "Results Report: all test results, charts and the requirement "
                              "compliance"],
+            ["HPDP-GDE-001", "Learning Guide: the HPDP taught from the basics to the full design, "
+                             "with check questions (Simplified Technical English)"],
             ["SPEC.md", "The specification (v1.0)"],
             ["docs/", "project_report.md and the engineering notes of each milestone (m0 to m7)"]],
             [1, 4])])

@@ -256,14 +256,27 @@ def drawing_figure(drawing, caption):
 # ---------------------------------------------------------------------------
 # Diagrams
 # ---------------------------------------------------------------------------
+def _fit(text, width, size, font="UI"):
+    """[text], or text broken in two at the space nearest its middle if it is wider than width"""
+    if pdfmetrics.stringWidth(text, font, size) <= width or " " not in text:
+        return [text]
+    spaces = [i for i, c in enumerate(text) if c == " "]
+    cut = min(spaces, key=lambda i: abs(i - len(text) / 2))
+    return [text[:cut], text[cut + 1:]]
+
+
 def _box(d, x, y, w, h, text, fill, stroke=RULE, size=7.6, bold_first=True):
+    """A rounded box with centred lines of text; a line wider than the box takes two lines."""
     d.add(Rect(x, y, w, h, rx=4, ry=4, fillColor=fill, strokeColor=stroke, strokeWidth=0.8))
-    lines = text.split("\n")
+    lines = []                                  # (text, font)
+    for i, ln in enumerate(text.split("\n")):
+        font = "UI-Bold" if (i == 0 and bold_first) else "UI"
+        lines += [(part, font) for part in _fit(ln, w - 6, size, font)]
     lh = size + 2
     y0 = y + h / 2 + (len(lines) - 1) * lh / 2 - size / 2 + 1
-    for i, ln in enumerate(lines):
-        d.add(String(x + w / 2, y0 - i * lh, ln, fontName="UI-Bold" if (i == 0 and bold_first) else "UI",
-                     fontSize=size, fillColor=INK, textAnchor="middle"))
+    for i, (ln, font) in enumerate(lines):
+        d.add(String(x + w / 2, y0 - i * lh, ln, fontName=font, fontSize=size, fillColor=INK,
+                     textAnchor="middle"))
 
 
 def _arrow(d, x1, y1, x2, y2, color=INK2, width=1.0):

@@ -5,8 +5,8 @@
 
 One interpreter for both: the project venv with docs/pdf/requirements.txt installed.
 
-Writes docs/pdf/HPDP_Project_Brief.pdf, HPDP_Process_Description_STE.pdf and
-HPDP_Results_Report.pdf.
+Writes docs/pdf/HPDP_Project_Brief.pdf, HPDP_Process_Description_STE.pdf,
+HPDP_Results_Report.pdf and HPDP_Learning_Guide_STE.pdf.
 """
 
 import sys
@@ -16,6 +16,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 import doc_brief  # noqa: E402
+import doc_guide  # noqa: E402
 import doc_process  # noqa: E402
 import doc_report  # noqa: E402
 
@@ -23,6 +24,7 @@ OUTPUTS = [
     (doc_brief, "HPDP_Project_Brief.pdf"),
     (doc_process, "HPDP_Process_Description_STE.pdf"),
     (doc_report, "HPDP_Results_Report.pdf"),
+    (doc_guide, "HPDP_Learning_Guide_STE.pdf"),
 ]
 
 if __name__ == "__main__":

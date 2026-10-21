@@ -15,6 +15,15 @@ The full specification is in [SPEC.md](SPEC.md).
 Project report (results, requirements compliance, open items):
 [docs/project_report.md](docs/project_report.md).
 
+PDF documents in [docs/pdf/](docs/pdf/) (built by `docs/pdf/build_docs.py`):
+
+| Document | Contents |
+|---|---|
+| [HPDP_Project_Brief.pdf](docs/pdf/HPDP_Project_Brief.pdf) | HPDP-BRF-001: the project on three pages |
+| [HPDP_Process_Description_STE.pdf](docs/pdf/HPDP_Process_Description_STE.pdf) | HPDP-PRC-001: how the project was done, with the procedures (Simplified Technical English) |
+| [HPDP_Results_Report.pdf](docs/pdf/HPDP_Results_Report.pdf) | HPDP-RPT-001: all test results and the requirement compliance |
+| [HPDP_Learning_Guide_STE.pdf](docs/pdf/HPDP_Learning_Guide_STE.pdf) | HPDP-GDE-001: the HPDP taught from the basics to the full design, with check questions (Simplified Technical English) |
+
 | Milestone | Content | State |
 |---|---|---|
 | M0 | Repository, tool flow, ZCU106 base design with DMA loopback | **done**: 64 MB loopback passes on the board at 3865 MB/s ([notes](docs/m0_bringup.md)) |

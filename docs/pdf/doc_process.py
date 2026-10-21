@@ -68,7 +68,8 @@ def story(doc):
         ("System", "Hyperspectral Payload Data Processor (HPDP) on the AMD ZCU106 board"),
         ("Language", "ASD-STE100 Simplified Technical English (STE)"),
         ("Related documents", "SPEC.md (specification v1.0), HPDP-BRF-001 (project brief), "
-                              "HPDP-RPT-001 (results report), docs/m0 to m7 (milestone notes)"),
+                              "HPDP-RPT-001 (results report), HPDP-GDE-001 (learning guide), "
+                              "docs/m0 to m7 (milestone notes)"),
     ], extra=[p("This document tells how the project team made the HPDP, from the first "
                 "specification to the tests on the board. It also gives the procedures to "
                 "build, test and operate the system again.")])
