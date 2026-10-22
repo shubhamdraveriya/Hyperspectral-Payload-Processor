@@ -389,7 +389,9 @@ def part_c():
               ["Radiation", "SEM upsets on the board", "198 corrected in 125 to 153 ms, 0 uncorrectable"],
               ["Radiation", "Fault campaign", "0 silent in 820 protected trials"],
               ["Timing", "All clocks (VER-09)", "met; WNS +0.087 ns; report_cdc clean"],
-              ["Requirements", "102 v1.0 shall/should items", "99 met, 1 partly met (SW-05), 2 pending (O-5)"]],
+              ["Conformance", "Independent CCSDS 123 model (O-5)", "same bytes in 947 of 949 runs"],
+              ["Requirements", "102 v1.0 shall/should items", "101 met, 1 partly met (SW-05); open "
+                                                              "finding O-9"]],
               [1.2, 2.6, 3.2], "The main results"),
           key(["The HPDP meets the mission rate, gets every test scene back bit-exactly and survives "
                "injected upsets."])]
@@ -397,13 +399,16 @@ def part_c():
     # ------------------------------------------------------------------ 24
     s += [h1("24  Status, limits and next steps")]
     s += [h2("24.1  Status"),
-          bullets(["99 of the 102 v1.0 requirements are met. None is unmet.",
+          bullets(["101 of the 102 v1.0 requirements are met. None is unmet.",
                    "<b>SW-05 is partly met.</b> The Ethernet upload of the received data is written and builds. It is not tested on the board, because the PC had no free Ethernet port. "
                    "The data goes to the PC through JTAG. A USB-Ethernet adapter and approximately "
                    "10 minutes would close this item.",
-                   "<b>CMP-02 and MDL-02 are pending</b> (open item O-5). They need a check of the "
-                   "compressor output with an independent CCSDS 123 decoder: ESA WhiteDwarf 2.0 or the "
-                   "CNES tools. Both need a user account."]),
+                   "<b>CMP-02 and MDL-02 are met with a deviation.</b> The specified decoders (ESA, "
+                   "CNES) need a user account. Thus the team used an independent compressor, the NTNU "
+                   "SmallSat Lab model. It gave the same bytes in 947 of 949 runs (O-5 closed).",
+                   "<b>O-9 is an open finding.</b> The two other runs used full prediction at Nx = 1. "
+                   "The independent model does not accept this setting (CCSDS 123.0-B-2, section "
+                   "4.3.1). The mission setting is not affected."]),
           h2("24.2  Limits"),
           bullets(["Commercial parts, no radiation qualification.",
                    "No radio link and no real camera.",
@@ -412,14 +417,15 @@ def part_c():
                    "Upsets in unprotected data registers are silent approximately one time in four "
                    "(accepted residual risk)."]),
           h2("24.3  Possible next steps"),
-          bullets(["Decode the test data with an independent CCSDS 123 decoder (closes O-5).",
+          bullets(["Make sure of the rule for Nx = 1, then reject full prediction at Nx = 1 "
+                   "(closes O-9).",
                    "Test the Ethernet upload with an adapter (closes the SW-05 deviation).",
                    "Near-lossless compression and the hybrid entropy coder.",
                    "A hardware RS decoder, a faster ground decoder (C or numba), and Linux in place of "
                    "bare-metal.",
                    "A return channel: the fiber cable has two fibers, so this is now possible."]),
-          key(["The project is complete except one deviation (Ethernet upload) and one external check "
-               "(independent decoder)."])]
+          key(["The project is complete. One requirement is partly met (Ethernet upload), and one "
+               "finding is open (full prediction at Nx = 1)."])]
 
     # ------------------------------------------------------------------ 25
     s += [h1("25  Procedures")]

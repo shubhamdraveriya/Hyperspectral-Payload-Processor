@@ -5,8 +5,8 @@ from hpdp_pdf import (HpdpDoc, Spacer, bullets, chain_diagram, drawing_figure, f
 
 TITLE = "HPDP Project Brief"
 DOC_ID = "HPDP-BRF-001"
-REV = "A"
-DATE = "2026-10-16"
+REV = "B"
+DATE = "2026-10-22"
 
 
 def story(doc):
@@ -18,7 +18,7 @@ def story(doc):
         ("Standards", "CCSDS 123.0-B-2 (compression), 133.0-B (space packets), 732.0-B (AOS "
                       "frames), 131.0-B (channel coding)"),
         ("Duration", "10 to 15 October 2026, eight milestones, 51 commits"),
-        ("Status", "All milestones (M0 to M7) complete; 99 of 102 requirements met, none unmet"),
+        ("Status", "All milestones (M0 to M7) complete; 101 of 102 requirements met, none unmet"),
     ], extra=[table(["At a glance", ""], [
         ["What", "The complete onboard data chain of a hyperspectral imaging satellite, running "
                  "in FPGA logic, with a fiber link to a ground receiver"],
@@ -81,7 +81,9 @@ def story(doc):
               ["Timing and resources", "Met on all 11 clocks (250 MHz data path); 17 % of the LUTs "
                                        "and 58 % of the UltraRAM", "VER-09"],
               ["Verification", "150 model tests, 87 RTL tests, all 864 compressor configurations "
-                               "bit-exact, 1300-trial fault campaign", "VER-01 to 10"]],
+                               "bit-exact, 1300-trial fault campaign; byte-identical to an "
+                               "independent CCSDS 123 model in 947 of 949 runs",
+               "VER-01 to 10, CMP-02"]],
               [1.3, 4.0, 1.1]),
           Spacer(1, 6),
           h2("How it was built"),
@@ -108,10 +110,10 @@ def story(doc):
               [0.9, 3.0, 2.6]),
           Spacer(1, 6),
           h2("What remains"),
-          bullets(["<b>Independent decoder check</b> (CMP-02, MDL-02): decode the outputs with ESA's "
-                   "WhiteDwarf or the CNES tools; needs an account. About half a day.",
-                   "<b>Ethernet upload on the board</b> (SW-05): written and built; needs an "
-                   "Ethernet port on the PC. About ten minutes."])]
+          bullets(["<b>Ethernet upload on the board</b> (SW-05): written and built; needs an "
+                   "Ethernet port on the PC. About ten minutes.",
+                   "<b>Full prediction at Nx = 1</b> (O-9): refused by the independent model; not a "
+                   "mission setting. About an hour."])]
     return s
 
 

@@ -8,8 +8,8 @@ from hpdp_pdf import (HpdpDoc, PageBreak, Spacer, bullets, caution, chain_diagra
 
 TITLE = "HPDP Process Description"
 DOC_ID = "HPDP-PRC-001"
-REV = "A"
-DATE = "2026-10-16"
+REV = "B"
+DATE = "2026-10-22"
 
 
 # Section 3.2: the blocks of the satellite part, in the order of the data. Section 3.3
@@ -254,8 +254,10 @@ def story(doc):
               ["M7", "13 Oct", "Radiation mitigation complete", "Upsets corrected in 153 ms or "
                                                                 "less; no silent error in "
                                                                 "protected parts"],
-              ["After M7", "14 to 15 Oct", "Real data, larger build, SD card, console",
-               "63 real scenes lossless; 1024-pixel build tested on the board"]],
+              ["After M7", "14 to 15 Oct", "Real data, larger build, SD card, console, "
+                                           "independent check",
+               "63 real scenes lossless; 1024-pixel build tested on the board; the same bytes as "
+               "an independent CCSDS 123 model in 947 of 949 runs"]],
               [1.1, 1.3, 2.6, 3.0]),
           Spacer(1, 4)]
 
@@ -319,7 +321,8 @@ def story(doc):
             "input for each compressed image. The Reed-Solomon encoder must give the same check "
             "bytes as an independent library (reedsolo)."),
           h3("Result"),
-          p("138 tests passed at M1. At the end of the project, there are 150 tests."),
+          p("138 tests passed at M1. At the end of the project, there are 150 tests. The check of "
+            "the compressor model against an independent model came after M7 (Section 5.10)."),
 
           h2("5.4  M2: The compressor in hardware"),
           h3("Objective"),
@@ -461,6 +464,10 @@ def story(doc):
                    "A UART console lets an operator start the jobs.",
                    "<b>Full test matrix.</b> All 864 compressor configurations of the "
                    "specification are bit-exact.",
+                   "<b>Independent check.</b> An independent CCSDS 123.0-B-2 model (NTNU SmallSat "
+                   "Lab) read the HPDP header and compressed the same scenes. It gave the same bytes "
+                   "as the HPDP in 947 of 949 runs. The other two runs found open item O-9 "
+                   "(Section 9).",
                    "<b>Transfer package.</b> Two archives let you move the project to another "
                    "computer.",
                    "<b>Project report.</b> The report gives the status of each requirement."])]
@@ -596,12 +603,19 @@ def story(doc):
 
     # ------------------------------------------------------------------ 8
     s += [h1("9  Status")]
-    s += [p("The HPDP meets 99 of the 102 requirements of version 1.0 of the specification. No "
-            "requirement has the status “not met”. Three requirements are open:"),
+    s += [p("The HPDP meets 101 of the 102 requirements of version 1.0 of the specification. No "
+            "requirement has the status “not met”. Note these items:"),
           bullets(["<b>SW-05</b> (upload through Ethernet) is partly met. The code is written and "
                    "it builds. The test on the board needs an Ethernet port on the PC.",
-                   "<b>CMP-02 and MDL-02</b> (comparison with an independent CCSDS 123 decoder) are "
-                   "open. They need an account for the ESA or the CNES tools."]),
+                   "<b>CMP-02 and MDL-02</b> (comparison with an independent CCSDS 123 "
+                   "implementation) are met, with a documented deviation. The specification gives "
+                   "the ESA and the CNES decoders, but these tools need an account. Thus the team "
+                   "used an independent compressor: the CCSDS 123.0-B-2 model of the NTNU SmallSat "
+                   "Lab. It gave the same bytes as the HPDP in 947 of 949 runs.",
+                   "<b>O-9</b> is an open finding. The two other runs used full prediction with one "
+                   "pixel in each line (Nx = 1). The independent model does not accept this setting "
+                   "(CCSDS 123.0-B-2, section 4.3.1). The mission setting (Nx = 512) is not "
+                   "affected."]),
           p("The results report (HPDP-RPT-001) gives the results, the status of each requirement "
             "and the open items.")]
 

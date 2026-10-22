@@ -6,8 +6,8 @@ from hpdp_pdf import CELL, HpdpDoc, PageBreak, Spacer, bullets, code, figure, h1
 
 TITLE = "HPDP Results Report"
 DOC_ID = "HPDP-RPT-001"
-REV = "A"
-DATE = "2026-10-16"
+REV = "B"
+DATE = "2026-10-22"
 PASS = "<font color='#006300'><b>PASS</b></font>"
 PART = "<font color='#a56b00'><b>PARTLY</b></font>"
 OPEN = "<font color='#52514e'><b>OPEN</b></font>"
@@ -22,8 +22,8 @@ def story(doc):
                           "NX_MAX 1024)"),
         ("Hardware", "AMD ZCU106, XCZU7EV-2; two 1000BASE-SX SFP modules; 1 m duplex OM3 fiber"),
         ("Specification", "SPEC.md v1.0 (102 shall / should requirements)"),
-        ("Result", "99 of 102 requirements met; 1 partly met (documented deviation); 2 pending an "
-                   "external tool"),
+        ("Result", "101 of 102 requirements met, none unmet; 1 partly met (documented deviation); "
+                   "1 open finding (O-9)"),
     ], extra=[p("This report gives the measured results of the Hyperspectral Payload Data "
                 "Processor: throughput, compression, the optical link, end-to-end integrity, "
                 "radiation mitigation, implementation and verification coverage, followed by the "
@@ -49,7 +49,11 @@ def story(doc):
               ["Compressor matrix (VER-02)", "864 of 864 configurations bit-exact", PASS],
               ["Ethernet upload (SW-05)", "Written and built; board test not done (no Ethernet "
                                           "port on the PC)", PART],
-              ["Independent decoder (CMP-02, MDL-02)", "Needs ESA or CNES tool access (O-5)", OPEN]],
+              ["Independent implementation (CMP-02, MDL-02)", "Byte-identical to the NTNU CCSDS "
+                                                              "123.0-B-2 model in 947 of 949 runs; "
+                                                              "the other 2 are O-9", PASS],
+              ["Full prediction at Nx = 1 (O-9)", "Accepted by the HPDP, refused by the independent "
+                                                  "model (§4.3.1); not a mission setting", OPEN]],
               [1.9, 3.6, 0.8]),
           Spacer(1, 6),
           h2("1.1  Test set-up"),
@@ -229,6 +233,8 @@ def story(doc):
                                                 "× mode 2 × P 4 × D 3 × "
                                                 "Ω 3 × U<sub>max</sub> 3)",
                "864 of 864 bit-exact, 57 minutes"],
+              ["Independent model (O-5)", "NTNU CCSDS 123.0-B-2 model, same scenes and header",
+               "947 of 949 identical"],
               ["Fault campaign", "tb_fault, 1300 trials", "0 silent in protected state"],
               ["Board", "M0 loopback; M4 15 scenes; M5 VER-06/07/08 and SYS-09; M7 runbook; real "
                         "scenes, 1024 build, SD card and console", "All pass, JTAG only"]],
@@ -241,7 +247,8 @@ def story(doc):
               ["Sensor emulator (SE-01 to 06)", "All", "–"],
               ["Radiometric correction (RC-01 to 05)", "All", "–"],
               ["Corner turn (CT-01 to 04)", "All", "–"],
-              ["Compressor (CMP-01, 03 to 09)", "All", "CMP-02: independent decoder (O-5)"],
+              ["Compressor (CMP-01 to 09)", "All; CMP-02 by deviation (section 9)",
+               "Open finding O-9 (section 10)"],
               ["Packetizer, AOS framer", "All", "–"],
               ["Channel coding (CC-01 to 06)", "All; CC-06 with reedsolo instead of libfec", "–"],
               ["Error injector (EI-01 to 04)", "All", "–"],
@@ -250,7 +257,7 @@ def story(doc):
               ["Data movement (DM-01 to 03)", "All", "–"],
               ["PS software (SW-01 to 06)", "01 to 04, 06", "SW-05 partly met (section 9)"],
               ["Ground station (GS-01 to 06)", "All; GS-02 with reedsolo", "–"],
-              ["Models (MDL-01 to 04)", "01, 03, 04", "MDL-02: independent decoder (O-5)"],
+              ["Models (MDL-01 to 04)", "All; MDL-02 by deviation (section 9)", "–"],
               ["Radiation (RAD-01 to 07)", "All", "–"],
               ["Verification (VER-01 to 10)", "All; VER-04 with reedsolo", "–"]],
               [2.4, 2.4, 2.2], zebra=True),
@@ -270,6 +277,12 @@ def story(doc):
               ["reedsolo instead of libfec (CC-06, GS-02, VER-04)",
                "An independent RS implementation in Python with the same field and roots, "
                "available without building libfec on Windows."],
+              ["Independent CCSDS 123 check without the ESA / CNES tools (CMP-02, MDL-02, O-5)",
+               "Both tools need an account or a request. The check uses the NTNU SmallSat Lab's "
+               "CCSDS 123.0-B-2 model (Python, MIT licence), which its authors verified against the "
+               "CCSDS test vectors and the CNES tool. It is a compressor, not a decoder: it reads our "
+               "header, compresses the same samples and must produce the same bytes. A decode with "
+               "the ESA or CNES tool remains an optional further check."],
               ["Calibration table layouts (M7, SYS-04)",
                "Layout A, one entry per 64-bit word up to 512 × 256; layout B above it, so "
                "NX_MAX 1024 fits in 80 of 96 UltraRAMs."],
@@ -294,7 +307,11 @@ def story(doc):
               ["SW-05: TCP upload on the board (closes the deviation)",
                "An Ethernet cable from the board to a PC port, for example through a USB-Ethernet "
                "adapter", "About ten minutes"],
-              ["CMP-02 / MDL-02 / O-5: independent CCSDS 123 decoder",
+              ["O-9: full prediction mode at Nx = 1",
+               "Confirm the rule in CCSDS 123.0-B-2 §4.3.1; then reject the setting in the model "
+               "and in cfg_error, and rerun the RTL regression and the independent check. The "
+               "mission setting (Nx = 512) is not affected", "About an hour"],
+              ["CMP-02 to the letter (optional)",
                "An account for ESA WhiteDwarf 2.0 (ESSR) or the CNES tools; then decode the RTL "
                "test vectors and the real-data scenes", "Half a day once available"]],
               [2.2, 3.2, 1.2]),
@@ -306,10 +323,13 @@ def story(doc):
             "to a bit-exact image at the ground, at the full mission rate, through a real optical "
             "link, with error correction that holds to a bit error rate of 2 × "
             "10<super>-3</super> and radiation mitigation that left no silent corruption in "
-            "protected logic. 99 of 102 requirements are met and none is unmet; the remaining "
-            "three need an Ethernet port and an external decoder."),
+            "protected logic. 101 of 102 requirements are met and none is unmet; the remaining "
+            "one needs an Ethernet port. Its output is byte-identical to an independent CCSDS "
+            "123.0-B-2 implementation; the one open finding (O-9) is a setting outside the "
+            "mission configuration."),
           h2("Appendix A: Reproducing the results"),
           code(["python -m pytest model                                  # Python models",
+                "python model/xcheck_ntnu.py --hlm <clone> -j 6 all      # independent check (O-5)",
                 "vivado -mode batch -source tb/run_sim.tcl               # RTL regression (87 tests)",
                 "vivado -mode batch -source vivado/build.tcl             # bitstream + XSA",
                 "vitis -s sw/baremetal/build.py build/m7h/hpdp.xsa       # software",
