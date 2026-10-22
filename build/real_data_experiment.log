@@ -1,0 +1,101 @@
+﻿99 tasks to run (0 done), 5 processes
+[1/99, 0 min] indian_pines: reduced prediction: 6.019 bits/sample, round trip None, 17 s
+[2/99, 0 min] indian_pines: P = 0 (spatial only): 7.433 bits/sample, round trip None, 18 s
+[3/99, 0 min] indian_pines: column-wide local sum: 6.296 bits/sample, round trip None, 20 s
+[4/99, 0 min] indian_pines: neighbour-narrow local sum: 6.190 bits/sample, round trip None, 21 s
+[5/99, 1 min] indian_pines: P = 15: 6.061 bits/sample, round trip None, 33 s
+[6/99, 1 min] indian_pines: column-narrow local sum: 6.325 bits/sample, round trip None, 21 s
+[7/99, 1 min] indian_pines: omega 19, v_max 9: 6.065 bits/sample, round trip None, 22 s
+[8/99, 1 min] indian_pines: scenes of 32 lines: 6.072 bits/sample, round trip None, 19 s
+[9/99, 1 min] indian_pines: scenes of 16 lines: 6.118 bits/sample, round trip None, 22 s
+[10/99, 1 min] indian_pines: scenes of 64 lines: 6.042 bits/sample, round trip None, 19 s
+[11/99, 1 min] indian_pines: scenes of 128 lines: 6.015 bits/sample, round trip None, 18 s
+[12/99, 4 min] aviris/f090710t01p00r09rdn_b_crop19: reduced prediction: 3.903 bits/sample, round trip None, 197 s
+[13/99, 4 min] aviris/f090710t01p00r09rdn_b_crop19: P = 0 (spatial only): 6.568 bits/sample, round trip None, 205 s
+[14/99, 5 min] aviris/f090710t01p00r09rdn_b_crop19: column-wide local sum: 4.215 bits/sample, round trip None, 232 s
+[15/99, 5 min] aviris/f090710t01p00r09rdn_b_crop19: neighbour-narrow local sum: 4.048 bits/sample, round trip None, 242 s
+[16/99, 7 min] aviris/f090710t01p00r09rdn_b_crop19: P = 15: 4.105 bits/sample, round trip None, 384 s
+[17/99, 8 min] aviris/f090710t01p00r09rdn_b_crop19: column-narrow local sum: 4.233 bits/sample, round trip None, 245 s
+[18/99, 9 min] aviris/f090710t01p00r09rdn_b_crop19: omega 19, v_max 9: 4.102 bits/sample, round trip None, 268 s
+[19/99, 9 min] aviris/f090710t01p00r09rdn_b_crop19: scenes of 16 lines: 4.084 bits/sample, round trip None, 265 s
+[20/99, 9 min] aviris/f090710t01p00r09rdn_b_crop19: scenes of 32 lines: 4.030 bits/sample, round trip None, 269 s
+[21/99, 12 min] aviris/f090710t01p00r09rdn_b_crop19: scenes of 64 lines: 3.993 bits/sample, round trip None, 268 s
+[22/99, 12 min] aviris/f090710t01p00r09rdn_b_crop19: scenes of 128 lines: 3.963 bits/sample, round trip None, 263 s
+[23/99, 13 min] aviris/f090710t01p00r09rdn_b_crop19: scenes of 256 lines: 3.945 bits/sample, round trip None, 259 s
+[24/99, 13 min] hyperion/EO1H2230682017070110KF_2: P = 0 (spatial only): 5.484 bits/sample, round trip None, 231 s
+[25/99, 15 min] hyperion/EO1H2230682017070110KF_2: reduced prediction: 4.963 bits/sample, round trip None, 220 s
+[26/99, 17 min] hyperion/EO1H2230682017070110KF_2: P = 15: 4.881 bits/sample, round trip None, 430 s
+[27/99, 17 min] hyperion/EO1H2230682017070110KF_2: neighbour-narrow local sum: 4.992 bits/sample, round trip None, 273 s
+[28/99, 17 min] hyperion/EO1H2230682017070110KF_2: column-wide local sum: 5.084 bits/sample, round trip None, 264 s
+[29/99, 18 min] hyperion/EO1H2230682017070110KF_2: column-narrow local sum: 5.089 bits/sample, round trip None, 269 s
+[30/99, 20 min] hyperion/EO1H2230682017070110KF_2: omega 19, v_max 9: 5.675 bits/sample, round trip None, 293 s
+[31/99, 21 min] hyperion/EO1H2230682017070110KF_2: scenes of 16 lines: 5.030 bits/sample, round trip None, 286 s
+[32/99, 22 min] hyperion/EO1H2230682017070110KF_2: scenes of 32 lines: 4.994 bits/sample, round trip None, 286 s
+[33/99, 22 min] hyperion/EO1H2230682017070110KF_2: scenes of 64 lines: 4.965 bits/sample, round trip None, 283 s
+[34/99, 22 min] hyperion/EO1H2230682017070110KF_2: scenes of 128 lines: 4.943 bits/sample, round trip None, 284 s
+[35/99, 22 min] indian_pines: default (P 3, full, neighbour-wide, omega 13): 6.012 bits/sample, round trip True, 40 s
+[36/99, 25 min] hyperion/EO1H2230682017070110KF_2: scenes of 256 lines: 4.928 bits/sample, round trip None, 266 s
+[37/99, 26 min] hyperion/EO1H2230682017070110KF_2: scenes of 512 lines: 4.920 bits/sample, round trip None, 255 s
+[38/99, 30 min] aviris/f080806t01p00r07_crop0: default (P 3, full, neighbour-wide, omega 13): 4.027 bits/sample, round trip True, 443 s
+[39/99, 30 min] aviris/f080706t01p00r08rdn_0: default (P 3, full, neighbour-wide, omega 13): 7.085 bits/sample, round trip True, 486 s
+[40/99, 31 min] aviris/f080713t01p00r15rdn_2: default (P 3, full, neighbour-wide, omega 13): 7.882 bits/sample, round trip True, 495 s
+[41/99, 32 min] aviris/f080806t01p00r07_crop2: default (P 3, full, neighbour-wide, omega 13): 4.093 bits/sample, round trip True, 445 s
+[42/99, 33 min] aviris/f080806t01p00r07_crop4: default (P 3, full, neighbour-wide, omega 13): 3.993 bits/sample, round trip True, 437 s
+[43/99, 37 min] aviris/f080806t01p00r07_crop5: default (P 3, full, neighbour-wide, omega 13): 3.947 bits/sample, round trip True, 439 s
+[44/99, 37 min] aviris/f080806t01p00r08_crop8: default (P 3, full, neighbour-wide, omega 13): 4.242 bits/sample, round trip True, 442 s
+[45/99, 38 min] aviris/f080806t01p00r08_crop9: default (P 3, full, neighbour-wide, omega 13): 4.256 bits/sample, round trip True, 444 s
+[46/99, 39 min] aviris/f080814t01p00r17_crop0: default (P 3, full, neighbour-wide, omega 13): 3.844 bits/sample, round trip True, 439 s
+[47/99, 40 min] aviris/f080814t01p00r17_crop4: default (P 3, full, neighbour-wide, omega 13): 3.400 bits/sample, round trip True, 434 s
+[48/99, 45 min] aviris/f080814t01p00r17_crop5: default (P 3, full, neighbour-wide, omega 13): 3.232 bits/sample, round trip True, 460 s
+[49/99, 46 min] aviris/f090705t01p00r07rdn_10: default (P 3, full, neighbour-wide, omega 13): 7.465 bits/sample, round trip True, 523 s
+[50/99, 47 min] aviris/f090705t01p00r07rdn_14: default (P 3, full, neighbour-wide, omega 13): 7.929 bits/sample, round trip True, 528 s
+[51/99, 48 min] aviris/f090705t01p00r07rdn_25: default (P 3, full, neighbour-wide, omega 13): 7.081 bits/sample, round trip True, 518 s
+[52/99, 49 min] aviris/f090705t01p00r07rdn_6: default (P 3, full, neighbour-wide, omega 13): 7.650 bits/sample, round trip True, 527 s
+[53/99, 54 min] aviris/f090705t01p00r07rdn_8: default (P 3, full, neighbour-wide, omega 13): 7.597 bits/sample, round trip True, 524 s
+[54/99, 54 min] aviris/f090710t01p00r09rdn_b_crop10: default (P 3, full, neighbour-wide, omega 13): 3.982 bits/sample, round trip True, 484 s
+[55/99, 55 min] aviris/f090710t01p00r09rdn_b_crop11: default (P 3, full, neighbour-wide, omega 13): 3.962 bits/sample, round trip True, 486 s
+[56/99, 56 min] aviris/f090710t01p00r09rdn_b_crop12: default (P 3, full, neighbour-wide, omega 13): 3.985 bits/sample, round trip True, 495 s
+[57/99, 57 min] aviris/f090710t01p00r09rdn_b_crop13: default (P 3, full, neighbour-wide, omega 13): 3.976 bits/sample, round trip True, 499 s
+[58/99, 61 min] aviris/f090710t01p00r09rdn_b_crop14: default (P 3, full, neighbour-wide, omega 13): 3.950 bits/sample, round trip True, 469 s
+[59/99, 62 min] aviris/f090710t01p00r09rdn_b_crop16: default (P 3, full, neighbour-wide, omega 13): 3.904 bits/sample, round trip True, 475 s
+[60/99, 63 min] aviris/f090710t01p00r09rdn_b_crop19: default (P 3, full, neighbour-wide, omega 13): 3.932 bits/sample, round trip True, 470 s
+[61/99, 64 min] aviris/f090710t01p00r09rdn_b_crop2: default (P 3, full, neighbour-wide, omega 13): 4.045 bits/sample, round trip True, 475 s
+[62/99, 65 min] aviris/f090710t01p00r09rdn_b_crop29: default (P 3, full, neighbour-wide, omega 13): 3.839 bits/sample, round trip True, 474 s
+[63/99, 69 min] aviris/f090710t01p00r09rdn_b_crop3: default (P 3, full, neighbour-wide, omega 13): 3.996 bits/sample, round trip True, 473 s
+[64/99, 70 min] aviris/f090710t01p00r09rdn_b_crop31: default (P 3, full, neighbour-wide, omega 13): 3.849 bits/sample, round trip True, 467 s
+[65/99, 70 min] aviris/f090710t01p00r09rdn_b_crop8: default (P 3, full, neighbour-wide, omega 13): 3.957 bits/sample, round trip True, 463 s
+[66/99, 72 min] aviris/f090710t01p00r09rdn_b_crop9: default (P 3, full, neighbour-wide, omega 13): 3.937 bits/sample, round trip True, 456 s
+[67/99, 73 min] aviris/f090729t01p00r09rdn_b_crop1: default (P 3, full, neighbour-wide, omega 13): 4.263 bits/sample, round trip True, 454 s
+[68/99, 77 min] aviris/f100731t01p00r05rdn_b_crop0: default (P 3, full, neighbour-wide, omega 13): 4.112 bits/sample, round trip True, 486 s
+[69/99, 78 min] aviris/f100731t01p00r05rdn_b_crop3: default (P 3, full, neighbour-wide, omega 13): 4.105 bits/sample, round trip True, 488 s
+[70/99, 79 min] aviris/f100731t01p00r05rdn_b_crop4: default (P 3, full, neighbour-wide, omega 13): 4.126 bits/sample, round trip True, 489 s
+[71/99, 80 min] aviris/f100825t01p00r08rdn_b_crop0: default (P 3, full, neighbour-wide, omega 13): 3.498 bits/sample, round trip True, 474 s
+[72/99, 81 min] aviris/f100825t01p00r08rdn_b_crop12: default (P 3, full, neighbour-wide, omega 13): 4.131 bits/sample, round trip True, 498 s
+[73/99, 85 min] aviris/f100825t01p00r08rdn_b_crop13: default (P 3, full, neighbour-wide, omega 13): 4.171 bits/sample, round trip True, 462 s
+[74/99, 86 min] aviris/f100825t01p00r08rdn_b_crop6: default (P 3, full, neighbour-wide, omega 13): 4.169 bits/sample, round trip True, 460 s
+[75/99, 86 min] aviris/f100830t01p00r20rdn_b_sc01_crop4: default (P 3, full, neighbour-wide, omega 13): 2.985 bits/sample, round trip True, 439 s
+[76/99, 87 min] aviris/f100830t01p00r20rdn_b_sc01_crop5: default (P 3, full, neighbour-wide, omega 13): 3.020 bits/sample, round trip True, 437 s
+[77/99, 89 min] aviris/f110512t01p00r04rdn_c_sc01_crop5: default (P 3, full, neighbour-wide, omega 13): 4.116 bits/sample, round trip True, 453 s
+[78/99, 93 min] aviris/f110615t01p00r08rdn_c_crop10: default (P 3, full, neighbour-wide, omega 13): 4.136 bits/sample, round trip True, 449 s
+[79/99, 93 min] aviris/f110615t01p00r08rdn_c_crop11: default (P 3, full, neighbour-wide, omega 13): 4.136 bits/sample, round trip True, 447 s
+[80/99, 93 min] aviris/f110615t01p00r08rdn_c_crop13: default (P 3, full, neighbour-wide, omega 13): 4.198 bits/sample, round trip True, 451 s
+[81/99, 94 min] aviris/f110615t01p00r08rdn_c_crop6: default (P 3, full, neighbour-wide, omega 13): 4.330 bits/sample, round trip True, 451 s
+[82/99, 96 min] aviris/f170509t01p00r02rdn_e_sc01_crop12: default (P 3, full, neighbour-wide, omega 13): 3.484 bits/sample, round trip True, 450 s
+[83/99, 101 min] aviris/f170509t01p00r02rdn_e_sc01_crop21: default (P 3, full, neighbour-wide, omega 13): 3.798 bits/sample, round trip True, 497 s
+[84/99, 102 min] aviris/f170509t01p00r02rdn_e_sc01_crop27: default (P 3, full, neighbour-wide, omega 13): 3.689 bits/sample, round trip True, 501 s
+[85/99, 102 min] aviris/f170509t01p00r02rdn_e_sc01_crop32: default (P 3, full, neighbour-wide, omega 13): 3.625 bits/sample, round trip True, 493 s
+[86/99, 103 min] aviris/f170509t01p00r02rdn_e_sc01_crop34: default (P 3, full, neighbour-wide, omega 13): 3.792 bits/sample, round trip True, 495 s
+[87/99, 105 min] hyperion/EO1H0280342017063110K7_1: default (P 3, full, neighbour-wide, omega 13): 4.928 bits/sample, round trip True, 531 s
+[88/99, 109 min] hyperion/EO1H0280342017063110K7_2: default (P 3, full, neighbour-wide, omega 13): 4.903 bits/sample, round trip True, 520 s
+[89/99, 110 min] hyperion/EO1H1070332017063110K8_4: default (P 3, full, neighbour-wide, omega 13): 4.952 bits/sample, round trip True, 524 s
+[90/99, 110 min] hyperion/EO1H0430342017071110KF_2: default (P 3, full, neighbour-wide, omega 13): 4.837 bits/sample, round trip True, 528 s
+[91/99, 111 min] hyperion/EO1H1160142017064110KF_0: default (P 3, full, neighbour-wide, omega 13): 4.773 bits/sample, round trip True, 532 s
+[92/99, 114 min] hyperion/EO1H1290502017065110KF_1: default (P 3, full, neighbour-wide, omega 13): 4.736 bits/sample, round trip True, 536 s
+[93/99, 118 min] hyperion/EO1H1650432017063110K3_1: default (P 3, full, neighbour-wide, omega 13): 5.157 bits/sample, round trip True, 512 s
+[94/99, 119 min] hyperion/EO1H1790732017071110KG_2: default (P 3, full, neighbour-wide, omega 13): 4.979 bits/sample, round trip True, 495 s
+[95/99, 119 min] hyperion/EO1H1870432017064110T3_2: default (P 3, full, neighbour-wide, omega 13): 5.099 bits/sample, round trip True, 496 s
+[96/99, 120 min] hyperion/EO1H1980182017066110K3_0: default (P 3, full, neighbour-wide, omega 13): 5.008 bits/sample, round trip True, 484 s
+[97/99, 122 min] hyperion/EO1H1980182017066110K3_2: default (P 3, full, neighbour-wide, omega 13): 4.998 bits/sample, round trip True, 483 s
+[98/99, 127 min] hyperion/EO1H1980182017066110K3_3: default (P 3, full, neighbour-wide, omega 13): 5.006 bits/sample, round trip True, 530 s
+[99/99, 127 min] hyperion/EO1H2230682017070110KF_2: default (P 3, full, neighbour-wide, omega 13): 4.915 bits/sample, round trip True, 529 s
+table: C:\Users\shubham.draveriya\Desktop\Linux Boot\Hyperspectral-Payload-Processor\build\real_data_results.md

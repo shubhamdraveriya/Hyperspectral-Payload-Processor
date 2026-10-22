@@ -1,7 +1,8 @@
 name: ci
 
-# Python reference models run on every push. RTL simulation and FPGA builds
-# need Vivado and run locally (tb/run_sim.tcl, vivado/build.tcl).
+# Python reference models and the ground station decoder run on every push.
+# RTL simulation and FPGA builds need Vivado and run locally (tb/run_sim.tcl,
+# vivado/build.tcl).
 on:
   push:
   pull_request:
@@ -16,3 +17,5 @@ jobs:
           python-version: "3.12"
       - run: pip install -r requirements.txt
       - run: python -m pytest -q
+      # decoding and reports need only the standard library, model/ and reedsolo
+      - run: python -m pytest -q sw/ground

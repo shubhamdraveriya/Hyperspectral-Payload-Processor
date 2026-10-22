@@ -1,0 +1,56 @@
+﻿attempting to launch hw_server
+
+****** Xilinx hw_server v2025.2
+  **** Build date : Oct 28 2025 at 10:03:13
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+INFO: hw_server application started
+INFO: Use Ctrl-C to exit hw_server application
+
+
+
+****** Xilinx hw_server v2025.2
+
+  **** Build date : Oct 28 2025 at 10:03:13
+
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+
+
+INFO: hw_server application started
+
+INFO: Use Ctrl-C to exit hw_server application
+
+
+
+
+INFO: To connect to this hw_server instance use url: TCP:127.0.0.1:3121
+
+
+
+WARNING: If the reset is being triggered after powering on the device,
+ 
+         write bootloop at reset vector address (0xffff0000), or use
+ 
+         -clear-registers option, to avoid unpredictable behavior.
+ 
+         Further warnings will be suppressed
+sd_put: result read back
+  scene0.hpdp: 1048640 bytes at 0x11000000
+  scene_c.hpdp: 1048640 bytes at 0x11100040
+  table.cal: 65600 bytes at 0x11200080
+  avi64.hpdp: 14680128 bytes at 0x112100C0
+  avi64b.hpdp: 14680128 bytes at 0x12010100
+  EXPECTED.txt: 479 bytes at 0x12E10140
+XSDB script: C:\Users\shubham.draveriya\hpdp_runs\sd_put\run.tcl
+running XSDB (JTAG): files into DDR, sd_put writes and verifies them ...
+  scene0.hpdp: written and verified
+  scene_c.hpdp: written and verified
+  table.cal: written and verified
+  avi64.hpdp: written and verified
+  avi64b.hpdp: written and verified
+  EXPECTED.txt: written and verified
+PASS: sd_put, 6 of 6 files on the SD card (status 0)

@@ -1,0 +1,19 @@
+﻿1 scenes 256x128x242 D=15, source dma, correction off: computing the expected output ...
+downlink: 2435 packets in 5678 science frames
+build 0x00000000, 1 scenes compressed
+link: LNK.STATUS 0x00000F0F (tx 1, rx 1, aligned 1, locked 1, CPLL 11, power good 11), 0 RX resets during bring-up
+memory ECC, corrected / uncorrectable reads: table 0 / 0, corner turn 0 / 0, line buffer 0 / 0
+weights ECC: 0 corrected / 0 uncorrectable reads; TMR disagreements: compressor memories 0, registers 0, state machines 0
+SEM: status 0x004 (observing), 0 corrections, 0 uncorrectable, 1000 heartbeats
+pipeline watchdog stalls: compressor 0, downlink 0, ground capture 0
+compressed scenes (capture DMA):
+build 0x00000000, 1 scenes compressed
+  scene 0: 4985044 bytes (5.03 bits/sample), identical to the model, decodes bit-exactly
+throughput: 100.0 Msamples/s (1500 Mbit/s raw), line period 61953 cycles = 100.0 Msamples/s offered
+compression: 2.98:1 over 1 scenes
+PASS: capture path, 1 scenes 256x128x242 D=15
+ground: 5678 records (0 VERIFY, 5678 LOCK, 0 FLYWHEEL), 0 ASM bit errors; RS: 0 symbols corrected, 0 codeblocks uncorrectable; 0 frames lost, 0 idle, 0 foreign
+  scene 0: reconstructed bit-exactly (4985044 compressed bytes)
+downlink: 2435 packets, 5678 science + 6 idle frames, 0 bits injected (BER 0.00e+00 over 5684 CADUs)
+link: 0 code errors, 0 clock corrections, 0 buffer errors, 0 data / 0 idle words sent
+PASS: run_m5, 1 scenes 256x128x242 D=15 over the link

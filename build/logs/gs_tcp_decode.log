@@ -1,0 +1,9 @@
+﻿connecting to tcp://127.0.0.1:5001 ...
+scene 0: 145x145x220 D=14, 3476350 bytes, 6.01 bits/sample (2.33:1), 3960 frames, 0 RS corrections, decoded in 18.5 s -> PASS
+3960 records in 24.8 s
+records: 3960 (3960 LOCK), 0 ASM bit errors, 1674 sequence numbers not captured (skipped idle frames or drops)
+RS: 0 symbols corrected, 0 codeblocks uncorrectable
+frames: 3960 science, 0 idle, 0 other VC, 0 foreign, 0 lost (VC frame count gaps)
+packets: 1698 science, 0 missing by sequence count, 0 unreadable, 0 other APID
+scenes: 1 reconstructed, 0 not
+PASS: hpdp_gs, 1 of 1 scenes bit-exact

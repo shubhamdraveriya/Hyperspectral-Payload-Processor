@@ -257,7 +257,7 @@ out[x] = c[x]                          if g[x]
 | ID | Requirement |
 |---|---|
 | CMP-01 | The output bitstream shall be bit-identical to the Python reference model (`model/ccsds123`) for every supported configuration. |
-| CMP-02 | The output shall decode bit-exactly with an independent CCSDS 123.0-B-2 decoder (ESA WhiteDwarf 2.0 decompressor or CNES tools). |
+| CMP-02 | The output shall decode bit-exactly with an independent CCSDS 123.0-B-2 decoder (ESA WhiteDwarf 2.0 decompressor or CNES tools). *Deviation (2026-10-15, O-5): shown instead by byte identity with an independent CCSDS 123.0-B-2 compressor; see docs/project_report.md §6.* |
 | CMP-03 | Lossless mode shall sustain 1 sample per cycle at `clk_sys` ≥ 200 MHz (target 250 MHz), for any image content, when the output is not back-pressured. |
 | CMP-04 | Shall support output back-pressure by stalling the whole pipeline, without losing data. |
 | CMP-05 | Per-band state (weights, entropy-coder accumulators and counters) shall live in on-chip RAM and be reused every Nz samples. `NZ_MIN` (expected ≥ 32) shall be documented from the final pipeline depth. |
@@ -512,7 +512,7 @@ overflow, sync loss, link lock loss, uncorrectable ECC error, watchdog.
 | ID | Requirement |
 |---|---|
 | MDL-01 | `model/` shall contain a bit-exact model of every block, with pytest unit tests. |
-| MDL-02 | CCSDS 123 encoder **and** decoder, with round-trip tests over the configuration matrix (`VER-02`) and cross-validation against an independent decoder. |
+| MDL-02 | CCSDS 123 encoder **and** decoder, with round-trip tests over the configuration matrix (`VER-02`) and cross-validation against an independent decoder. *Deviation (2026-10-15, O-5): cross-validated against an independent compressor instead (`model/xcheck_ntnu.py`); see docs/project_report.md §6.* |
 | MDL-03 | Shall generate the test vectors used by the RTL testbenches. |
 | MDL-04 | End-to-end model: raw scene → CADUs, and captured codeblocks → reconstructed scene. |
 
@@ -666,7 +666,7 @@ Total about 31 weeks at 15–20 hours per week.
 | Risk | Mitigation |
 |---|---|
 | Misreading the CCSDS 123 standard | Python model first, validated against an independent decoder before any RTL (M1 before M2) |
-| Getting the ESA/CNES reference tools takes time | Request access during M0. Until then rely on round trips between the project's own encoder and decoder |
+| Getting the ESA/CNES reference tools takes time | Request access during M0. Until then rely on round trips between the project's own encoder and decoder. In the end an independent open-source model served instead (O-5) |
 | Compressor misses 200 MHz | BIP gives Nz cycles of slack on per-band state; pipeline deeply; check timing per block as it is built |
 | Near-lossless feedback loop limits speed | Ship lossless at full rate (v1.0); near-lossless may run slower (v1.1) |
 | GTH / SFP bring-up problems | Start from the Wizard example design and IBERT; fall back to internal near-end loopback, which needs no fiber |
@@ -694,10 +694,11 @@ Total about 31 weeks at 15–20 hours per week.
 | O-2 | ~~Which oscillator feeds the SFP quad, and must it be programmed over I2C at boot?~~ Closed: 156.25 MHz from the Si570 (through an SI53340) on MGTREFCLK1 of quad 226, no I2C setup; measured 156,250,064 Hz on this board. The Si5328 on MGTREFCLK1 of quad 225 would need I2C programming | M5 |
 | O-3 | ~~How SFP `TX_DISABLE`, `LOS` and `TX_FAULT` are wired~~ Closed (UG1244 table 3-32): `TX_DISABLE_B` on PL pins AE22 / AF20 (LVCMOS12); `LOS` and `TX_FAULT` are not wired to the PL | M5 |
 | O-4 | ~~Vivado licence covering XCZU7EV (ZCU106 kit voucher)~~ Closed: every XCZU7EV build since M0 (2026-10-10) ran with the installed licence | M0 |
-| O-5 | Access to ESA WhiteDwarf 2.0 / CNES CCSDS 123.0-B-2 tools | M1 |
+| O-5 | ~~Access to ESA WhiteDwarf 2.0 / CNES CCSDS 123.0-B-2 tools~~ Closed (2026-10-15) without them: the NTNU SmallSat Lab's independent CCSDS 123.0-B-2 model, set up from our headers, produces byte-identical output in 947 of 949 runs (the RTL tests, the whole `VER-02` matrix, Indian Pines crops; `model/xcheck_ntnu.py`, docs/project_report.md §6). The other two found O-9 | M1 |
 | O-6 | ~~`NZ_MIN` from the final compressor pipeline depth~~ Closed: `NZ_MIN` = 16 (docs/m2_compressor.md; tested in `c123_min_bands`) | M2 |
 | O-7 | ~~Default scene length (256 lines) and packet size (2048 bytes), to revisit after compression experiments~~ Closed (2026-10-14, docs/real_data.md): on real AVIRIS and Hyperion scenes, 256-line scenes cost 0.3 % against whole images (16 lines: 2 – 4 %), so the default stands; the packet size does not affect compression and stays at 2048 bytes (99.3 % packet efficiency, §12.2) | M4 |
 | O-8 | ~~SEM IP availability and licence for ZU7EV in Vivado 2025.2~~ Closed: `sem_ultra` 3.1 supports the XCZU7EV in Vivado 2025.2 with no licence key; running on the board since build m7f (docs/m7_plan.md) | M7 |
+| O-9 | Full prediction mode at Nx = 1: the model and RTL accept it, the NTNU model refuses it and cites CCSDS 123.0-B-2 §4.3.1 (reduced mode required). To confirm against the standard; if so, reject it in the model and in `cfg_error`, and test `one_column` in reduced mode (it matches the NTNU model there) | M2 |
 
 ---
 
@@ -719,6 +720,7 @@ Total about 31 weeks at 15–20 hours per week.
 | AMD UG573 | UltraScale Architecture Memory Resources (BRAM, UltraRAM) |
 | Sánchez et al., IEEE GRSL, 2022 | Removing the quantizer from the CCSDS 123.0-B-2 near-lossless feedback loop |
 | ESA WhiteDwarf 2.0 | Cross-validated CCSDS implementations (includes a 123.0-B-2 decompressor) |
+| Vorhaug, Boyle and Orlandić, WHISPERS 2024 | High-Level CCSDS 123.0-B-2 Hyperspectral Image Compressor Verification Model (NTNU SmallSat Lab; github.com/NTNU-SmallSat-Lab/ccsds123_issue_2_verification_model) |
 | libfec (Phil Karn) | Reference implementation of CCSDS Reed-Solomon (`encode_rs_ccsds`) |
 
 ---

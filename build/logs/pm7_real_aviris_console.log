@@ -1,0 +1,66 @@
+﻿attempting to launch hw_server
+
+****** Xilinx hw_server v2025.2
+  **** Build date : Oct 28 2025 at 10:03:13
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+INFO: hw_server application started
+INFO: Use Ctrl-C to exit hw_server application
+
+
+
+****** Xilinx hw_server v2025.2
+
+  **** Build date : Oct 28 2025 at 10:03:13
+
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+
+
+INFO: hw_server application started
+
+INFO: Use Ctrl-C to exit hw_server application
+
+
+
+
+INFO: To connect to this hw_server instance use url: TCP:127.0.0.1:3121
+
+
+
+WARNING: If the reset is being triggered after powering on the device,
+ 
+         write bootloop at reset vector address (0xffff0000), or use
+ 
+         -clear-registers option, to avoid unpredictable behavior.
+ 
+         Further warnings will be suppressed
+run_m5: result read back
+2 scenes 512x64x224 D=14, source dma, correction off: computing the expected output ...
+downlink: 5354 packets in 12487 science frames
+files and XSDB script in C:\Users\shubham.draveriya\hpdp_runs\pm7_real_aviris
+running XSDB (JTAG; volatile configuration only) ...
+build 0x577661AB, 2 scenes compressed
+link: LNK.STATUS 0x00000F0F (tx 1, rx 1, aligned 1, locked 1, CPLL 11, power good 11), 0 RX resets during bring-up
+memory ECC, corrected / uncorrectable reads: table 0 / 0, corner turn 0 / 0, line buffer 0 / 0
+weights ECC: 0 corrected / 0 uncorrectable reads; TMR disagreements: compressor memories 0, registers 0, state machines 0
+SEM: status 0x004 (observing), 0 corrections, 0 uncorrectable, 52916 heartbeats
+pipeline watchdog stalls: compressor 0, downlink 0, ground capture 0
+compressed scenes (capture DMA):
+build 0x577661AB, 2 scenes compressed
+  scene 0: 3898952 bytes (4.25 bits/sample), identical to the model, decodes bit-exactly
+  scene 1: 7063902 bytes (7.70 bits/sample), identical to the model, decodes bit-exactly
+throughput: 99.3 Msamples/s (1391 Mbit/s raw), line period 114689 cycles = 100.0 Msamples/s offered
+compression: 2.34:1 over 2 scenes
+compressor: last scene 18308957 clk_sys cycles, 16009281 output stall cycles
+PASS: capture path, 2 scenes 512x64x224 D=14
+ground: 12487 records (0 VERIFY, 12487 LOCK, 0 FLYWHEEL), 0 ASM bit errors; RS: 0 symbols corrected, 0 codeblocks uncorrectable; 0 frames lost, 0 idle, 0 foreign
+  scene 0: reconstructed bit-exactly (3898952 compressed bytes)
+  scene 1: reconstructed bit-exactly (7063902 compressed bytes)
+downlink: 5354 packets, 12487 science + 6727 idle frames, 0 bits injected (BER 0.00e+00 over 19214 CADUs)
+link: 0 code errors, 0 clock corrections, 0 buffer errors, 9837471 data / 4805 idle words sent
+ground: last record 148.1 ms after the sensor start (592 Mbit/s of compressed data end to end)
+PASS: run_m5, 2 scenes 512x64x224 D=14 over the link

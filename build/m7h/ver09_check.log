@@ -1,0 +1,94 @@
+#-----------------------------------------------------------
+# Vivado v2025.2 (64-bit)
+# SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+# IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+# SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+# Start of session at: Tue Oct 13 15:57:24 2026
+# Process ID         : 30216
+# Current directory  : C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h
+# Command line       : vivado.exe -mode batch -nojournal -log C:\Users\shubham.draveriya\Desktop\Linux Boot\Hyperspectral-Payload-Processor\build\m7h\ver09_check.log -source ver09_check.tcl
+# Log file           : C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/ver09_check.log
+# Journal file       : 
+# Running On         : EMS-GB-SD
+# Platform           : Windows Server 2016 or Windows 10
+# Operating System   : 26300
+# Processor Detail   : Intel(R) Core(TM) Ultra 5 245K
+# CPU Frequency      : 4186 MHz
+# CPU Physical cores : 14
+# CPU Logical cores  : 14
+# Host memory        : 33795 MB
+# Swap memory        : 10654 MB
+# Total Virtual      : 44449 MB
+# Available Virtual  : 22307 MB
+#-----------------------------------------------------------
+source ver09_check.tcl
+# set here [file dirname [file normalize [info script]]]
+# open_checkpoint [file join $here vivado hpdp.runs impl_1 hpdp_top_routed.dcp]
+Command: open_checkpoint {C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/impl_1/hpdp_top_routed.dcp}
+
+Starting open_checkpoint Task
+
+Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.027 . Memory (MB): peak = 343.312 ; gain = 5.809
+INFO: [Device 21-403] Loading part xczu7ev-ffvc1156-2-e
+Netlist sorting complete. Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.736 . Memory (MB): peak = 1768.188 ; gain = 0.000
+INFO: [Netlist 29-17] Analyzing 1862 Unisim elements for replacement
+INFO: [Netlist 29-28] Unisim Transformation completed in 0 CPU seconds
+INFO: [Project 1-479] Netlist was created with Vivado 2025.2
+INFO: [Project 1-570] Preparing netlist for logic optimization
+Read ShapeDB Complete: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.148 . Memory (MB): peak = 1813.738 ; gain = 23.520
+INFO: [Timing 38-478] Restoring timing data from binary archive.
+INFO: [Timing 38-479] Binary timing data restore complete.
+INFO: [Project 1-856] Restoring constraints from binary archive.
+INFO: [Project 1-853] Binary constraint restore complete.
+INFO: [Designutils 20-5722] Start Reading Physical Databases.
+Reading placement.
+Read Netlist Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.050 . Memory (MB): peak = 2306.414 ; gain = 0.000
+Reading placer database...
+Read Device Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.027 . Memory (MB): peak = 2306.414 ; gain = 0.000
+Read PlaceDB: Time (s): cpu = 00:00:02 ; elapsed = 00:00:02 . Memory (MB): peak = 2388.594 ; gain = 82.180
+Read PulsedLatchDB: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 2388.594 ; gain = 0.000
+Reading routing.
+Read RouteStorage: Time (s): cpu = 00:00:06 ; elapsed = 00:00:05 . Memory (MB): peak = 2951.191 ; gain = 562.598
+Read Physdb Files: Time (s): cpu = 00:00:08 ; elapsed = 00:00:08 . Memory (MB): peak = 2951.191 ; gain = 644.777
+Restored from archive | CPU: 8.000000 secs | Memory: 0.000000 MB |
+Finished XDEF File Restore: Time (s): cpu = 00:00:08 ; elapsed = 00:00:08 . Memory (MB): peak = 2951.191 ; gain = 644.777
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.026 . Memory (MB): peak = 2951.191 ; gain = 0.000
+INFO: [Project 1-111] Unisim Transformation Summary:
+  A total of 437 instances were transformed.
+  DSP48E2 => DSP48E2 (DSP_ALU, DSP_A_B_DATA, DSP_C_DATA, DSP_MULTIPLIER, DSP_M_DATA, DSP_OUTPUT, DSP_PREADD, DSP_PREADD_DATA): 21 instances
+  DSP48E2 => DSP48E2 (inverted pins: RSTA) (DSP_ALU, DSP_A_B_DATA, DSP_C_DATA, DSP_MULTIPLIER, DSP_M_DATA, DSP_OUTPUT, DSP_PREADD, DSP_PREADD_DATA): 1 instance 
+  DSP48E2 => DSP48E2 (inverted pins: RSTA, RSTB) (DSP_ALU, DSP_A_B_DATA, DSP_C_DATA, DSP_MULTIPLIER, DSP_M_DATA, DSP_OUTPUT, DSP_PREADD, DSP_PREADD_DATA): 1 instance 
+  DSP48E2 => DSP48E2 (inverted pins: RSTB) (DSP_ALU, DSP_A_B_DATA, DSP_C_DATA, DSP_MULTIPLIER, DSP_M_DATA, DSP_OUTPUT, DSP_PREADD, DSP_PREADD_DATA): 1 instance 
+  IBUFDS => IBUFDS (DIFFINBUF, IBUFCTRL): 1 instance 
+  LUT6_2 => LUT6_2 (LUT5, LUT6): 38 instances
+  RAM16X1D => RAM32X1D (RAMD32(x2)): 2 instances
+  RAM32M => RAM32M (RAMD32(x6), RAMS32(x2)): 9 instances
+  RAM32M16 => RAM32M16 (RAMD32(x14), RAMS32(x2)): 112 instances
+  RAM32X1D => RAM32X1D (RAMD32(x2)): 21 instances
+  RAM64M => RAM64M (RAMD64E(x4)): 50 instances
+  RAM64M8 => RAM64M8 (RAMD64E(x8)): 168 instances
+  RAM64X1D => RAM64X1D (RAMD64E(x2)): 12 instances
+
+INFO: [Project 1-604] Checkpoint was created with Vivado v2025.2 (64-bit) build 6299465
+open_checkpoint: Time (s): cpu = 00:00:32 ; elapsed = 00:00:33 . Memory (MB): peak = 2951.191 ; gain = 2623.496
+# report_bus_skew -file [file join $here reports bus_skew.rpt]
+INFO: [Timing 38-91] UpdateTimingParams: Speed grade: -2, Temperature grade: E, Delay Type: min_max.
+INFO: [Timing 38-191] Multithreading enabled for timing update using a maximum of 2 CPUs
+report_bus_skew: Time (s): cpu = 00:00:28 ; elapsed = 00:00:18 . Memory (MB): peak = 3249.840 ; gain = 298.648
+# report_cdc -details -file [file join $here reports cdc_details.rpt]
+INFO: [Timing 38-91] UpdateTimingParams: Speed grade: -2, Temperature grade: E, Delay Type: min_max.
+INFO: [Timing 38-191] Multithreading enabled for timing update using a maximum of 2 CPUs
+INFO: [Timing 38-314] The report_cdc command only analyzes and reports clock domain crossing paths where clocks have been defined on both source and destination sides. Ports with no input delay constraint are skipped. Please run check_timing to verify there are no missing clock definitions in your design, nor any unconstrained input port.
+# report_methodology -file [file join $here reports methodology_check.rpt]
+Command: report_methodology -file {C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/reports/methodology_check.rpt}
+INFO: [Timing 38-35] Done setting XDC timing constraints.
+INFO: [DRC 23-133] Running Methodology with 2 threads
+INFO: [Vivado_Tcl 2-1520] The results of Report Methodology are in file C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/reports/methodology_check.rpt.
+report_methodology completed successfully
+report_methodology: Time (s): cpu = 00:00:18 ; elapsed = 00:00:10 . Memory (MB): peak = 3249.926 ; gain = 0.086
+# set viol 0
+INFO: [Timing 38-35] Done setting XDC timing constraints.
+# foreach s [get_timing_paths -max_paths 1 -nworst 1 -setup] { if {[get_property SLACK $s] < 0} { incr viol } }
+# puts "VER09: setup slack check, violations $viol"
+VER09: setup slack check, violations 0
+INFO: [Common 17-206] Exiting Vivado at Tue Oct 13 15:58:34 2026...

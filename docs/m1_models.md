@@ -27,7 +27,7 @@ reference the RTL is checked against in M2–M5 (SPEC.md MDL-01..04).
 | CCSDS 123 encoder/decoder consistency | lossless round trip for 20 configurations × D ∈ {8, 12, 16}, noise at D ∈ {2, 5, 16}, constant images, BSQ / BIL / BIP / sub-frame orders | high |
 | Predictor behaviour | `test_interband_prediction_converges`: with the same texture in every band, the previous-band weight converges and the late residual falls below 0.5 (0.02 measured); spatial-only prediction cannot do this | high |
 | Near-lossless quantizer | max error ≤ m for m = 1, 3, 7 (body only; header subpart not implemented) | high |
-| CCSDS 123 conformance (equations, header bit layout) | written from CCSDS 123.0-B-2; **not yet checked against an independent decoder** | pending O-5 |
+| CCSDS 123 conformance (equations, header bit layout) | written from CCSDS 123.0-B-2; `model/xcheck_ntnu.py` (2026-10-15): the NTNU SmallSat Lab's independent CCSDS 123.0-B-2 model, set up from our header, produces byte-identical output in 947 of 949 runs (RTL test scenes, the `VER-02` matrix, BSQ / BIL / sub-frame orders, Indian Pines crops). The other two are full prediction at Nx = 1, which it refuses (§4.3.1; SPEC O-9) | high (O-5) |
 | RS generator and dual basis | generator palindromic (reciprocal root pairs), zero syndromes on codewords, dual-basis table from libfec `ccsds_tal.c` | medium–high |
 | RS decoder | corrects every pattern of ≤ 16 symbol errors tested, flags ≥ 17 as uncorrectable, 64-byte burst at I = 4 corrected | high |
 | RS against an independent implementation | `test_matches_independent_implementation`: parity identical to `reedsolo` (same field and roots) | high |
@@ -38,11 +38,18 @@ reference the RTL is checked against in M2–M5 (SPEC.md MDL-01..04).
 
 Test count: 142 (138 at M1, 4 added for `sensor.py` in M3), all passing.
 
-## Still open for M1's "done when"
+## Independent CCSDS 123 check (M1's "done when", SPEC O-5)
 
-1. **Independent CCSDS 123.0-B-2 decoder** (SPEC O-5): request ESA WhiteDwarf 2.0
-   and/or the CNES tools, then decompress `compress()` output with them, starting with
-   the header. Until then conformance rests on implementing the standard's text.
+Done 2026-10-15 with an independent compressor instead of the ESA / CNES decoders (a
+deviation, docs/project_report.md §6). `model/xcheck_ntnu.py` writes each scene, our
+header and our compressed image, runs the NTNU SmallSat Lab's CCSDS 123.0-B-2
+high-level model on the scene with our header, and compares the bytes; a mismatch
+reports the first differing byte and the first differing mapped residual. Setup and
+options are at the top of the script (`all`: the RTL tests, the matrix and the extra
+orders, about 6 minutes with `-j 6`; `--real`: a crop of a real scene).
+
+Still open: full prediction mode at Nx = 1 (SPEC O-9). The model accepts it; the NTNU
+model refuses it, citing §4.3.1. In reduced mode the same scenes match.
 
 ## Notes for M2 (RTL)
 

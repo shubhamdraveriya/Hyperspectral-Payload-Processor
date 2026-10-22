@@ -1,0 +1,1898 @@
+#-----------------------------------------------------------
+# Vivado v2025.2 (64-bit)
+# SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+# IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+# SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+# Start of session at: Tue Oct 13 14:36:07 2026
+# Process ID         : 28608
+# Current directory  : C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor
+# Command line       : vivado.exe -mode batch -nojournal -log C:\Users\shubham.draveriya\Desktop\Linux Boot\Hyperspectral-Payload-Processor\build\m7h\build.log -source vivado/build.tcl
+# Log file           : C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/build.log
+# Journal file       : 
+# Running On         : EMS-GB-SD
+# Platform           : Windows Server 2016 or Windows 10
+# Operating System   : 26300
+# Processor Detail   : Intel(R) Core(TM) Ultra 5 245K
+# CPU Frequency      : 4186 MHz
+# CPU Physical cores : 14
+# CPU Logical cores  : 14
+# Host memory        : 33795 MB
+# Swap memory        : 10654 MB
+# Total Virtual      : 44449 MB
+# Available Virtual  : 23956 MB
+#-----------------------------------------------------------
+source vivado/build.tcl
+# set repo [file normalize [file join [file dirname [info script]] ..]]
+# if {[info exists ::env(HPDP_BUILD_DIR)]} {
+#     set build_dir [file normalize $::env(HPDP_BUILD_DIR)]
+# } else {
+#     set build_dir [file join $repo build]
+# }
+# set xpr [file join $build_dir vivado hpdp.xpr]
+# set jobs 8
+# if {[file exists $xpr]} {
+#     open_project $xpr
+# } else {
+#     source [file join $repo vivado create_project.tcl]
+# }
+## set repo [file normalize [file join [file dirname [info script]] ..]]
+## if {[info exists ::env(HPDP_BUILD_DIR)]} {
+##     set build_dir [file normalize $::env(HPDP_BUILD_DIR)]
+## } else {
+##     set build_dir [file join $repo build]
+## }
+## set proj_dir [file join $build_dir vivado]
+## create_project hpdp $proj_dir -part xczu7ev-ffvc1156-2-e -force
+INFO: [ProjectBase 1-489] The host OS only allows 260 characters in a normal path. The project is stored in a path with more than 80 characters. If you experience issues with IP, Block Designs, or files not being found, please consider moving the project to a location with a shorter path. Alternately consider using the OS subst command to map part of the path to a drive letter.
+Current project path is 'C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado'
+## set_property board_part [lindex [get_board_parts -latest_file_version {*:zcu106:part0:*}] 0] [current_project]
+## set_property target_language Verilog [current_project]
+## set rtl [concat [glob -nocomplain [file join $repo rtl * *.sv]] [glob -nocomplain [file join $repo rtl * *.v]]]
+## if {[llength $rtl]} { add_files -norecurse $rtl }
+## set xdc [glob -nocomplain [file join $repo vivado constraints *.xdc]]
+## if {[llength $xdc]} { add_files -fileset constrs_1 -norecurse $xdc }
+## set_property USED_IN_SYNTHESIS false [get_files waivers.xdc]
+## source [file join $repo vivado ip gt_link.tcl]
+INFO: [IP_Flow 19-234] Refreshing IP repositories
+INFO: [IP_Flow 19-1704] No user IP repositories specified
+INFO: [IP_Flow 19-2313] Loaded Vivado IP repository 'C:/AMDDesignTools/2025.2/Vivado/data/ip'.
+### set ip [create_ip -name gtwizard_ultrascale -vendor xilinx.com -library ip -module_name gt_link]
+### set_property -dict [list \
+###     CONFIG.CHANNEL_ENABLE                {X0Y11 X0Y10} \
+###     CONFIG.TX_MASTER_CHANNEL             {X0Y10} \
+###     CONFIG.RX_MASTER_CHANNEL             {X0Y10} \
+###     CONFIG.TX_LINE_RATE                  {1.25} \
+###     CONFIG.RX_LINE_RATE                  {1.25} \
+###     CONFIG.TX_PLL_TYPE                   {CPLL} \
+###     CONFIG.RX_PLL_TYPE                   {CPLL} \
+###     CONFIG.TX_REFCLK_FREQUENCY           {156.25} \
+###     CONFIG.RX_REFCLK_FREQUENCY           {156.25} \
+### ] [get_ips gt_link]
+### set_property -dict [list \
+###     CONFIG.TX_DATA_ENCODING              {8B10B} \
+###     CONFIG.RX_DATA_DECODING              {8B10B} \
+###     CONFIG.TX_USER_DATA_WIDTH            {16} \
+###     CONFIG.TX_INT_DATA_WIDTH             {20} \
+###     CONFIG.RX_USER_DATA_WIDTH            {16} \
+###     CONFIG.RX_INT_DATA_WIDTH             {20} \
+### ] [get_ips gt_link]
+### set_property -dict [list \
+###     CONFIG.TX_REFCLK_SOURCE              {X0Y11 clk1+1 X0Y10 clk1+1} \
+###     CONFIG.RX_REFCLK_SOURCE              {X0Y11 clk1+1 X0Y10 clk1+1} \
+### ] [get_ips gt_link]
+### set_property -dict [list \
+###     CONFIG.RX_COMMA_PRESET               {K28.5} \
+###     CONFIG.RX_COMMA_P_ENABLE             {true} \
+###     CONFIG.RX_COMMA_M_ENABLE             {true} \
+###     CONFIG.RX_COMMA_MASK                 {1111111111} \
+###     CONFIG.RX_COMMA_ALIGN_WORD           {2} \
+###     CONFIG.RX_COMMA_DOUBLE_ENABLE        {false} \
+###     CONFIG.RX_COMMA_SHOW_REALIGN_ENABLE  {true} \
+### ] [get_ips gt_link]
+### set_property -dict [list \
+###     CONFIG.RX_CC_NUM_SEQ                 {1} \
+###     CONFIG.RX_CC_LEN_SEQ                 {2} \
+###     CONFIG.RX_CC_VAL_0_0                 {10111100} \
+###     CONFIG.RX_CC_K_0_0                   {true} \
+###     CONFIG.RX_CC_VAL_0_1                 {01010000} \
+###     CONFIG.RX_CC_K_0_1                   {false} \
+###     CONFIG.RX_CC_PERIODICITY             {1000} \
+###     CONFIG.RX_PPM_OFFSET                 {200} \
+### ] [get_ips gt_link]
+### set_property -dict [list \
+###     CONFIG.LOCATE_TX_USER_CLOCKING       {CORE} \
+###     CONFIG.LOCATE_RX_USER_CLOCKING       {EXAMPLE_DESIGN} \
+###     CONFIG.LOCATE_RESET_CONTROLLER       {CORE} \
+###     CONFIG.LOCATE_COMMON                 {CORE} \
+### ] [get_ips gt_link]
+### set_property CONFIG.ENABLE_OPTIONAL_PORTS {cplllock_out gtpowergood_out loopback_in rxbufstatus_out rxbyteisaligned_out rxbyterealign_out rxclkcorcnt_out rxcommadet_out rxctrl0_out rxctrl1_out rxctrl2_out rxctrl3_out rxpmaresetdone_out rxpolarity_in rxprbscntreset_in rxprbserr_out rxprbslocked_out rxprbssel_in rxresetdone_out txbufstatus_out txctrl0_in txctrl1_in txctrl2_in txpmaresetdone_out txpolarity_in txprbsforceerr_in txprbssel_in txresetdone_out txdiffctrl_in txpostcursor_in txprecursor_in drpaddr_in drpdi_in drpen_in drpwe_in drpdo_out drprdy_out eyescanreset_in rxrate_in rxlpmen_in} [get_ips gt_link]
+### set_property CONFIG.FREERUN_FREQUENCY {31.25} [get_ips gt_link]
+### if {[get_property CONFIG.FREERUN_FREQUENCY [get_ips gt_link]] != 31.25} {
+###     error "gt_link: FREERUN_FREQUENCY is not 31.25 MHz"
+### }
+## source [file join $repo vivado ip sem.tcl]
+### create_ip -name sem_ultra -vendor xilinx.com -library ip -module_name sem_ip
+INFO: [xilinx.com:ip:sem_ultra:3.1-333] sem_ip: c_board xilinx.com:zcu106:part0:2.6
+### set_property -dict [list CONFIG.MODE {mitigation_and_testing} CONFIG.CLOCK_PERIOD {32000} \
+###     CONFIG.ENABLE_CLASSIFICATION {false} CONFIG.LOCATE_CONFIG_PRIM {example_design}] [get_ips sem_ip]
+INFO: [xilinx.com:ip:sem_ultra:3.1-333] sem_ip: c_board xilinx.com:zcu106:part0:2.6
+## set ibert [expr {[info exists ::env(HPDP_IBERT)] && $::env(HPDP_IBERT) eq "1"}]
+## if {$ibert} {
+##     source [file join $repo vivado ip isib_link.tcl]
+##     add_files -fileset constrs_1 -norecurse [list [file join $repo vivado ibert ibert_debug.xdc]]
+##     set_property USED_IN_SYNTHESIS false [get_files ibert_debug.xdc]
+##     puts "In-System IBERT included (HPDP_IBERT=1)"
+## }
+## update_compile_order -fileset sources_1
+## if {[catch {exec git -C $repo rev-parse --short=8 HEAD} hash]} { set hash 0 }
+## set build_id [format 0x%08X [expr {"0x$hash"}]]
+## puts "BUILD_ID $build_id"
+BUILD_ID 0x577661AB
+## source [file join $repo vivado bd system.tcl]
+### proc latest_ip {name} {
+###     set defs [lsort -dictionary [get_ipdefs -all -filter "NAME == $name"]]
+###     if {![llength $defs]} { error "IP $name not found in the catalog" }
+###     return [lindex $defs end]
+### }
+### create_bd_design system
+Wrote  : <C:\Users\shubham.draveriya\Desktop\Linux Boot\Hyperspectral-Payload-Processor\build\m7h\vivado\hpdp.srcs\sources_1\bd\system\system.bd> 
+### set ps [create_bd_cell -type ip -vlnv [latest_ip zynq_ultra_ps_e] ps]
+### apply_bd_automation -rule xilinx.com:bd_rule:zynq_ultra_ps_e -config {apply_board_preset "1"} $ps
+INFO: [PSU-1]  DP_AUDIO clock source: RPLL is also being used by other peripheral clocks. Their outputs may get impacted if any driver changes DP_AUDIO PLL source to support runtime audio change 
+### set_property -dict [list \
+###     CONFIG.PSU__USE__M_AXI_GP0                {1}   \
+###     CONFIG.PSU__USE__M_AXI_GP1                {0}   \
+###     CONFIG.PSU__USE__M_AXI_GP2                {0}   \
+###     CONFIG.PSU__MAXIGP0__DATA_WIDTH           {32}  \
+###     CONFIG.PSU__USE__S_AXI_GP2                {1}   \
+###     CONFIG.PSU__SAXIGP2__DATA_WIDTH           {128} \
+###     CONFIG.PSU__FPGA_PL0_ENABLE               {1}   \
+###     CONFIG.PSU__CRL_APB__PL0_REF_CTRL__FREQMHZ {100} \
+###     CONFIG.PSU__FPGA_PL1_ENABLE               {1}   \
+###     CONFIG.PSU__CRL_APB__PL1_REF_CTRL__FREQMHZ {250} \
+###     CONFIG.PSU__USE__IRQ0                     {1}   \
+### ] $ps
+INFO: [PSU-1]  DP_AUDIO clock source: RPLL is also being used by other peripheral clocks. Their outputs may get impacted if any driver changes DP_AUDIO PLL source to support runtime audio change 
+### if {![info exists ::env(HPDP_DDR_BOARD_PRESET)]} {
+###     set_property -dict [list \
+###         CONFIG.PSU__DDRC__DRAM_WIDTH      {16 Bits}    \
+###         CONFIG.PSU__DDRC__DEVICE_CAPACITY {8192 MBits} \
+###         CONFIG.PSU__DDRC__BG_ADDR_COUNT   {1}          \
+###         CONFIG.PSU__DDRC__ROW_ADDR_COUNT  {16}         \
+###     ] $ps
+### }
+INFO: [PSU-1]  DP_AUDIO clock source: RPLL is also being used by other peripheral clocks. Their outputs may get impacted if any driver changes DP_AUDIO PLL source to support runtime audio change 
+### set clk_ctrl [get_bd_pins ps/pl_clk0]
+### set clk_sys  [get_bd_pins ps/pl_clk1]
+INFO: [Device 21-403] Loading part xczu7ev-ffvc1156-2-e
+create_bd_cell: Time (s): cpu = 00:00:04 ; elapsed = 00:00:05 . Memory (MB): peak = 1993.797 ; gain = 1178.453
+### set mmcm [create_bd_cell -type ip -vlnv [latest_ip clk_wiz] clk_sensor_gen]
+### set_property -dict [list \
+###     CONFIG.PRIM_SOURCE                {Global_buffer} \
+###     CONFIG.PRIM_IN_FREQ               [get_property CONFIG.PSU__CRL_APB__PL0_REF_CTRL__ACT_FREQMHZ $ps] \
+###     CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {100.000} \
+###     CONFIG.CLK_OUT1_PORT              {clk_sensor} \
+###     CONFIG.USE_LOCKED                 {true} \
+###     CONFIG.RESET_TYPE                 {ACTIVE_LOW} \
+###     CONFIG.RESET_PORT                 {resetn} \
+### ] $mmcm
+### connect_bd_net $clk_ctrl [get_bd_pins clk_sensor_gen/clk_in1]
+### connect_bd_net [get_bd_pins ps/pl_resetn0] [get_bd_pins clk_sensor_gen/resetn]
+### set clk_sensor [get_bd_pins clk_sensor_gen/clk_sensor]
+### foreach {name clk} [list rst_ctrl $clk_ctrl rst_sys $clk_sys rst_sensor $clk_sensor] {
+###     create_bd_cell -type ip -vlnv [latest_ip proc_sys_reset] $name
+###     connect_bd_net $clk [get_bd_pins $name/slowest_sync_clk]
+###     connect_bd_net [get_bd_pins ps/pl_resetn0] [get_bd_pins $name/ext_reset_in]
+### }
+### connect_bd_net [get_bd_pins clk_sensor_gen/locked] [get_bd_pins rst_sensor/dcm_locked]
+### set dma [create_bd_cell -type ip -vlnv [latest_ip axi_dma] dma]
+### set_property -dict [list \
+###     CONFIG.c_include_sg              {0}   \
+###     CONFIG.c_sg_length_width         {26}  \
+###     CONFIG.c_m_axi_mm2s_data_width   {128} \
+###     CONFIG.c_m_axis_mm2s_tdata_width {128} \
+###     CONFIG.c_m_axi_s2mm_data_width   {128} \
+###     CONFIG.c_s_axis_s2mm_tdata_width {64}  \
+###     CONFIG.c_mm2s_burst_size         {64}  \
+###     CONFIG.c_s2mm_burst_size         {64}  \
+### ] $dma
+### set dma_gr [create_bd_cell -type ip -vlnv [latest_ip axi_dma] dma_gr]
+### set_property -dict [list \
+###     CONFIG.c_include_sg              {0}   \
+###     CONFIG.c_include_mm2s            {0}   \
+###     CONFIG.c_sg_length_width         {26}  \
+###     CONFIG.c_m_axi_s2mm_data_width   {128} \
+###     CONFIG.c_s_axis_s2mm_tdata_width {64}  \
+###     CONFIG.c_s2mm_burst_size         {64}  \
+### ] $dma_gr
+INFO: [IP_Flow 19-5107] Inferred bus interface 'clk_ctrl' of definition 'xilinx.com:signal:clock:1.0' (from X_INTERFACE_INFO parameter from HDL file).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'clk_ctrl' of definition 'xilinx.com:signal:clock:1.0' (from 'X_INTERFACE_INFO' attribute).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'rst_ctrl_n' of definition 'xilinx.com:signal:reset:1.0' (from X_INTERFACE_INFO parameter from HDL file).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'rst_ctrl_n' of definition 'xilinx.com:signal:reset:1.0' (from 'X_INTERFACE_INFO' attribute).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'clk_sys' of definition 'xilinx.com:signal:clock:1.0' (from X_INTERFACE_INFO parameter from HDL file).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'clk_sys' of definition 'xilinx.com:signal:clock:1.0' (from 'X_INTERFACE_INFO' attribute).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'rst_sys_n' of definition 'xilinx.com:signal:reset:1.0' (from X_INTERFACE_INFO parameter from HDL file).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'rst_sys_n' of definition 'xilinx.com:signal:reset:1.0' (from 'X_INTERFACE_INFO' attribute).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'clk_sensor' of definition 'xilinx.com:signal:clock:1.0' (from X_INTERFACE_INFO parameter from HDL file).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'clk_sensor' of definition 'xilinx.com:signal:clock:1.0' (from 'X_INTERFACE_INFO' attribute).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'rst_sensor_n' of definition 'xilinx.com:signal:reset:1.0' (from X_INTERFACE_INFO parameter from HDL file).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'rst_sensor_n' of definition 'xilinx.com:signal:reset:1.0' (from 'X_INTERFACE_INFO' attribute).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'clk_link' of definition 'xilinx.com:signal:clock:1.0' (from X_INTERFACE_INFO parameter from HDL file).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'clk_link' of definition 'xilinx.com:signal:clock:1.0' (from 'X_INTERFACE_INFO' attribute).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'clk_sem' of definition 'xilinx.com:signal:clock:1.0' (from X_INTERFACE_INFO parameter from HDL file).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'clk_sem' of definition 'xilinx.com:signal:clock:1.0' (from 'X_INTERFACE_INFO' attribute).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'irq' of definition 'xilinx.com:signal:interrupt:1.0' (from X_INTERFACE_INFO parameter from HDL file).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'irq' of definition 'xilinx.com:signal:interrupt:1.0' (from 'X_INTERFACE_INFO' attribute).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axis_cmp' of definition 'xilinx.com:interface:axis:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axis_gr' of definition 'xilinx.com:interface:axis:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 's_axis_dma' of definition 'xilinx.com:interface:axis:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 's_axil' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'gt_prbs_cnt_reset' of definition 'xilinx.com:signal:reset:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-4728] Bus Interface 'clk_ctrl': Added interface parameter 'ASSOCIATED_BUSIF' with value 's_axil'.
+INFO: [IP_Flow 19-4728] Bus Interface 'clk_ctrl': Added interface parameter 'ASSOCIATED_RESET' with value 'rst_ctrl_n'.
+INFO: [IP_Flow 19-4728] Bus Interface 'rst_ctrl_n': Added interface parameter 'POLARITY' with value 'ACTIVE_LOW'.
+INFO: [IP_Flow 19-4728] Bus Interface 'clk_sys': Added interface parameter 'ASSOCIATED_BUSIF' with value 's_axis_dma'.
+INFO: [IP_Flow 19-4728] Bus Interface 'clk_sys': Added interface parameter 'ASSOCIATED_RESET' with value 'rst_sys_n'.
+INFO: [IP_Flow 19-4728] Bus Interface 'rst_sys_n': Added interface parameter 'POLARITY' with value 'ACTIVE_LOW'.
+INFO: [IP_Flow 19-4728] Bus Interface 'clk_sensor': Added interface parameter 'ASSOCIATED_RESET' with value 'rst_sensor_n'.
+INFO: [IP_Flow 19-4728] Bus Interface 'rst_sensor_n': Added interface parameter 'POLARITY' with value 'ACTIVE_LOW'.
+INFO: [IP_Flow 19-4728] Bus Interface 'clk_link': Added interface parameter 'FREQ_HZ' with value '62500000'.
+INFO: [IP_Flow 19-4728] Bus Interface 'clk_sem': Added interface parameter 'FREQ_HZ' with value '31250000'.
+INFO: [IP_Flow 19-4728] Bus Interface 'irq': Added interface parameter 'SENSITIVITY' with value 'LEVEL_HIGH'.
+WARNING: [IP_Flow 19-11770] Clock interface 'clk_ctrl' has no FREQ_HZ parameter.
+WARNING: [IP_Flow 19-11770] Clock interface 'clk_sys' has no FREQ_HZ parameter.
+WARNING: [IP_Flow 19-5661] Bus Interface 'clk_sensor' does not have any bus interfaces associated with it.
+WARNING: [IP_Flow 19-11770] Clock interface 'clk_sensor' has no FREQ_HZ parameter.
+INFO: [IP_Flow 19-7067] Note that bus interface 'clk_link' has a fixed FREQ_HZ of '62500000'. This value will be respected whenever this IP is instantiated in IP Integrator.
+WARNING: [IP_Flow 19-5661] Bus Interface 'clk_link' does not have any bus interfaces associated with it.
+INFO: [IP_Flow 19-7067] Note that bus interface 'clk_sem' has a fixed FREQ_HZ of '31250000'. This value will be respected whenever this IP is instantiated in IP Integrator.
+WARNING: [IP_Flow 19-5661] Bus Interface 'clk_sem' does not have any bus interfaces associated with it.
+### set core [create_bd_cell -type module -reference hpdp_core_bd hpdp]
+### set_property CONFIG.BUILD_ID $::build_id $core
+### connect_bd_intf_net [get_bd_intf_pins dma/M_AXIS_MM2S] [get_bd_intf_pins hpdp/s_axis_dma]
+### connect_bd_intf_net [get_bd_intf_pins hpdp/m_axis_cmp] [get_bd_intf_pins dma/S_AXIS_S2MM]
+### connect_bd_intf_net [get_bd_intf_pins hpdp/m_axis_gr]  [get_bd_intf_pins dma_gr/S_AXIS_S2MM]
+### connect_bd_net [get_bd_pins clk_sensor_gen/locked] [get_bd_pins hpdp/sensor_locked]
+### foreach pin {
+###     clk_link gt_tx_done gt_rx_done gt_cplllock gt_powergood gt_reset_all gt_reset_rx sfp_tx_enable
+###     gt_txdata gt_txcharisk gt_prbs_sel gt_prbs_force_err gt_prbs_cnt_reset gt_loopback
+###     gt_txpolarity gt_rxpolarity gt_rxbufreset gt_rxdata gt_rxcharisk gt_rxdisperr gt_rxnotintable
+###     gt_rxbyteisaligned gt_rxprbserr gt_rxprbslocked gt_rxclkcorcnt gt_rxbufstatus
+###     clk_sem sem_status sem_cmd_busy sem_icap_avail sem_mon_data sem_mon_write
+###     sem_cmd_strobe sem_cmd_code sem_grant
+### } {
+###     make_bd_pins_external -name $pin [get_bd_pins hpdp/$pin]
+### }
+### set_property CONFIG.FREQ_HZ 62500000 [get_bd_ports clk_link]
+### set_property CONFIG.FREQ_HZ 31250000 [get_bd_ports clk_sem]
+### set sc_ctrl [create_bd_cell -type ip -vlnv [latest_ip smartconnect] sc_ctrl]
+### set_property -dict [list CONFIG.NUM_SI {1} CONFIG.NUM_MI {3}] $sc_ctrl
+### connect_bd_intf_net [get_bd_intf_pins ps/M_AXI_HPM0_FPD] [get_bd_intf_pins sc_ctrl/S00_AXI]
+### connect_bd_intf_net [get_bd_intf_pins sc_ctrl/M00_AXI]   [get_bd_intf_pins dma/S_AXI_LITE]
+### connect_bd_intf_net [get_bd_intf_pins sc_ctrl/M01_AXI]   [get_bd_intf_pins hpdp/s_axil]
+### connect_bd_intf_net [get_bd_intf_pins sc_ctrl/M02_AXI]   [get_bd_intf_pins dma_gr/S_AXI_LITE]
+### set sc_data [create_bd_cell -type ip -vlnv [latest_ip smartconnect] sc_data]
+### set_property -dict [list CONFIG.NUM_SI {3} CONFIG.NUM_MI {1}] $sc_data
+### connect_bd_intf_net [get_bd_intf_pins dma/M_AXI_MM2S]    [get_bd_intf_pins sc_data/S00_AXI]
+### connect_bd_intf_net [get_bd_intf_pins dma/M_AXI_S2MM]    [get_bd_intf_pins sc_data/S01_AXI]
+### connect_bd_intf_net [get_bd_intf_pins dma_gr/M_AXI_S2MM] [get_bd_intf_pins sc_data/S02_AXI]
+### connect_bd_intf_net [get_bd_intf_pins sc_data/M00_AXI]   [get_bd_intf_pins ps/S_AXI_HP0_FPD]
+### connect_bd_net $clk_ctrl \
+###     [get_bd_pins ps/maxihpm0_fpd_aclk] \
+###     [get_bd_pins sc_ctrl/aclk] \
+###     [get_bd_pins dma/s_axi_lite_aclk] \
+###     [get_bd_pins dma_gr/s_axi_lite_aclk] \
+###     [get_bd_pins hpdp/clk_ctrl]
+### connect_bd_net $clk_sys \
+###     [get_bd_pins ps/saxihp0_fpd_aclk] \
+###     [get_bd_pins sc_data/aclk] \
+###     [get_bd_pins dma/m_axi_mm2s_aclk] \
+###     [get_bd_pins dma/m_axi_s2mm_aclk] \
+###     [get_bd_pins dma_gr/m_axi_s2mm_aclk] \
+###     [get_bd_pins hpdp/clk_sys]
+### connect_bd_net $clk_sensor [get_bd_pins hpdp/clk_sensor]
+### connect_bd_net [get_bd_pins rst_ctrl/interconnect_aresetn]  [get_bd_pins sc_ctrl/aresetn]
+### connect_bd_net [get_bd_pins rst_ctrl/peripheral_aresetn]    [get_bd_pins dma/axi_resetn] \
+###                                                             [get_bd_pins dma_gr/axi_resetn] \
+###                                                             [get_bd_pins hpdp/rst_ctrl_n]
+### connect_bd_net [get_bd_pins rst_sys/interconnect_aresetn]   [get_bd_pins sc_data/aresetn]
+### connect_bd_net [get_bd_pins rst_sys/peripheral_aresetn]     [get_bd_pins hpdp/rst_sys_n]
+### connect_bd_net [get_bd_pins rst_sensor/peripheral_aresetn]  [get_bd_pins hpdp/rst_sensor_n]
+### if {[llength [get_ipdefs -all -filter {NAME == ilconcat}]]} {
+###     set irq [create_bd_cell -type inline_hdl -vlnv [latest_ip ilconcat] irq_concat]
+### } else {
+###     set irq [create_bd_cell -type ip -vlnv [latest_ip xlconcat] irq_concat]
+### }
+### set_property CONFIG.NUM_PORTS {4} $irq
+### connect_bd_net [get_bd_pins dma/mm2s_introut]    [get_bd_pins irq_concat/In0]
+### connect_bd_net [get_bd_pins dma/s2mm_introut]    [get_bd_pins irq_concat/In1]
+### connect_bd_net [get_bd_pins hpdp/irq]            [get_bd_pins irq_concat/In2]
+### connect_bd_net [get_bd_pins dma_gr/s2mm_introut] [get_bd_pins irq_concat/In3]
+### connect_bd_net [get_bd_pins irq_concat/dout]     [get_bd_pins ps/pl_ps_irq0]
+### assign_bd_address -offset 0xA0000000 -range 1M \
+###     -target_address_space [get_bd_addr_spaces ps/Data] [get_bd_addr_segs hpdp/s_axil/reg0]
+Slave segment '/hpdp/s_axil/reg0' is being assigned into address space '/ps/Data' at <0xA000_0000 [ 1M ]>.
+### assign_bd_address -offset 0xA0100000 -range 64K \
+###     -target_address_space [get_bd_addr_spaces ps/Data] [get_bd_addr_segs dma/S_AXI_LITE/Reg]
+Slave segment '/dma/S_AXI_LITE/Reg' is being assigned into address space '/ps/Data' at <0xA010_0000 [ 64K ]>.
+### assign_bd_address -offset 0xA0110000 -range 64K \
+###     -target_address_space [get_bd_addr_spaces ps/Data] [get_bd_addr_segs dma_gr/S_AXI_LITE/Reg]
+Slave segment '/dma_gr/S_AXI_LITE/Reg' is being assigned into address space '/ps/Data' at <0xA011_0000 [ 64K ]>.
+### foreach space {dma/Data_MM2S dma/Data_S2MM dma_gr/Data_S2MM} {
+###     assign_bd_address -target_address_space [get_bd_addr_spaces $space] \
+###         [get_bd_addr_segs ps/SAXIGP2/HP0_DDR_LOW]
+### }
+Slave segment '/ps/SAXIGP2/HP0_DDR_LOW' is being assigned into address space '/dma/Data_MM2S' at <0x0000_0000 [ 2G ]>.
+Slave segment '/ps/SAXIGP2/HP0_DDR_LOW' is being assigned into address space '/dma/Data_S2MM' at <0x0000_0000 [ 2G ]>.
+Slave segment '/ps/SAXIGP2/HP0_DDR_LOW' is being assigned into address space '/dma_gr/Data_S2MM' at <0x0000_0000 [ 2G ]>.
+### validate_bd_design
+WARNING: [BD 41-3281] Instance '/ps' is connected on both sides by SmartConnects and cannot automatically configure itself to match the endpoints. Please manually configure its AXI interfaces as required for the design.
+WARNING: [BD 41-3281] Instance '/dma' is connected on both sides by SmartConnects and cannot automatically configure itself to match the endpoints. Please manually configure its AXI interfaces as required for the design.
+WARNING: [BD 41-3281] Instance '/dma_gr' is connected on both sides by SmartConnects and cannot automatically configure itself to match the endpoints. Please manually configure its AXI interfaces as required for the design.
+WARNING: [BD 41-702] Propagation TCL tries to overwrite USER strength parameter C_M_AXI_S2MM_DATA_WIDTH(128) on '/dma' with propagated value(64). Command ignored
+WARNING: [BD 41-702] Propagation TCL tries to overwrite USER strength parameter C_M_AXI_S2MM_DATA_WIDTH(128) on '/dma_gr' with propagated value(64). Command ignored
+INFO: [PSU-1]  DP_AUDIO clock source: RPLL is also being used by other peripheral clocks. Their outputs may get impacted if any driver changes DP_AUDIO PLL source to support runtime audio change 
+INFO: [BD 5-943] Reserving offset range <0xA010_0000 [ 64K ]> from slave interface '/sc_ctrl/S00_AXI' to master interface '/sc_ctrl/M00_AXI'. This will be used by smartconnect on path for routing.
+INFO: [BD 5-943] Reserving offset range <0xA000_0000 [ 1M ]> from slave interface '/sc_ctrl/S00_AXI' to master interface '/sc_ctrl/M01_AXI'. This will be used by smartconnect on path for routing.
+INFO: [BD 5-943] Reserving offset range <0xA011_0000 [ 64K ]> from slave interface '/sc_ctrl/S00_AXI' to master interface '/sc_ctrl/M02_AXI'. This will be used by smartconnect on path for routing.
+INFO: [xilinx.com:ip:smartconnect:1.0-1] system_sc_ctrl_0: SmartConnect system_sc_ctrl_0 is in Low-Area Mode.
+INFO: [BD 5-943] Reserving offset range <0x0000_0000 [ 2G ]> from slave interface '/sc_data/S00_AXI' to master interface '/sc_data/M00_AXI'. This will be used by smartconnect on path for routing.
+INFO: [BD 5-943] Reserving offset range <0x0000_0000 [ 2G ]> from slave interface '/sc_data/S01_AXI' to master interface '/sc_data/M00_AXI'. This will be used by smartconnect on path for routing.
+INFO: [BD 5-943] Reserving offset range <0x0000_0000 [ 2G ]> from slave interface '/sc_data/S02_AXI' to master interface '/sc_data/M00_AXI'. This will be used by smartconnect on path for routing.
+INFO: [xilinx.com:ip:smartconnect:1.0-1] system_sc_data_0: SmartConnect system_sc_data_0 is in High-performance Mode.
+INFO: [xilinx.com:ip:clk_wiz:6.0-1] /clk_sensor_gen clk_wiz propagate
+INFO: [xilinx.com:ip:axi_dma:7.1-14] /dma 
+                    ##########################################################################################
+                    Clocks connected to AXI DMA are not same. Configuring AXI DMA in ASYNC mode ..........
+                    ##########################################################################################
+INFO: [xilinx.com:ip:axi_dma:7.1-16] /dma_gr 
+                    ##########################################################################################
+                    Clocks connected to AXI DMA are not same. Configuring AXI DMA in ASYNC mode ..........
+                    ##########################################################################################
+WARNING: [BD 41-237] Bus Interface property AWUSER_WIDTH does not match between /ps/S_AXI_HP0_FPD(1) and /sc_data/M00_AXI(0)
+WARNING: [BD 41-237] Bus Interface property ARUSER_WIDTH does not match between /ps/S_AXI_HP0_FPD(1) and /sc_data/M00_AXI(0)
+validate_bd_design: Time (s): cpu = 00:00:08 ; elapsed = 00:00:10 . Memory (MB): peak = 1993.797 ; gain = 0.000
+### save_bd_design
+Wrote  : <C:\Users\shubham.draveriya\Desktop\Linux Boot\Hyperspectral-Payload-Processor\build\m7h\vivado\hpdp.srcs\sources_1\bd\system\system.bd> 
+## make_wrapper -files [get_files system.bd] -top -import
+INFO: [BD 41-1662] The design 'system.bd' is already validated. Therefore parameter propagation will not be re-run.
+Verilog Output written to : C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v
+Verilog Output written to : C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/sim/system.v
+Verilog Output written to : C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/hdl/system_wrapper.v
+## set_property top hpdp_top [current_fileset]
+## if {$ibert} { set_property generic {IBERT=1'b1} [current_fileset] }
+## update_compile_order -fileset sources_1
+## puts "Created [file join $proj_dir hpdp.xpr]"
+Created C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.xpr
+# reset_run synth_1
+# launch_runs synth_1 -jobs $jobs
+INFO: [BD 41-1662] The design 'system.bd' is already validated. Therefore parameter propagation will not be re-run.
+Verilog Output written to : C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v
+Verilog Output written to : C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/sim/system.v
+Verilog Output written to : C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/hdl/system_wrapper.v
+INFO: [xilinx.com:ip:zynq_ultra_ps_e:3.5-0] system_ps_0: 
+Changes in your design (including the PCW configuration settings) are not automatically exported from Vivado to Amd's SDK, Petalinux or Yocto.
+This is by design to avoid disrupting existing embedded development efforts. To have any changes of your design taking effect in the embedded software flow please export your
+design by going through Vivado's main menu, click on File, then Export finally select Export Hardware, please ensure you click on the Include BitStream option.
+The auto-generated HDF file is all you need to import in Amd's SDK, Petalinux or Yocto for your changes to be reflected in the Embedded Software Flow.
+For more information, please consult PG201, section: Exporting PCW Settings to Embedded Software Flows
+INFO: [PSU-0] Address Range of DDR (0x7ff00000 to 0x7fffffff) is reserved by PMU for internal purpose.
+INFO: [IP_Flow 19-5611] Unable to find an associated reset port for the interface 'M_AXI_HPM0_FPD'. A default connection has been created.
+INFO: [IP_Flow 19-5611] Unable to find an associated reset port for the interface 'S_AXI_HP0_FPD'. A default connection has been created.
+INFO: [BD 41-1029] Generation completed for the IP Integrator block ps .
+INFO: [BD 41-1029] Generation completed for the IP Integrator block clk_sensor_gen .
+INFO: [BD 41-1029] Generation completed for the IP Integrator block rst_ctrl .
+INFO: [BD 41-1029] Generation completed for the IP Integrator block rst_sys .
+INFO: [BD 41-1029] Generation completed for the IP Integrator block rst_sensor .
+INFO: [BD 41-1029] Generation completed for the IP Integrator block dma .
+INFO: [BD 41-1029] Generation completed for the IP Integrator block dma_gr .
+INFO: [BD 41-1029] Generation completed for the IP Integrator block hpdp .
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/s00_nodes/s00_ar_node/s_sc_payld'(169) to pin: '/s00_nodes/S_SC_AR_payld'(165) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/s00_nodes/s00_aw_node/s_sc_payld'(169) to pin: '/s00_nodes/S_SC_AW_payld'(165) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/m00_nodes/m00_r_node/s_sc_payld'(55) to pin: '/m00_nodes/S_SC_R_payld'(53) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/m00_nodes/m00_b_node/s_sc_payld'(9) to pin: '/m00_nodes/S_SC_B_payld'(7) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/m01_nodes/m01_r_node/s_sc_payld'(55) to pin: '/m01_nodes/S_SC_R_payld'(53) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/m01_nodes/m01_b_node/s_sc_payld'(9) to pin: '/m01_nodes/S_SC_B_payld'(7) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/m02_nodes/m02_r_node/s_sc_payld'(55) to pin: '/m02_nodes/S_SC_R_payld'(53) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/m02_nodes/m02_b_node/s_sc_payld'(9) to pin: '/m02_nodes/S_SC_B_payld'(7) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/s00_axi2sc/s_sc_r_payld'(53) to pin: '/s00_nodes/M_SC_R_payld'(55) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/s00_axi2sc/s_sc_b_payld'(7) to pin: '/s00_nodes/M_SC_B_payld'(9) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/m00_sc2axi/s_sc_ar_payld'(165) to pin: '/m00_nodes/M_SC_AR_payld'(169) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/m00_sc2axi/s_sc_aw_payld'(165) to pin: '/m00_nodes/M_SC_AW_payld'(169) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/m01_sc2axi/s_sc_ar_payld'(165) to pin: '/m01_nodes/M_SC_AR_payld'(169) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/m01_sc2axi/s_sc_aw_payld'(165) to pin: '/m01_nodes/M_SC_AW_payld'(169) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/m02_sc2axi/s_sc_ar_payld'(165) to pin: '/m02_nodes/M_SC_AR_payld'(169) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/m02_sc2axi/s_sc_aw_payld'(165) to pin: '/m02_nodes/M_SC_AW_payld'(169) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/s00_nodes/s00_ar_node/s_sc_payld'(169) to pin: '/s00_nodes/S_SC_AR_payld'(165) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/s00_nodes/s00_aw_node/s_sc_payld'(169) to pin: '/s00_nodes/S_SC_AW_payld'(165) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/m00_nodes/m00_r_node/s_sc_payld'(55) to pin: '/m00_nodes/S_SC_R_payld'(53) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/m00_nodes/m00_b_node/s_sc_payld'(9) to pin: '/m00_nodes/S_SC_B_payld'(7) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/m01_nodes/m01_r_node/s_sc_payld'(55) to pin: '/m01_nodes/S_SC_R_payld'(53) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/m01_nodes/m01_b_node/s_sc_payld'(9) to pin: '/m01_nodes/S_SC_B_payld'(7) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/m02_nodes/m02_r_node/s_sc_payld'(55) to pin: '/m02_nodes/S_SC_R_payld'(53) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/m02_nodes/m02_b_node/s_sc_payld'(9) to pin: '/m02_nodes/S_SC_B_payld'(7) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/s00_axi2sc/s_sc_r_payld'(53) to pin: '/s00_nodes/M_SC_R_payld'(55) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/s00_axi2sc/s_sc_b_payld'(7) to pin: '/s00_nodes/M_SC_B_payld'(9) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/m00_sc2axi/s_sc_ar_payld'(165) to pin: '/m00_nodes/M_SC_AR_payld'(169) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/m00_sc2axi/s_sc_aw_payld'(165) to pin: '/m00_nodes/M_SC_AW_payld'(169) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/m01_sc2axi/s_sc_ar_payld'(165) to pin: '/m01_nodes/M_SC_AR_payld'(169) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/m01_sc2axi/s_sc_aw_payld'(165) to pin: '/m01_nodes/M_SC_AW_payld'(169) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/m02_sc2axi/s_sc_ar_payld'(165) to pin: '/m02_nodes/M_SC_AR_payld'(169) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/m02_sc2axi/s_sc_aw_payld'(165) to pin: '/m02_nodes/M_SC_AW_payld'(169) - Only lower order bits will be connected.
+Exporting to file c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_sc_ctrl_0/bd_0/hw_handoff/system_sc_ctrl_0.hwh
+Generated Hardware Definition File c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_sc_ctrl_0/bd_0/synth/system_sc_ctrl_0.hwdef
+INFO: [BD 41-1029] Generation completed for the IP Integrator block sc_ctrl .
+Exporting to file c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_sc_data_0/bd_0/hw_handoff/system_sc_data_0.hwh
+Generated Hardware Definition File c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_sc_data_0/bd_0/synth/system_sc_data_0.hwdef
+INFO: [BD 41-1029] Generation completed for the IP Integrator block sc_data .
+Exporting to file C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/hw_handoff/system.hwh
+Generated Hardware Definition File C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.hwdef
+INFO: [BD 41-3262] Generated VHDL Instantiation Template file c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/system.vho
+INFO: [BD 41-3262] Generated Verilog Instantiation Template file c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/system.veo
+INFO: [BD 41-3262] Generated System Verilog Instantiation Template file c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/system_sv.sveo
+INFO: [IP_Flow 19-1686] Generating 'Synthesis' target for IP 'sem_ip'...
+INFO: [IP_Flow 19-1686] Generating 'Synthesis' target for IP 'gt_link'...
+WARNING: [Vivado 12-7122] Auto Incremental Compile:: No reference checkpoint was found in run synth_1. Auto-incremental flow will not be run, the standard flow will be run instead.
+[Tue Oct 13 14:37:26 2026] Launched gt_link_synth_1, sem_ip_synth_1, system_clk_sensor_gen_0_synth_1, system_ps_0_synth_1, system_rst_sys_0_synth_1, system_rst_ctrl_0_synth_1, system_rst_sensor_0_synth_1, system_dma_gr_0_synth_1, system_dma_0_synth_1, system_hpdp_0_synth_1, system_sc_ctrl_0_synth_1, system_sc_data_0_synth_1...
+Run output will be captured here:
+gt_link_synth_1: C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/gt_link_synth_1/runme.log
+sem_ip_synth_1: C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/sem_ip_synth_1/runme.log
+system_clk_sensor_gen_0_synth_1: C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/system_clk_sensor_gen_0_synth_1/runme.log
+system_ps_0_synth_1: C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/system_ps_0_synth_1/runme.log
+system_rst_sys_0_synth_1: C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/system_rst_sys_0_synth_1/runme.log
+system_rst_ctrl_0_synth_1: C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/system_rst_ctrl_0_synth_1/runme.log
+system_rst_sensor_0_synth_1: C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/system_rst_sensor_0_synth_1/runme.log
+system_dma_gr_0_synth_1: C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/system_dma_gr_0_synth_1/runme.log
+system_dma_0_synth_1: C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/system_dma_0_synth_1/runme.log
+system_hpdp_0_synth_1: C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/system_hpdp_0_synth_1/runme.log
+system_sc_ctrl_0_synth_1: C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/system_sc_ctrl_0_synth_1/runme.log
+system_sc_data_0_synth_1: C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/system_sc_data_0_synth_1/runme.log
+[Tue Oct 13 14:37:26 2026] Launched synth_1...
+Run output will be captured here: C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/synth_1/runme.log
+launch_runs: Time (s): cpu = 00:00:29 ; elapsed = 00:00:35 . Memory (MB): peak = 1993.797 ; gain = 0.000
+# wait_on_run synth_1
+[Tue Oct 13 14:37:26 2026] Waiting for synth_1 to finish...
+
+*** Running vivado
+    with args -log hpdp_top.vds -m64 -product Vivado -mode batch -messageDb vivado.pb -notrace -source hpdp_top.tcl
+
+
+
+****** Vivado v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Tue Oct 13 14:41:35 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source hpdp_top.tcl -notrace
+INFO: [IP_Flow 19-234] Refreshing IP repositories
+INFO: [IP_Flow 19-1704] No user IP repositories specified
+INFO: [IP_Flow 19-2313] Loaded Vivado IP repository 'C:/AMDDesignTools/2025.2/Vivado/data/ip'.
+add_files: Time (s): cpu = 00:00:04 ; elapsed = 00:00:05 . Memory (MB): peak = 611.418 ; gain = 65.473
+Command: synth_design -top hpdp_top -part xczu7ev-ffvc1156-2-e
+Starting synth_design
+Attempting to get a license for feature 'Synthesis' and/or device 'xczu7ev'
+INFO: [Common 17-349] Got license for feature 'Synthesis' and/or device 'xczu7ev'
+INFO: [Device 21-403] Loading part xczu7ev-ffvc1156-2-e
+INFO: [Synth 8-7079] Multithreading enabled for synth_design using a maximum of 2 processes.
+INFO: [Synth 8-7078] Launching helper process for spawning children vivado processes
+INFO: [Synth 8-7075] Helper process launched with PID 16880
+---------------------------------------------------------------------------------
+Starting RTL Elaboration : Time (s): cpu = 00:00:03 ; elapsed = 00:00:03 . Memory (MB): peak = 2067.246 ; gain = 215.168
+---------------------------------------------------------------------------------
+INFO: [Synth 8-6157] synthesizing module 'hpdp_top' [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/system/hpdp_top.sv:21]
+INFO: [Synth 8-6157] synthesizing module 'IBUFDS' [C:/AMDDesignTools/2025.2/Vivado/scripts/rt/data/unisim_comp.v:82819]
+INFO: [Synth 8-6155] done synthesizing module 'IBUFDS' (0#1) [C:/AMDDesignTools/2025.2/Vivado/scripts/rt/data/unisim_comp.v:82819]
+INFO: [Synth 8-6157] synthesizing module 'BUFGCE_DIV' [C:/AMDDesignTools/2025.2/Vivado/scripts/rt/data/unisim_comp.v:2718]
+	Parameter BUFGCE_DIVIDE bound to: 4 - type: integer 
+INFO: [Synth 8-6155] done synthesizing module 'BUFGCE_DIV' (0#1) [C:/AMDDesignTools/2025.2/Vivado/scripts/rt/data/unisim_comp.v:2718]
+INFO: [Synth 8-6157] synthesizing module 'IBUFDS_GTE4' [C:/AMDDesignTools/2025.2/Vivado/scripts/rt/data/unisim_comp.v:83082]
+	Parameter REFCLK_HROW_CK_SEL bound to: 2'b00 
+INFO: [Synth 8-6155] done synthesizing module 'IBUFDS_GTE4' (0#1) [C:/AMDDesignTools/2025.2/Vivado/scripts/rt/data/unisim_comp.v:83082]
+INFO: [Synth 8-6157] synthesizing module 'xpm_cdc_single' [C:/AMDDesignTools/2025.2/Vivado/data/ip/xpm/xpm_cdc/hdl/xpm_cdc.sv:152]
+	Parameter DEST_SYNC_FF bound to: 2 - type: integer 
+	Parameter SRC_INPUT_REG bound to: 0 - type: integer 
+INFO: [Synth 8-6155] done synthesizing module 'xpm_cdc_single' (0#1) [C:/AMDDesignTools/2025.2/Vivado/data/ip/xpm/xpm_cdc/hdl/xpm_cdc.sv:152]
+INFO: [Synth 8-6157] synthesizing module 'gt_link' [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/synth_1/.Xil/Vivado-8308-EMS-GB-SD/realtime/gt_link_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 'gt_link' (0#1) [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/synth_1/.Xil/Vivado-8308-EMS-GB-SD/realtime/gt_link_stub.v:6]
+INFO: [Synth 8-6157] synthesizing module 'sem_support' [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/rad/sem_support.sv:14]
+INFO: [Synth 8-6157] synthesizing module 'sem_ip' [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/synth_1/.Xil/Vivado-8308-EMS-GB-SD/realtime/sem_ip_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 'sem_ip' (0#1) [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/synth_1/.Xil/Vivado-8308-EMS-GB-SD/realtime/sem_ip_stub.v:6]
+INFO: [Synth 8-6157] synthesizing module 'ICAPE3' [C:/AMDDesignTools/2025.2/Vivado/scripts/rt/data/unisim_comp.v:84856]
+	Parameter DEVICE_ID bound to: -1 - type: integer 
+INFO: [Synth 8-6155] done synthesizing module 'ICAPE3' (0#1) [C:/AMDDesignTools/2025.2/Vivado/scripts/rt/data/unisim_comp.v:84856]
+INFO: [Synth 8-6157] synthesizing module 'FRAME_ECCE4' [C:/AMDDesignTools/2025.2/Vivado/scripts/rt/data/unisim_comp.v:50327]
+INFO: [Synth 8-6155] done synthesizing module 'FRAME_ECCE4' (0#1) [C:/AMDDesignTools/2025.2/Vivado/scripts/rt/data/unisim_comp.v:50327]
+INFO: [Synth 8-6155] done synthesizing module 'sem_support' (0#1) [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/rad/sem_support.sv:14]
+INFO: [Synth 8-6157] synthesizing module 'system_wrapper' [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.srcs/sources_1/imports/hdl/system_wrapper.v:13]
+INFO: [Synth 8-6157] synthesizing module 'system' [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:13]
+INFO: [Synth 8-6157] synthesizing module 'system_clk_sensor_gen_0' [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/synth_1/.Xil/Vivado-8308-EMS-GB-SD/realtime/system_clk_sensor_gen_0_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 'system_clk_sensor_gen_0' (0#1) [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/synth_1/.Xil/Vivado-8308-EMS-GB-SD/realtime/system_clk_sensor_gen_0_stub.v:6]
+INFO: [Synth 8-6157] synthesizing module 'system_dma_0' [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/synth_1/.Xil/Vivado-8308-EMS-GB-SD/realtime/system_dma_0_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 'system_dma_0' (0#1) [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/synth_1/.Xil/Vivado-8308-EMS-GB-SD/realtime/system_dma_0_stub.v:6]
+WARNING: [Synth 8-7071] port 'mm2s_prmry_reset_out_n' of module 'system_dma_0' is unconnected for instance 'dma' [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:324]
+WARNING: [Synth 8-7071] port 'm_axis_mm2s_tkeep' of module 'system_dma_0' is unconnected for instance 'dma' [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:324]
+WARNING: [Synth 8-7071] port 's2mm_prmry_reset_out_n' of module 'system_dma_0' is unconnected for instance 'dma' [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:324]
+WARNING: [Synth 8-7071] port 'axi_dma_tstvec' of module 'system_dma_0' is unconnected for instance 'dma' [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:324]
+WARNING: [Synth 8-7023] instance 'dma' of module 'system_dma_0' has 64 connections declared, but only 60 given [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:324]
+INFO: [Synth 8-6157] synthesizing module 'system_dma_gr_0' [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/synth_1/.Xil/Vivado-8308-EMS-GB-SD/realtime/system_dma_gr_0_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 'system_dma_gr_0' (0#1) [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/synth_1/.Xil/Vivado-8308-EMS-GB-SD/realtime/system_dma_gr_0_stub.v:6]
+WARNING: [Synth 8-7071] port 's2mm_prmry_reset_out_n' of module 'system_dma_gr_0' is unconnected for instance 'dma_gr' [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:385]
+WARNING: [Synth 8-7071] port 'axi_dma_tstvec' of module 'system_dma_gr_0' is unconnected for instance 'dma_gr' [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:385]
+WARNING: [Synth 8-7023] instance 'dma_gr' of module 'system_dma_gr_0' has 43 connections declared, but only 41 given [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:385]
+INFO: [Synth 8-6157] synthesizing module 'system_hpdp_0' [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/synth_1/.Xil/Vivado-8308-EMS-GB-SD/realtime/system_hpdp_0_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 'system_hpdp_0' (0#1) [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/synth_1/.Xil/Vivado-8308-EMS-GB-SD/realtime/system_hpdp_0_stub.v:6]
+INFO: [Synth 8-6157] synthesizing module 'system_ps_0' [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/synth_1/.Xil/Vivado-8308-EMS-GB-SD/realtime/system_ps_0_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 'system_ps_0' (0#1) [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/synth_1/.Xil/Vivado-8308-EMS-GB-SD/realtime/system_ps_0_stub.v:6]
+WARNING: [Synth 8-7071] port 'saxigp2_bid' of module 'system_ps_0' is unconnected for instance 'ps' [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:505]
+WARNING: [Synth 8-7071] port 'saxigp2_rid' of module 'system_ps_0' is unconnected for instance 'ps' [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:505]
+WARNING: [Synth 8-7023] instance 'ps' of module 'system_ps_0' has 84 connections declared, but only 82 given [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:505]
+INFO: [Synth 8-6157] synthesizing module 'system_rst_ctrl_0' [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/synth_1/.Xil/Vivado-8308-EMS-GB-SD/realtime/system_rst_ctrl_0_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 'system_rst_ctrl_0' (0#1) [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/synth_1/.Xil/Vivado-8308-EMS-GB-SD/realtime/system_rst_ctrl_0_stub.v:6]
+WARNING: [Synth 8-7071] port 'mb_reset' of module 'system_rst_ctrl_0' is unconnected for instance 'rst_ctrl' [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:588]
+WARNING: [Synth 8-7071] port 'bus_struct_reset' of module 'system_rst_ctrl_0' is unconnected for instance 'rst_ctrl' [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:588]
+WARNING: [Synth 8-7071] port 'peripheral_reset' of module 'system_rst_ctrl_0' is unconnected for instance 'rst_ctrl' [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:588]
+WARNING: [Synth 8-7023] instance 'rst_ctrl' of module 'system_rst_ctrl_0' has 10 connections declared, but only 7 given [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:588]
+INFO: [Synth 8-6157] synthesizing module 'system_rst_sensor_0' [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/synth_1/.Xil/Vivado-8308-EMS-GB-SD/realtime/system_rst_sensor_0_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 'system_rst_sensor_0' (0#1) [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/synth_1/.Xil/Vivado-8308-EMS-GB-SD/realtime/system_rst_sensor_0_stub.v:6]
+WARNING: [Synth 8-7071] port 'mb_reset' of module 'system_rst_sensor_0' is unconnected for instance 'rst_sensor' [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:596]
+WARNING: [Synth 8-7071] port 'bus_struct_reset' of module 'system_rst_sensor_0' is unconnected for instance 'rst_sensor' [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:596]
+WARNING: [Synth 8-7071] port 'peripheral_reset' of module 'system_rst_sensor_0' is unconnected for instance 'rst_sensor' [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:596]
+WARNING: [Synth 8-7071] port 'interconnect_aresetn' of module 'system_rst_sensor_0' is unconnected for instance 'rst_sensor' [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:596]
+WARNING: [Synth 8-7023] instance 'rst_sensor' of module 'system_rst_sensor_0' has 10 connections declared, but only 6 given [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:596]
+INFO: [Synth 8-6157] synthesizing module 'system_rst_sys_0' [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/synth_1/.Xil/Vivado-8308-EMS-GB-SD/realtime/system_rst_sys_0_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 'system_rst_sys_0' (0#1) [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/synth_1/.Xil/Vivado-8308-EMS-GB-SD/realtime/system_rst_sys_0_stub.v:6]
+WARNING: [Synth 8-7071] port 'mb_reset' of module 'system_rst_sys_0' is unconnected for instance 'rst_sys' [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:603]
+WARNING: [Synth 8-7071] port 'bus_struct_reset' of module 'system_rst_sys_0' is unconnected for instance 'rst_sys' [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:603]
+WARNING: [Synth 8-7071] port 'peripheral_reset' of module 'system_rst_sys_0' is unconnected for instance 'rst_sys' [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:603]
+WARNING: [Synth 8-7023] instance 'rst_sys' of module 'system_rst_sys_0' has 10 connections declared, but only 7 given [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:603]
+INFO: [Synth 8-6157] synthesizing module 'system_sc_ctrl_0' [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/synth_1/.Xil/Vivado-8308-EMS-GB-SD/realtime/system_sc_ctrl_0_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 'system_sc_ctrl_0' (0#1) [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/synth_1/.Xil/Vivado-8308-EMS-GB-SD/realtime/system_sc_ctrl_0_stub.v:6]
+WARNING: [Synth 8-7071] port 'M00_AXI_awprot' of module 'system_sc_ctrl_0' is unconnected for instance 'sc_ctrl' [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:611]
+WARNING: [Synth 8-7071] port 'M00_AXI_wstrb' of module 'system_sc_ctrl_0' is unconnected for instance 'sc_ctrl' [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:611]
+WARNING: [Synth 8-7071] port 'M00_AXI_arprot' of module 'system_sc_ctrl_0' is unconnected for instance 'sc_ctrl' [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:611]
+WARNING: [Synth 8-7071] port 'M02_AXI_awprot' of module 'system_sc_ctrl_0' is unconnected for instance 'sc_ctrl' [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:611]
+WARNING: [Synth 8-7071] port 'M02_AXI_wstrb' of module 'system_sc_ctrl_0' is unconnected for instance 'sc_ctrl' [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:611]
+WARNING: [Synth 8-7071] port 'M02_AXI_arprot' of module 'system_sc_ctrl_0' is unconnected for instance 'sc_ctrl' [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:611]
+WARNING: [Synth 8-7023] instance 'sc_ctrl' of module 'system_sc_ctrl_0' has 98 connections declared, but only 92 given [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:611]
+INFO: [Synth 8-6157] synthesizing module 'system_sc_data_0' [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/synth_1/.Xil/Vivado-8308-EMS-GB-SD/realtime/system_sc_data_0_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 'system_sc_data_0' (0#1) [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/synth_1/.Xil/Vivado-8308-EMS-GB-SD/realtime/system_sc_data_0_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 'system' (0#1) [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/synth/system.v:13]
+INFO: [Synth 8-6155] done synthesizing module 'system_wrapper' (0#1) [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.srcs/sources_1/imports/hdl/system_wrapper.v:13]
+INFO: [Synth 8-6155] done synthesizing module 'hpdp_top' (0#1) [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/system/hpdp_top.sv:21]
+WARNING: [Synth 8-7129] Port src_clk in module xpm_cdc_single is either unconnected or has no load
+---------------------------------------------------------------------------------
+Finished RTL Elaboration : Time (s): cpu = 00:00:04 ; elapsed = 00:00:05 . Memory (MB): peak = 2198.402 ; gain = 346.324
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Handling Custom Attributes
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Handling Custom Attributes : Time (s): cpu = 00:00:05 ; elapsed = 00:00:05 . Memory (MB): peak = 2198.402 ; gain = 346.324
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished RTL Optimization Phase 1 : Time (s): cpu = 00:00:05 ; elapsed = 00:00:05 . Memory (MB): peak = 2198.402 ; gain = 346.324
+---------------------------------------------------------------------------------
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.010 . Memory (MB): peak = 2198.402 ; gain = 0.000
+INFO: [Netlist 29-17] Analyzing 1 Unisim elements for replacement
+INFO: [Netlist 29-28] Unisim Transformation completed in 0 CPU seconds
+INFO: [Project 1-570] Preparing netlist for logic optimization
+
+Processing XDC Constraints
+Initializing timing engine
+Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_ps_0/system_ps_0/system_ps_0_in_context.xdc] for cell 'u_system/system_i/ps'
+Finished Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_ps_0/system_ps_0/system_ps_0_in_context.xdc] for cell 'u_system/system_i/ps'
+Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_clk_sensor_gen_0/system_clk_sensor_gen_0/system_clk_sensor_gen_0_in_context.xdc] for cell 'u_system/system_i/clk_sensor_gen'
+Finished Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_clk_sensor_gen_0/system_clk_sensor_gen_0/system_clk_sensor_gen_0_in_context.xdc] for cell 'u_system/system_i/clk_sensor_gen'
+Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_rst_ctrl_0/system_rst_ctrl_0/system_rst_ctrl_0_in_context.xdc] for cell 'u_system/system_i/rst_ctrl'
+Finished Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_rst_ctrl_0/system_rst_ctrl_0/system_rst_ctrl_0_in_context.xdc] for cell 'u_system/system_i/rst_ctrl'
+Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_rst_sys_0/system_rst_sys_0/system_rst_sys_0_in_context.xdc] for cell 'u_system/system_i/rst_sys'
+Finished Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_rst_sys_0/system_rst_sys_0/system_rst_sys_0_in_context.xdc] for cell 'u_system/system_i/rst_sys'
+Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_rst_sensor_0/system_rst_sensor_0/system_rst_ctrl_0_in_context.xdc] for cell 'u_system/system_i/rst_sensor'
+Finished Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_rst_sensor_0/system_rst_sensor_0/system_rst_ctrl_0_in_context.xdc] for cell 'u_system/system_i/rst_sensor'
+Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_dma_0/system_dma_0/system_dma_0_in_context.xdc] for cell 'u_system/system_i/dma'
+Finished Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_dma_0/system_dma_0/system_dma_0_in_context.xdc] for cell 'u_system/system_i/dma'
+Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_dma_gr_0/system_dma_gr_0/system_dma_gr_0_in_context.xdc] for cell 'u_system/system_i/dma_gr'
+Finished Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_dma_gr_0/system_dma_gr_0/system_dma_gr_0_in_context.xdc] for cell 'u_system/system_i/dma_gr'
+Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_hpdp_0/system_hpdp_0/system_hpdp_0_in_context.xdc] for cell 'u_system/system_i/hpdp'
+Finished Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_hpdp_0/system_hpdp_0/system_hpdp_0_in_context.xdc] for cell 'u_system/system_i/hpdp'
+Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_sc_ctrl_0/system_sc_ctrl_0/system_sc_ctrl_0_in_context.xdc] for cell 'u_system/system_i/sc_ctrl'
+Finished Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_sc_ctrl_0/system_sc_ctrl_0/system_sc_ctrl_0_in_context.xdc] for cell 'u_system/system_i/sc_ctrl'
+Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_sc_data_0/system_sc_data_0/system_sc_data_0_in_context.xdc] for cell 'u_system/system_i/sc_data'
+Finished Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_sc_data_0/system_sc_data_0/system_sc_data_0_in_context.xdc] for cell 'u_system/system_i/sc_data'
+Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/ip/gt_link/gt_link/gt_link_in_context.xdc] for cell 'u_gt'
+Finished Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/ip/gt_link/gt_link/gt_link_in_context.xdc] for cell 'u_gt'
+Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/ip/sem_ip/sem_ip/sem_ip_in_context.xdc] for cell 'u_sem/u_sem'
+Finished Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/ip/sem_ip/sem_ip/sem_ip_in_context.xdc] for cell 'u_sem/u_sem'
+Parsing XDC File [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/vivado/constraints/hpdp.xdc]
+Finished Parsing XDC File [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/vivado/constraints/hpdp.xdc]
+INFO: [Project 1-236] Implementation specific constraints were found while reading constraint file [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/vivado/constraints/hpdp.xdc]. These constraints will be ignored for synthesis but will be used in implementation. Impacted constraints are listed in the file [.Xil/hpdp_top_propImpl.xdc].
+Resolution: To avoid this warning, move constraints listed in [.Xil/hpdp_top_propImpl.xdc] to another XDC file and exclude this new file from synthesis with the used_in_synthesis property (File Properties dialog in GUI) and re-run elaboration/synthesis.
+Parsing XDC File [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/synth_1/dont_touch.xdc]
+Finished Parsing XDC File [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/synth_1/dont_touch.xdc]
+INFO: [Timing 38-2] Deriving generated clocks
+INFO: [Project 1-236] Implementation specific constraints were found while reading constraint file [C:/AMDDesignTools/2025.2/Vivado/data/ip/xpm/xpm_cdc/tcl/xpm_cdc_single.tcl]. These constraints will be ignored for synthesis but will be used in implementation. Impacted constraints are listed in the file [.Xil/hpdp_top_propImpl.xdc].
+Resolution: To avoid this warning, move constraints listed in [.Xil/hpdp_top_propImpl.xdc] to another XDC file and exclude this new file from synthesis with the used_in_synthesis property (File Properties dialog in GUI) and re-run elaboration/synthesis.
+INFO: [Project 1-1714] 2 XPM XDC files have been applied to the design.
+Completed Processing XDC Constraints
+
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 2258.543 ; gain = 0.000
+INFO: [Project 1-111] Unisim Transformation Summary:
+  A total of 1 instances were transformed.
+  IBUFDS => IBUFDS (DIFFINBUF, IBUFCTRL): 1 instance 
+
+Constraint Validation Runtime : Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.008 . Memory (MB): peak = 2258.543 ; gain = 0.000
+---------------------------------------------------------------------------------
+Finished Constraint Validation : Time (s): cpu = 00:00:12 ; elapsed = 00:00:13 . Memory (MB): peak = 2258.543 ; gain = 406.465
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Loading Part and Timing Information
+---------------------------------------------------------------------------------
+Loading part: xczu7ev-ffvc1156-2-e
+INFO: [Synth 8-6742] Reading net delay rules and data
+---------------------------------------------------------------------------------
+Finished Loading Part and Timing Information : Time (s): cpu = 00:00:12 ; elapsed = 00:00:13 . Memory (MB): peak = 2258.543 ; gain = 406.465
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Applying 'set_property' XDC Constraints
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished applying 'set_property' XDC Constraints : Time (s): cpu = 00:00:12 ; elapsed = 00:00:13 . Memory (MB): peak = 2258.543 ; gain = 406.465
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished RTL Optimization Phase 2 : Time (s): cpu = 00:00:13 ; elapsed = 00:00:13 . Memory (MB): peak = 2258.543 ; gain = 406.465
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start RTL Component Statistics 
+---------------------------------------------------------------------------------
+Detailed RTL Component Info : 
++---Adders : 
+	   2 Input   16 Bit       Adders := 1     
++---Registers : 
+	               16 Bit    Registers := 1     
+	                2 Bit    Registers := 2     
+	                1 Bit    Registers := 3     
+---------------------------------------------------------------------------------
+Finished RTL Component Statistics 
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Part Resource Summary
+---------------------------------------------------------------------------------
+Part Resources:
+DSPs: 1728 (col length:144)
+BRAMs: 624 (col length: RAMB18 144 RAMB36 72)
+---------------------------------------------------------------------------------
+Finished Part Resource Summary
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Cross Boundary and Area Optimization
+---------------------------------------------------------------------------------
+WARNING: [Synth 8-7129] Port src_clk in module xpm_cdc_single is either unconnected or has no load
+---------------------------------------------------------------------------------
+Finished Cross Boundary and Area Optimization : Time (s): cpu = 00:00:14 ; elapsed = 00:00:14 . Memory (MB): peak = 2258.543 ; gain = 406.465
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Applying XDC Timing Constraints
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Applying XDC Timing Constraints : Time (s): cpu = 00:00:21 ; elapsed = 00:00:22 . Memory (MB): peak = 2946.422 ; gain = 1094.344
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Timing Optimization
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Timing Optimization : Time (s): cpu = 00:00:21 ; elapsed = 00:00:22 . Memory (MB): peak = 2966.555 ; gain = 1114.477
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Technology Mapping
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Technology Mapping : Time (s): cpu = 00:00:21 ; elapsed = 00:00:22 . Memory (MB): peak = 2967.836 ; gain = 1115.758
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start IO Insertion
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Flattening Before IO Insertion
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Flattening Before IO Insertion
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Final Netlist Cleanup
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Final Netlist Cleanup
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished IO Insertion : Time (s): cpu = 00:00:24 ; elapsed = 00:00:25 . Memory (MB): peak = 3207.926 ; gain = 1355.848
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Renaming Generated Instances
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Renaming Generated Instances : Time (s): cpu = 00:00:24 ; elapsed = 00:00:25 . Memory (MB): peak = 3207.926 ; gain = 1355.848
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Rebuilding User Hierarchy
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Rebuilding User Hierarchy : Time (s): cpu = 00:00:24 ; elapsed = 00:00:25 . Memory (MB): peak = 3207.926 ; gain = 1355.848
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Renaming Generated Ports
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Renaming Generated Ports : Time (s): cpu = 00:00:24 ; elapsed = 00:00:25 . Memory (MB): peak = 3207.926 ; gain = 1355.848
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Handling Custom Attributes
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Handling Custom Attributes : Time (s): cpu = 00:00:24 ; elapsed = 00:00:25 . Memory (MB): peak = 3207.926 ; gain = 1355.848
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Renaming Generated Nets
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Renaming Generated Nets : Time (s): cpu = 00:00:24 ; elapsed = 00:00:25 . Memory (MB): peak = 3207.926 ; gain = 1355.848
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Writing Synthesis Report
+---------------------------------------------------------------------------------
+
+Report BlackBoxes: 
++------+------------------------+----------+
+|      |BlackBox name           |Instances |
++------+------------------------+----------+
+|1     |gt_link                 |         1|
+|2     |sem_ip                  |         1|
+|3     |system_clk_sensor_gen_0 |         1|
+|4     |system_dma_0            |         1|
+|5     |system_dma_gr_0         |         1|
+|6     |system_hpdp_0           |         1|
+|7     |system_ps_0             |         1|
+|8     |system_rst_ctrl_0       |         1|
+|9     |system_rst_sensor_0     |         1|
+|10    |system_rst_sys_0        |         1|
+|11    |system_sc_ctrl_0        |         1|
+|12    |system_sc_data_0        |         1|
++------+------------------------+----------+
+
+Report Cell Usage: 
++------+----------------------+------+
+|      |Cell                  |Count |
++------+----------------------+------+
+|1     |gt_link               |     1|
+|2     |sem_ip                |     1|
+|3     |system_clk_sensor_gen |     1|
+|4     |system_dma            |     1|
+|5     |system_dma_gr         |     1|
+|6     |system_hpdp           |     1|
+|7     |system_ps             |     1|
+|8     |system_rst_ctrl       |     1|
+|9     |system_rst_sensor     |     1|
+|10    |system_rst_sys        |     1|
+|11    |system_sc_ctrl        |     1|
+|12    |system_sc_data        |     1|
+|13    |BUFGCE_DIV            |     1|
+|14    |CARRY8                |     2|
+|15    |FRAME_ECCE4           |     1|
+|16    |IBUFDS_GTE4           |     1|
+|17    |ICAPE3                |     1|
+|18    |LUT1                  |     1|
+|19    |LUT2                  |     2|
+|20    |LUT6                  |     3|
+|21    |FDRE                  |    23|
+|22    |IBUFDS                |     1|
+|23    |OBUF                  |     2|
++------+----------------------+------+
+---------------------------------------------------------------------------------
+Finished Writing Synthesis Report : Time (s): cpu = 00:00:24 ; elapsed = 00:00:25 . Memory (MB): peak = 3207.926 ; gain = 1355.848
+---------------------------------------------------------------------------------
+Synthesis finished with 0 errors, 0 critical warnings and 1 warnings.
+Synthesis Optimization Runtime : Time (s): cpu = 00:00:15 ; elapsed = 00:00:21 . Memory (MB): peak = 3207.926 ; gain = 1295.707
+Synthesis Optimization Complete : Time (s): cpu = 00:00:24 ; elapsed = 00:00:25 . Memory (MB): peak = 3207.926 ; gain = 1355.848
+INFO: [Project 1-571] Translating synthesized netlist
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.013 . Memory (MB): peak = 3207.926 ; gain = 0.000
+INFO: [Netlist 29-17] Analyzing 3 Unisim elements for replacement
+INFO: [Netlist 29-28] Unisim Transformation completed in 0 CPU seconds
+INFO: [Project 1-570] Preparing netlist for logic optimization
+INFO: [Opt 31-138] Pushed 0 inverter(s) to 0 load pin(s).
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 3207.926 ; gain = 0.000
+INFO: [Project 1-111] Unisim Transformation Summary:
+  A total of 1 instances were transformed.
+  IBUFDS => IBUFDS (DIFFINBUF, IBUFCTRL): 1 instance 
+
+Synth Design complete | Checksum: 5ee5a360
+INFO: [Common 17-83] Releasing license: Synthesis
+68 Infos, 33 Warnings, 0 Critical Warnings and 0 Errors encountered.
+synth_design completed successfully
+synth_design: Time (s): cpu = 00:00:29 ; elapsed = 00:00:34 . Memory (MB): peak = 3207.926 ; gain = 2574.520
+Write ShapeDB Complete: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.001 . Memory (MB): peak = 3207.926 ; gain = 0.000
+INFO: [Common 17-1381] The checkpoint 'C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/synth_1/hpdp_top.dcp' has been generated.
+INFO: [Vivado 12-24828] Executing command : report_utilization -file hpdp_top_utilization_synth.rpt -pb hpdp_top_utilization_synth.pb
+INFO: [Common 17-206] Exiting Vivado at Tue Oct 13 14:42:21 2026...
+[Tue Oct 13 14:42:24 2026] synth_1 finished
+wait_on_runs: Time (s): cpu = 00:00:01 ; elapsed = 00:04:59 . Memory (MB): peak = 1993.797 ; gain = 0.000
+# if {[get_property PROGRESS [get_runs synth_1]] ne "100%"} { error "synthesis failed" }
+# launch_runs impl_1 -to_step write_bitstream -jobs $jobs
+[Tue Oct 13 14:42:27 2026] Launched impl_1...
+Run output will be captured here: C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/impl_1/runme.log
+# wait_on_run impl_1
+[Tue Oct 13 14:42:27 2026] Waiting for impl_1 to finish...
+
+*** Running vivado
+    with args -log hpdp_top.vdi -applog -m64 -product Vivado -messageDb vivado.pb -mode batch -source hpdp_top.tcl -notrace
+
+
+
+****** Vivado v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Tue Oct 13 14:42:32 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source hpdp_top.tcl -notrace
+INFO: [IP_Flow 19-234] Refreshing IP repositories
+INFO: [IP_Flow 19-1704] No user IP repositories specified
+INFO: [IP_Flow 19-2313] Loaded Vivado IP repository 'C:/AMDDesignTools/2025.2/Vivado/data/ip'.
+add_files: Time (s): cpu = 00:00:06 ; elapsed = 00:00:06 . Memory (MB): peak = 684.410 ; gain = 136.262
+Command: link_design -top hpdp_top -part xczu7ev-ffvc1156-2-e
+Design is defaulting to srcset: sources_1
+Design is defaulting to constrset: constrs_1
+INFO: [Device 21-403] Loading part xczu7ev-ffvc1156-2-e
+INFO: [Project 1-5699] Read binary netlist with skipMacroContent - 1
+INFO: [Project 1-454] Reading design checkpoint 'c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/ip/gt_link/gt_link.dcp' for cell 'u_gt'
+INFO: [Project 1-454] Reading design checkpoint 'c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/ip/sem_ip/sem_ip.dcp' for cell 'u_sem/u_sem'
+INFO: [Project 1-454] Reading design checkpoint 'c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_clk_sensor_gen_0/system_clk_sensor_gen_0.dcp' for cell 'u_system/system_i/clk_sensor_gen'
+INFO: [Project 1-454] Reading design checkpoint 'c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_dma_0/system_dma_0.dcp' for cell 'u_system/system_i/dma'
+INFO: [Project 1-454] Reading design checkpoint 'c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_dma_gr_0/system_dma_gr_0.dcp' for cell 'u_system/system_i/dma_gr'
+INFO: [Project 1-454] Reading design checkpoint 'c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_hpdp_0/system_hpdp_0.dcp' for cell 'u_system/system_i/hpdp'
+INFO: [Project 1-454] Reading design checkpoint 'c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_ps_0/system_ps_0.dcp' for cell 'u_system/system_i/ps'
+INFO: [Project 1-454] Reading design checkpoint 'c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_rst_ctrl_0/system_rst_ctrl_0.dcp' for cell 'u_system/system_i/rst_ctrl'
+INFO: [Project 1-454] Reading design checkpoint 'c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_rst_sensor_0/system_rst_sensor_0.dcp' for cell 'u_system/system_i/rst_sensor'
+INFO: [Project 1-454] Reading design checkpoint 'c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_rst_sys_0/system_rst_sys_0.dcp' for cell 'u_system/system_i/rst_sys'
+INFO: [Project 1-454] Reading design checkpoint 'c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_sc_ctrl_0/system_sc_ctrl_0.dcp' for cell 'u_system/system_i/sc_ctrl'
+INFO: [Project 1-454] Reading design checkpoint 'c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_sc_data_0/system_sc_data_0.dcp' for cell 'u_system/system_i/sc_data'
+Netlist sorting complete. Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.881 . Memory (MB): peak = 1907.691 ; gain = 0.000
+INFO: [Netlist 29-17] Analyzing 1882 Unisim elements for replacement
+INFO: [Netlist 29-28] Unisim Transformation completed in 1 CPU seconds
+INFO: [Project 1-479] Netlist was created with Vivado 2025.2
+INFO: [Project 1-570] Preparing netlist for logic optimization
+Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_ps_0/system_ps_0.xdc] for cell 'u_system/system_i/ps/inst'
+Finished Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_ps_0/system_ps_0.xdc] for cell 'u_system/system_i/ps/inst'
+Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_clk_sensor_gen_0/system_clk_sensor_gen_0_board.xdc] for cell 'u_system/system_i/clk_sensor_gen/inst'
+Finished Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_clk_sensor_gen_0/system_clk_sensor_gen_0_board.xdc] for cell 'u_system/system_i/clk_sensor_gen/inst'
+Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_clk_sensor_gen_0/system_clk_sensor_gen_0.xdc] for cell 'u_system/system_i/clk_sensor_gen/inst'
+Finished Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_clk_sensor_gen_0/system_clk_sensor_gen_0.xdc] for cell 'u_system/system_i/clk_sensor_gen/inst'
+Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_rst_ctrl_0/system_rst_ctrl_0_board.xdc] for cell 'u_system/system_i/rst_ctrl/U0'
+Finished Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_rst_ctrl_0/system_rst_ctrl_0_board.xdc] for cell 'u_system/system_i/rst_ctrl/U0'
+Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_rst_sys_0/system_rst_sys_0_board.xdc] for cell 'u_system/system_i/rst_sys/U0'
+Finished Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_rst_sys_0/system_rst_sys_0_board.xdc] for cell 'u_system/system_i/rst_sys/U0'
+Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_rst_sensor_0/system_rst_sensor_0_board.xdc] for cell 'u_system/system_i/rst_sensor/U0'
+Finished Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_rst_sensor_0/system_rst_sensor_0_board.xdc] for cell 'u_system/system_i/rst_sensor/U0'
+Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_dma_0/system_dma_0.xdc] for cell 'u_system/system_i/dma/U0'
+Finished Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_dma_0/system_dma_0.xdc] for cell 'u_system/system_i/dma/U0'
+Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_dma_gr_0/system_dma_gr_0.xdc] for cell 'u_system/system_i/dma_gr/U0'
+Finished Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_dma_gr_0/system_dma_gr_0.xdc] for cell 'u_system/system_i/dma_gr/U0'
+Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_sc_ctrl_0/bd_0/ip/ip_1/bd_73a6_psr_aclk_0_board.xdc] for cell 'u_system/system_i/sc_ctrl/inst/clk_map/psr_aclk/U0'
+Finished Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_sc_ctrl_0/bd_0/ip/ip_1/bd_73a6_psr_aclk_0_board.xdc] for cell 'u_system/system_i/sc_ctrl/inst/clk_map/psr_aclk/U0'
+Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_sc_ctrl_0/smartconnect.xdc] for cell 'u_system/system_i/sc_ctrl/inst'
+Finished Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_sc_ctrl_0/smartconnect.xdc] for cell 'u_system/system_i/sc_ctrl/inst'
+Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_sc_data_0/bd_0/ip/ip_1/bd_4c3b_psr_aclk_0_board.xdc] for cell 'u_system/system_i/sc_data/inst/clk_map/psr_aclk/U0'
+Finished Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_sc_data_0/bd_0/ip/ip_1/bd_4c3b_psr_aclk_0_board.xdc] for cell 'u_system/system_i/sc_data/inst/clk_map/psr_aclk/U0'
+Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_sc_data_0/smartconnect.xdc] for cell 'u_system/system_i/sc_data/inst'
+Finished Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_sc_data_0/smartconnect.xdc] for cell 'u_system/system_i/sc_data/inst'
+Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/ip/gt_link/synth/gt_link.xdc] for cell 'u_gt/inst'
+Finished Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/ip/gt_link/synth/gt_link.xdc] for cell 'u_gt/inst'
+Parsing XDC File [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/vivado/constraints/hpdp.xdc]
+Finished Parsing XDC File [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/vivado/constraints/hpdp.xdc]
+Parsing XDC File [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/vivado/constraints/waivers.xdc]
+Finished Parsing XDC File [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/vivado/constraints/waivers.xdc]
+Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_dma_0/system_dma_0_clocks.xdc] for cell 'u_system/system_i/dma/U0'
+Finished Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_dma_0/system_dma_0_clocks.xdc] for cell 'u_system/system_i/dma/U0'
+Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_dma_gr_0/system_dma_gr_0_clocks.xdc] for cell 'u_system/system_i/dma_gr/U0'
+Finished Parsing XDC File [c:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.gen/sources_1/bd/system/ip/system_dma_gr_0/system_dma_gr_0_clocks.xdc] for cell 'u_system/system_i/dma_gr/U0'
+INFO: [Project 1-1714] 304 XPM XDC files have been applied to the design.
+INFO: [Opt 31-138] Pushed 0 inverter(s) to 0 load pin(s).
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.031 . Memory (MB): peak = 2966.297 ; gain = 0.000
+INFO: [Project 1-111] Unisim Transformation Summary:
+  A total of 449 instances were transformed.
+  DSP48E2 => DSP48E2 (DSP_ALU, DSP_A_B_DATA, DSP_C_DATA, DSP_MULTIPLIER, DSP_M_DATA, DSP_OUTPUT, DSP_PREADD, DSP_PREADD_DATA): 24 instances
+  IBUFDS => IBUFDS (DIFFINBUF, IBUFCTRL): 1 instance 
+  LUT6_2 => LUT6_2 (LUT5, LUT6): 49 instances
+  RAM16X1D => RAM32X1D (RAMD32(x2)): 2 instances
+  RAM32M => RAM32M (RAMD32(x6), RAMS32(x2)): 9 instances
+  RAM32M16 => RAM32M16 (RAMD32(x14), RAMS32(x2)): 112 instances
+  RAM32X1D => RAM32X1D (RAMD32(x2)): 22 instances
+  RAM64M => RAM64M (RAMD64E(x4)): 50 instances
+  RAM64M8 => RAM64M8 (RAMD64E(x8)): 168 instances
+  RAM64X1D => RAM64X1D (RAMD64E(x2)): 12 instances
+
+24 Infos, 0 Warnings, 0 Critical Warnings and 0 Errors encountered.
+link_design completed successfully
+link_design: Time (s): cpu = 00:00:46 ; elapsed = 00:00:46 . Memory (MB): peak = 2966.297 ; gain = 2274.059
+Command: opt_design
+Attempting to get a license for feature 'Implementation' and/or device 'xczu7ev'
+INFO: [Common 17-349] Got license for feature 'Implementation' and/or device 'xczu7ev'
+Running DRC as a precondition to command opt_design
+
+Starting DRC Task
+INFO: [DRC 23-27] Running DRC with 2 threads
+INFO: [Project 1-461] DRC finished with 0 Errors
+INFO: [Project 1-462] Please refer to the DRC report (report_drc) for more information.
+
+Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.810 . Memory (MB): peak = 2966.297 ; gain = 0.000
+
+Starting Cache Timing Information Task
+INFO: [Timing 38-35] Done setting XDC timing constraints.
+Ending Cache Timing Information Task | Checksum: 2200f5ec4
+
+Time (s): cpu = 00:00:05 ; elapsed = 00:00:03 . Memory (MB): peak = 2966.297 ; gain = 0.000
+
+Starting Logic Optimization Task
+
+Phase 1 Initialization
+
+Phase 1.1 Core Generation And Design Setup
+Phase 1.1 Core Generation And Design Setup | Checksum: 2200f5ec4
+
+Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.064 . Memory (MB): peak = 3444.371 ; gain = 0.000
+
+Phase 1.2 Setup Constraints And Sort Netlist
+Phase 1.2 Setup Constraints And Sort Netlist | Checksum: 2200f5ec4
+
+Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.111 . Memory (MB): peak = 3444.371 ; gain = 0.000
+Phase 1 Initialization | Checksum: 2200f5ec4
+
+Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.117 . Memory (MB): peak = 3444.371 ; gain = 0.000
+
+Phase 2 Timer Update And Timing Data Collection
+
+Phase 2.1 Detect if minReqCache needed
+Phase 2.1 Detect if minReqCache needed | Checksum: 2200f5ec4
+
+Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.190 . Memory (MB): peak = 3456.586 ; gain = 12.215
+
+Phase 2.2 Timer Update
+Phase 2.2 Timer Update | Checksum: 2200f5ec4
+
+Time (s): cpu = 00:00:02 ; elapsed = 00:00:01 . Memory (MB): peak = 3456.586 ; gain = 12.215
+
+Phase 2.3 Timing Data Collection
+Phase 2.3 Timing Data Collection | Checksum: 2200f5ec4
+
+Time (s): cpu = 00:00:02 ; elapsed = 00:00:01 . Memory (MB): peak = 3456.586 ; gain = 12.215
+Phase 2 Timer Update And Timing Data Collection | Checksum: 2200f5ec4
+
+Time (s): cpu = 00:00:02 ; elapsed = 00:00:01 . Memory (MB): peak = 3456.586 ; gain = 12.215
+
+Phase 3 Retarget
+INFO: [Opt 31-1851] Number of loadless carry chains removed were: 0
+INFO: [Opt 31-1834] Total Chains To Be Transformed Were: 0 AND Number of Transformed insts Created are: 0
+INFO: [Opt 31-1566] Pulled 22 inverters resulting in an inversion of 244 pins
+INFO: [Opt 31-138] Pushed 147 inverter(s) to 4286 load pin(s).
+INFO: [Opt 31-49] Retargeted 0 cell(s).
+Phase 3 Retarget | Checksum: 23683671c
+
+Time (s): cpu = 00:00:04 ; elapsed = 00:00:03 . Memory (MB): peak = 3456.586 ; gain = 12.215
+Retarget | Checksum: 23683671c
+INFO: [Opt 31-389] Phase Retarget created 138 cells and removed 674 cells
+INFO: [Opt 31-1021] In phase Retarget, 171 netlist objects are constrained preventing optimization. Please run opt_design with -debug_log to get more detail. 
+
+Phase 4 Constant propagation
+INFO: [Opt 31-138] Pushed 0 inverter(s) to 0 load pin(s).
+Phase 4 Constant propagation | Checksum: 190663b1a
+
+Time (s): cpu = 00:00:04 ; elapsed = 00:00:03 . Memory (MB): peak = 3456.586 ; gain = 12.215
+Constant propagation | Checksum: 190663b1a
+INFO: [Opt 31-389] Phase Constant propagation created 153 cells and removed 538 cells
+INFO: [Opt 31-1021] In phase Constant propagation, 179 netlist objects are constrained preventing optimization. Please run opt_design with -debug_log to get more detail. 
+
+Phase 5 Sweep
+INFO: [Constraints 18-11670] Building netlist checker database with flags, 0x8
+Done building netlist checker database: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.060 . Memory (MB): peak = 3456.586 ; gain = 0.000
+INFO: [Constraints 18-11670] Building netlist checker database with flags, 0x8
+Done building netlist checker database: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.039 . Memory (MB): peak = 3456.586 ; gain = 0.000
+Phase 5 Sweep | Checksum: 26f5ec4cb
+
+Time (s): cpu = 00:00:07 ; elapsed = 00:00:06 . Memory (MB): peak = 3456.586 ; gain = 12.215
+Sweep | Checksum: 26f5ec4cb
+INFO: [Opt 31-389] Phase Sweep created 1 cells and removed 1385 cells
+INFO: [Opt 31-1021] In phase Sweep, 2183 netlist objects are constrained preventing optimization. Please run opt_design with -debug_log to get more detail. 
+
+Phase 6 BUFG optimization
+INFO: [Opt 31-1077] Phase BUFG optimization inserted 0 global clock buffer(s) for CLOCK_LOW_FANOUT.
+INFO: [Opt 31-274] Optimized connectivity to 1 cascaded buffer cells
+Phase 6 BUFG optimization | Checksum: 26095c377
+
+Time (s): cpu = 00:00:08 ; elapsed = 00:00:07 . Memory (MB): peak = 3456.586 ; gain = 12.215
+BUFG optimization | Checksum: 26095c377
+INFO: [Opt 31-662] Phase BUFG optimization created 0 cells of which 0 are BUFGs and removed 1 cells.
+
+Phase 7 Shift Register Optimization
+INFO: [Opt 31-1064] SRL Remap converted 0 SRLs to 0 registers and converted 0 registers of register chains to 0 SRLs
+Phase 7 Shift Register Optimization | Checksum: 26bf94b6f
+
+Time (s): cpu = 00:00:08 ; elapsed = 00:00:07 . Memory (MB): peak = 3456.586 ; gain = 12.215
+Shift Register Optimization | Checksum: 26bf94b6f
+INFO: [Opt 31-389] Phase Shift Register Optimization created 4 cells and removed 0 cells
+
+Phase 8 Post Processing Netlist
+Phase 8 Post Processing Netlist | Checksum: 1df825847
+
+Time (s): cpu = 00:00:08 ; elapsed = 00:00:07 . Memory (MB): peak = 3456.586 ; gain = 12.215
+Post Processing Netlist | Checksum: 1df825847
+INFO: [Opt 31-389] Phase Post Processing Netlist created 0 cells and removed 0 cells
+INFO: [Opt 31-1021] In phase Post Processing Netlist, 175 netlist objects are constrained preventing optimization. Please run opt_design with -debug_log to get more detail. 
+
+Phase 9 Finalization
+
+Phase 9.1 Finalizing Design Cores and Updating Shapes
+Phase 9.1 Finalizing Design Cores and Updating Shapes | Checksum: 19793074b
+
+Time (s): cpu = 00:00:10 ; elapsed = 00:00:09 . Memory (MB): peak = 3456.586 ; gain = 12.215
+
+Phase 9.2 Verifying Netlist Connectivity
+
+Starting Connectivity Check Task
+
+Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.105 . Memory (MB): peak = 3456.586 ; gain = 0.000
+Phase 9.2 Verifying Netlist Connectivity | Checksum: 19793074b
+
+Time (s): cpu = 00:00:10 ; elapsed = 00:00:09 . Memory (MB): peak = 3456.586 ; gain = 12.215
+Phase 9 Finalization | Checksum: 19793074b
+
+Time (s): cpu = 00:00:10 ; elapsed = 00:00:09 . Memory (MB): peak = 3456.586 ; gain = 12.215
+Opt_design Change Summary
+=========================
+
+
+-------------------------------------------------------------------------------------------------------------------------
+|  Phase                        |  #Cells created  |  #Cells Removed  |  #Constrained objects preventing optimizations  |
+-------------------------------------------------------------------------------------------------------------------------
+|  Retarget                     |             138  |             674  |                                            171  |
+|  Constant propagation         |             153  |             538  |                                            179  |
+|  Sweep                        |               1  |            1385  |                                           2183  |
+|  BUFG optimization            |               0  |               1  |                                              0  |
+|  Shift Register Optimization  |               4  |               0  |                                              0  |
+|  Post Processing Netlist      |               0  |               0  |                                            175  |
+-------------------------------------------------------------------------------------------------------------------------
+
+
+Ending Logic Optimization Task | Checksum: 19793074b
+
+Time (s): cpu = 00:00:10 ; elapsed = 00:00:09 . Memory (MB): peak = 3456.586 ; gain = 12.215
+
+Starting Power Optimization Task
+INFO: [Pwropt 34-132] Skipping clock gating for clocks with a period < 2.00 ns.
+INFO: [Power 33-23] Power model is not available for u_fecc
+INFO: [Pwropt 34-9] Applying IDT optimizations ...
+INFO: [Pwropt 34-10] Applying ODC optimizations ...
+INFO: [Timing 38-35] Done setting XDC timing constraints.
+Running Vector-less Activity Propagation...
+
+Finished Running Vector-less Activity Propagation
+
+
+Starting PowerOpt Patch Enables Task
+INFO: [Pwropt 34-162] WRITE_MODE attribute of 0 BRAM(s) out of a total of 45 has been updated to save power. Run report_power_opt to get a complete listing of the BRAMs updated.
+INFO: [Pwropt 34-201] Structural ODC has moved 18 WE to EN ports
+Number of BRAM Ports augmented: 17 newly gated: 19 Total Ports: 90
+Ending PowerOpt Patch Enables Task | Checksum: 21ba2d3e7
+
+Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.397 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Ending Power Optimization Task | Checksum: 21ba2d3e7
+
+Time (s): cpu = 00:00:36 ; elapsed = 00:00:26 . Memory (MB): peak = 4806.309 ; gain = 1349.723
+
+Starting Final Cleanup Task
+
+Starting Logic Optimization Task
+INFO: [Timing 38-35] Done setting XDC timing constraints.
+Ending Logic Optimization Task | Checksum: 2b774e07c
+
+Time (s): cpu = 00:00:08 ; elapsed = 00:00:06 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Ending Final Cleanup Task | Checksum: 2b774e07c
+
+Time (s): cpu = 00:00:11 ; elapsed = 00:00:09 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.038 . Memory (MB): peak = 4806.309 ; gain = 0.000
+INFO: [Common 17-83] Releasing license: Implementation
+59 Infos, 0 Warnings, 0 Critical Warnings and 0 Errors encountered.
+opt_design completed successfully
+opt_design: Time (s): cpu = 00:01:05 ; elapsed = 00:00:49 . Memory (MB): peak = 4806.309 ; gain = 1840.012
+INFO: [Vivado 12-24828] Executing command : report_drc -file hpdp_top_drc_opted.rpt -pb hpdp_top_drc_opted.pb -rpx hpdp_top_drc_opted.rpx
+Command: report_drc -file hpdp_top_drc_opted.rpt -pb hpdp_top_drc_opted.pb -rpx hpdp_top_drc_opted.rpx
+INFO: [IP_Flow 19-1839] IP Catalog is up to date.
+INFO: [DRC 23-27] Running DRC with 2 threads
+INFO: [Vivado_Tcl 2-168] The results of DRC are in file C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/impl_1/hpdp_top_drc_opted.rpt.
+report_drc completed successfully
+report_drc: Time (s): cpu = 00:00:10 ; elapsed = 00:00:09 . Memory (MB): peak = 4806.309 ; gain = 0.000
+generate_parallel_reports: Time (s): cpu = 00:00:10 ; elapsed = 00:00:09 . Memory (MB): peak = 4806.309 ; gain = 0.000
+INFO: [Timing 38-480] Writing timing data to binary archive.
+Wrote PlaceDB: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.005 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Wrote PulsedLatchDB: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Writing XDEF routing.
+Writing XDEF routing logical nets.
+Write ShapeDB Complete: Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.111 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Writing XDEF routing special nets.
+Wrote RouteStorage: Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.147 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Wrote Netlist Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.001 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Wrote Device Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.017 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Write Physdb Complete: Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.184 . Memory (MB): peak = 4806.309 ; gain = 0.000
+INFO: [Common 17-1381] The checkpoint 'C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/impl_1/hpdp_top_opt.dcp' has been generated.
+Command: place_design
+Attempting to get a license for feature 'Implementation' and/or device 'xczu7ev'
+INFO: [Common 17-349] Got license for feature 'Implementation' and/or device 'xczu7ev'
+INFO: [Common 17-83] Releasing license: Implementation
+INFO: [DRC 23-27] Running DRC with 2 threads
+INFO: [Vivado_Tcl 4-198] DRC finished with 0 Errors
+INFO: [Vivado_Tcl 4-199] Please refer to the DRC report (report_drc) for more information.
+INFO: [Timing 38-35] Done setting XDC timing constraints.
+Running DRC as a precondition to command place_design
+INFO: [DRC 23-27] Running DRC with 2 threads
+INFO: [Vivado_Tcl 4-198] DRC finished with 0 Errors
+INFO: [Vivado_Tcl 4-199] Please refer to the DRC report (report_drc) for more information.
+INFO: [Place 30-611] Multithreading enabled for place_design using a maximum of 2 CPUs
+
+Starting Placer Task
+
+Phase 1 Placer Initialization
+
+Phase 1.1 Placer Initialization Netlist Sorting
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.029 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Phase 1.1 Placer Initialization Netlist Sorting | Checksum: 22d125952
+
+Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.051 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.029 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 1.2 IO Placement/ Clock Placement/ Build Placer Device
+Phase 1.2 IO Placement/ Clock Placement/ Build Placer Device | Checksum: 1ec2afda7
+
+Time (s): cpu = 00:00:07 ; elapsed = 00:00:06 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 1.3 Build Placer Netlist Model
+Phase 1.3 Build Placer Netlist Model | Checksum: 207711538
+
+Time (s): cpu = 00:00:32 ; elapsed = 00:00:24 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 1.4 Constrain Clocks/Macros
+Phase 1.4 Constrain Clocks/Macros | Checksum: 207711538
+
+Time (s): cpu = 00:00:32 ; elapsed = 00:00:24 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Phase 1 Placer Initialization | Checksum: 207711538
+
+Time (s): cpu = 00:00:32 ; elapsed = 00:00:25 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 2 Global Placement
+
+Phase 2.1 Floorplanning
+
+Phase 2.1.1 Partition Driven Placement
+
+Phase 2.1.1.1 PBP: Partition Driven Placement
+Phase 2.1.1.1 PBP: Partition Driven Placement | Checksum: 25764525f
+
+Time (s): cpu = 00:01:12 ; elapsed = 00:00:50 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 2.1.1.2 PBP: Clock Region Placement
+INFO: [Place 30-3162] Check ILP status : ILP-based clock placer completed successfully.
+Phase 2.1.1.2 PBP: Clock Region Placement | Checksum: 1b88643bc
+
+Time (s): cpu = 00:01:14 ; elapsed = 00:00:52 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 2.1.1.3 PBP: Discrete Incremental
+Phase 2.1.1.3 PBP: Discrete Incremental | Checksum: 211b11496
+
+Time (s): cpu = 00:01:14 ; elapsed = 00:00:52 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 2.1.1.4 PBP: Compute Congestion
+Phase 2.1.1.4 PBP: Compute Congestion | Checksum: 211b11496
+
+Time (s): cpu = 00:01:29 ; elapsed = 00:01:01 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 2.1.1.5 PBP: Macro Placement
+Phase 2.1.1.5 PBP: Macro Placement | Checksum: 1d3b54519
+
+Time (s): cpu = 00:01:30 ; elapsed = 00:01:01 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 2.1.1.6 PBP: UpdateTiming
+Phase 2.1.1.6 PBP: UpdateTiming | Checksum: 1a73f9907
+
+Time (s): cpu = 00:01:35 ; elapsed = 00:01:05 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 2.1.1.7 PBP: Add part constraints
+Phase 2.1.1.7 PBP: Add part constraints | Checksum: 1a73f9907
+
+Time (s): cpu = 00:01:35 ; elapsed = 00:01:05 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Phase 2.1.1 Partition Driven Placement | Checksum: 1a73f9907
+
+Time (s): cpu = 00:01:35 ; elapsed = 00:01:05 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Phase 2.1 Floorplanning | Checksum: 1a73f9907
+
+Time (s): cpu = 00:01:35 ; elapsed = 00:01:05 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 2.2 Update Timing before SLR Path Opt
+Phase 2.2 Update Timing before SLR Path Opt | Checksum: 1a73f9907
+
+Time (s): cpu = 00:01:35 ; elapsed = 00:01:05 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 2.3 Post-Processing in Floorplanning
+Phase 2.3 Post-Processing in Floorplanning | Checksum: 25c158d3a
+
+Time (s): cpu = 00:01:36 ; elapsed = 00:01:05 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 2.4 Global Place Phase1
+Phase 2.4 Global Place Phase1 | Checksum: 2d084e4a1
+
+Time (s): cpu = 00:06:19 ; elapsed = 00:03:50 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 2.5 Global Place Phase2
+
+Phase 2.5.1 UpdateTiming Before Physical Synthesis
+Phase 2.5.1 UpdateTiming Before Physical Synthesis | Checksum: 205562b7e
+
+Time (s): cpu = 00:06:28 ; elapsed = 00:03:56 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 2.5.2 Physical Synthesis In Placer
+INFO: [Physopt 32-1035] Found 120 LUTNM shape to break, 1459 LUT instances to create LUTNM shape
+INFO: [Physopt 32-1044] Break lutnm for timing: one critical 50, two critical 70, total 120, new lutff created 30
+INFO: [Physopt 32-1138] End 1 Pass. Optimized 681 nets or LUTs. Breaked 120 LUTs, combined 561 existing LUTs and moved 0 existing LUT
+INFO: [Physopt 32-1030] Pass 1. Identified 45 candidate driver sets for equivalent driver rewiring.
+INFO: [Physopt 32-1483] Netlist edit fails for net u_system/system_i/dma_gr/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/I_RESET/sig_mmap_rst and pin u_system/system_i/dma_gr/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/I_CMD_STATUS/GEN_INCLUDE_STATUS_FIFO.I_STS_FIFO/USE_ASYNC_FIFO.I_ASYNC_FIFO/I_ASYNC_FIFOGEN_FIFO/gnuram_async_fifo.xpm_fifo_base_inst/xpm_fifo_rst_inst/gen_rst_ic.fifo_wr_rst_ic_i_2/I1. Please check constraints such as DONT_TOUCH on the instance, net and hierarchical instance between driver and loads.
+INFO: [Physopt 32-1483] Netlist edit fails for net u_system/system_i/dma_gr/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/I_RESET/sig_mmap_rst and pin u_system/system_i/dma_gr/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/I_CMD_STATUS/GEN_INCLUDE_STATUS_FIFO.I_STS_FIFO/USE_ASYNC_FIFO.I_ASYNC_FIFO/I_ASYNC_FIFOGEN_FIFO/gnuram_async_fifo.xpm_fifo_base_inst/xpm_fifo_rst_inst/gen_rst_ic.rst_seq_reentered_i_1/I1. Please check constraints such as DONT_TOUCH on the instance, net and hierarchical instance between driver and loads.
+INFO: [Physopt 32-1483] Netlist edit fails for net u_system/system_i/dma/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/I_RESET/sig_mmap_rst and pin u_system/system_i/dma/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/I_CMD_STATUS/GEN_INCLUDE_STATUS_FIFO.I_STS_FIFO/USE_ASYNC_FIFO.I_ASYNC_FIFO/I_ASYNC_FIFOGEN_FIFO/gnuram_async_fifo.xpm_fifo_base_inst/rst_d1_inst/gen_pf_ic_rc.gen_full_rst_val.ram_full_i_i_4/I0. Please check constraints such as DONT_TOUCH on the instance, net and hierarchical instance between driver and loads.
+INFO: [Physopt 32-661] Optimized 33 nets.  Re-placed 182 instances.
+INFO: [Physopt 32-775] End 1 Pass. Optimized 33 nets or cells. Created 0 new cell, deleted 0 existing cell and moved 182 existing cells
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.151 . Memory (MB): peak = 4806.309 ; gain = 0.000
+INFO: [Physopt 32-1132] Very high fanout net 'u_system/system_i/hpdp/inst/u_core/u_cmp/u_nb/z1[0]' is not considered as a candidate in VHFN optimization. The fanout considered for this optimization is changed from 1645 to 926 due to a timing constraint or macro primitives that prevent optimization on all of the loads. To force replication, set the FORCE_MAX_FANOUT property on the net to a number less than 926.
+INFO: [Physopt 32-1132] Very high fanout net 'u_system/system_i/hpdp/inst/u_core/u_cmp/u_nb/z1[1]' is not considered as a candidate in VHFN optimization. The fanout considered for this optimization is changed from 1645 to 926 due to a timing constraint or macro primitives that prevent optimization on all of the loads. To force replication, set the FORCE_MAX_FANOUT property on the net to a number less than 926.
+INFO: [Physopt 32-1132] Very high fanout net 'u_system/system_i/hpdp/inst/u_core/u_cmp/u_nb/z1[2]' is not considered as a candidate in VHFN optimization. The fanout considered for this optimization is changed from 1645 to 926 due to a timing constraint or macro primitives that prevent optimization on all of the loads. To force replication, set the FORCE_MAX_FANOUT property on the net to a number less than 926.
+INFO: [Physopt 32-1132] Very high fanout net 'u_system/system_i/hpdp/inst/u_core/u_cmp/u_nb/z1[3]' is not considered as a candidate in VHFN optimization. The fanout considered for this optimization is changed from 1645 to 926 due to a timing constraint or macro primitives that prevent optimization on all of the loads. To force replication, set the FORCE_MAX_FANOUT property on the net to a number less than 926.
+INFO: [Physopt 32-1132] Very high fanout net 'u_system/system_i/hpdp/inst/u_core/u_cmp/u_nb/z1[4]' is not considered as a candidate in VHFN optimization. The fanout considered for this optimization is changed from 1645 to 926 due to a timing constraint or macro primitives that prevent optimization on all of the loads. To force replication, set the FORCE_MAX_FANOUT property on the net to a number less than 926.
+INFO: [Physopt 32-1132] Very high fanout net 'u_system/system_i/hpdp/inst/u_core/u_cmp/u_nb/z1[5]' is not considered as a candidate in VHFN optimization. The fanout considered for this optimization is changed from 1645 to 926 due to a timing constraint or macro primitives that prevent optimization on all of the loads. To force replication, set the FORCE_MAX_FANOUT property on the net to a number less than 926.
+INFO: [Physopt 32-1408] Pass 1. Identified 2 candidate nets for high-fanout optimization.
+INFO: [Physopt 32-81] Processed net u_system/system_i/hpdp/inst/u_core/u_cmp/sg_tready. Replicated 21 times.
+INFO: [Physopt 32-1483] Netlist edit fails for net u_system/system_i/hpdp/inst/u_core/rst_sys_repN_5 and pin u_system/system_i/hpdp/inst/u_core/u_fe/u_se/u_prefetch/gnuram_async_fifo.xpm_fifo_base_inst/xpm_fifo_rst_inst/gen_rst_ic.wr_rst_busy_ic_i_1/I0. Please check constraints such as DONT_TOUCH on the instance, net and hierarchical instance between driver and loads.
+INFO: [Physopt 32-81] Processed net u_system/system_i/hpdp/inst/u_core/rst_sys. Replicated 8 times.
+INFO: [Physopt 32-232] Optimized 2 nets. Created 29 new instances.
+INFO: [Physopt 32-775] End 1 Pass. Optimized 2 nets or cells. Created 29 new cells, deleted 0 existing cell and moved 0 existing cell
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.157 . Memory (MB): peak = 4806.309 ; gain = 0.000
+INFO: [Physopt 32-456] No candidate cells for DSP register optimization found in the design.
+INFO: [Physopt 32-775] End 2 Pass. Optimized 0 net or cell. Created 0 new cell, deleted 0 existing cell and moved 0 existing cell
+INFO: [Physopt 32-1123] No candidate cells found for Shift Register to Pipeline optimization
+INFO: [Physopt 32-775] End 2 Pass. Optimized 0 net or cell. Created 0 new cell, deleted 0 existing cell and moved 0 existing cell
+INFO: [Physopt 32-1402] Pass 1: Identified 16 candidate cells for Shift Register optimization.
+INFO: [Physopt 32-775] End 1 Pass. Optimized 13 nets or cells. Created 23 new cells, deleted 0 existing cell and moved 0 existing cell
+Netlist sorting complete. Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.103 . Memory (MB): peak = 4806.309 ; gain = 0.000
+INFO: [Physopt 32-527] Pass 1: Identified 1 candidate cell for BRAM register optimization
+INFO: [Physopt 32-665] Processed cell u_system/system_i/hpdp/inst/u_core/u_fs/u_out/xpm_fifo_base_inst/gen_sdpram.xpm_memory_base_inst/gen_wr_a.gen_word_narrow.mem_reg_bram_0. 9 registers were pushed out.
+INFO: [Physopt 32-775] End 1 Pass. Optimized 1 net or cell. Created 9 new cells, deleted 0 existing cell and moved 0 existing cell
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.060 . Memory (MB): peak = 4806.309 ; gain = 0.000
+INFO: [Physopt 32-846] No candidate cells for URAM register optimization found in the design
+INFO: [Physopt 32-775] End 1 Pass. Optimized 0 net or cell. Created 0 new cell, deleted 0 existing cell and moved 0 existing cell
+INFO: [Physopt 32-846] No candidate cells for URAM register optimization found in the design
+INFO: [Physopt 32-775] End 1 Pass. Optimized 0 net or cell. Created 0 new cell, deleted 0 existing cell and moved 0 existing cell
+INFO: [Physopt 32-949] No candidate nets found for dynamic/static region interface net replication
+INFO: [Physopt 32-775] End 1 Pass. Optimized 0 net or cell. Created 0 new cell, deleted 0 existing cell and moved 0 existing cell
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.031 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Summary of Physical Synthesis Optimizations
+============================================
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+|  Optimization                                     |  Added Cells  |  Removed Cells  |  Optimized Cells/Nets  |  Dont Touch  |  Iterations  |  Elapsed   |
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+|  LUT Combining                                    |          120  |            561  |                   681  |           0  |           1  |  00:00:01  |
+|  Retime                                           |            0  |              0  |                     0  |           0  |           1  |  00:00:00  |
+|  Equivalent Driver Rewiring                       |            0  |              0  |                    33  |           0  |           1  |  00:00:04  |
+|  Very High Fanout                                 |           29  |              0  |                     2  |           0  |           1  |  00:00:01  |
+|  DSP Register                                     |            0  |              0  |                     0  |           0  |           1  |  00:00:00  |
+|  Shift Register to Pipeline                       |            0  |              0  |                     0  |           0  |           1  |  00:00:00  |
+|  Shift Register                                   |           23  |              0  |                    13  |           0  |           1  |  00:00:00  |
+|  BRAM Register                                    |            9  |              0  |                     1  |           0  |           1  |  00:00:00  |
+|  URAM Register                                    |            0  |              0  |                     0  |           0  |           1  |  00:00:00  |
+|  Dynamic/Static Region Interface Net Replication  |            0  |              0  |                     0  |           0  |           1  |  00:00:00  |
+|  Total                                            |          181  |            561  |                   730  |           0  |          10  |  00:00:07  |
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+Phase 2.5.2 Physical Synthesis In Placer | Checksum: 292224a55
+
+Time (s): cpu = 00:06:44 ; elapsed = 00:04:10 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Phase 2.5 Global Place Phase2 | Checksum: 2084f3b62
+
+Time (s): cpu = 00:07:20 ; elapsed = 00:04:31 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Phase 2 Global Placement | Checksum: 2084f3b62
+
+Time (s): cpu = 00:07:20 ; elapsed = 00:04:31 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 3 Detail Placement
+
+Phase 3.1 Commit Multi Column Macros
+Phase 3.1 Commit Multi Column Macros | Checksum: 258496815
+
+Time (s): cpu = 00:07:42 ; elapsed = 00:04:44 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 3.2 Commit Most Macros & LUTRAMs
+Phase 3.2 Commit Most Macros & LUTRAMs | Checksum: 2cda154f1
+
+Time (s): cpu = 00:07:52 ; elapsed = 00:04:51 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 3.3 Small Shape DP
+
+Phase 3.3.1 Small Shape Clustering
+Phase 3.3.1 Small Shape Clustering | Checksum: 2c6e9b9bc
+
+Time (s): cpu = 00:08:41 ; elapsed = 00:05:20 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 3.3.2 Slice Area Swap
+
+Phase 3.3.2.1 Slice Area Swap Initial
+Phase 3.3.2.1 Slice Area Swap Initial | Checksum: 25833f0f7
+
+Time (s): cpu = 00:09:03 ; elapsed = 00:05:38 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Phase 3.3.2 Slice Area Swap | Checksum: 25833f0f7
+
+Time (s): cpu = 00:09:04 ; elapsed = 00:05:38 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Phase 3.3 Small Shape DP | Checksum: 27b22c909
+
+Time (s): cpu = 00:09:49 ; elapsed = 00:06:03 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 3.4 Re-assign LUT pins
+Phase 3.4 Re-assign LUT pins | Checksum: 27ff6e823
+
+Time (s): cpu = 00:09:53 ; elapsed = 00:06:07 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 3.5 Pipeline Register Optimization
+Phase 3.5 Pipeline Register Optimization | Checksum: 23d0e54a1
+
+Time (s): cpu = 00:09:56 ; elapsed = 00:06:09 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 3.6 Fast Optimization
+Phase 3.6 Fast Optimization | Checksum: 1aeeb7400
+
+Time (s): cpu = 00:10:30 ; elapsed = 00:06:29 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Phase 3 Detail Placement | Checksum: 1aeeb7400
+
+Time (s): cpu = 00:10:30 ; elapsed = 00:06:29 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 4 Post Placement Optimization and Clean-Up
+
+Phase 4.1 Post Commit Optimization
+INFO: [Timing 38-35] Done setting XDC timing constraints.
+
+Phase 4.1.1 Post Placement Optimization
+Post Placement Optimization Initialization | Checksum: 1e0e738db
+
+Phase 4.1.1.1 BUFG Insertion
+
+Starting Physical Synthesis Task
+
+Phase 1 Physical Synthesis Initialization
+INFO: [Physopt 32-721] Multithreading enabled for phys_opt_design using a maximum of 2 CPUs
+INFO: [Physopt 32-619] Estimated Timing Summary | WNS=0.134 | TNS=0.000 |
+Phase 1 Physical Synthesis Initialization | Checksum: 14be81a47
+
+Time (s): cpu = 00:00:03 ; elapsed = 00:00:01 . Memory (MB): peak = 4806.309 ; gain = 0.000
+INFO: [Physopt 32-1483] Netlist edit fails for net u_system/system_i/hpdp/inst/u_core/u_cdc_sys_stat/rst_ctrl_n_0[0]_bufg_place and pin u_system/system_i/hpdp/inst/u_core/u_regs/g_copy[0].u_regs/axil_prev_was_rd_i_1/I0. Please check constraints such as DONT_TOUCH on the instance, net and hierarchical instance between driver and loads.
+INFO: [Place 46-32] Processed net u_system/system_i/hpdp/inst/u_core/u_cdc_sys_stat/rst_ctrl_n_0[0], BUFG insertion was skipped because the netlist editing failed.
+INFO: [Place 46-35] Processed net u_system/system_i/hpdp/inst/u_core/u_cmp/u_pred/c2[u][3][0]_i_1_n_0, inserted BUFG to drive 1320 loads.
+INFO: [Place 46-35] Processed net u_system/system_i/hpdp/inst/u_core/u_cmp/u_ld/E[0], inserted BUFG to drive 1043 loads.
+INFO: [Place 46-56] BUFG insertion identified 3 candidate nets. Inserted BUFG: 2, Replicated BUFG Driver: 0, Skipped due to Placement/Routing Conflicts: 0, Skipped due to Timing Degradation: 0, Skipped due to netlist editing failed: 1.
+Ending Physical Synthesis Task | Checksum: 21e7e5476
+
+Time (s): cpu = 00:00:05 ; elapsed = 00:00:03 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Phase 4.1.1.1 BUFG Insertion | Checksum: 27f6d02f9
+
+Time (s): cpu = 00:11:21 ; elapsed = 00:07:03 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 4.1.1.2 Post Placement Timing Optimization
+INFO: [Place 30-746] Post Placement Timing Summary WNS=0.231. For the most accurate timing information please run report_timing.
+Phase 4.1.1.2 Post Placement Timing Optimization | Checksum: 167b885f8
+
+Time (s): cpu = 00:11:48 ; elapsed = 00:07:29 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Time (s): cpu = 00:11:48 ; elapsed = 00:07:29 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Phase 4.1 Post Commit Optimization | Checksum: 167b885f8
+
+Time (s): cpu = 00:11:49 ; elapsed = 00:07:29 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.115 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 4.2 Post Placement Cleanup
+Phase 4.2 Post Placement Cleanup | Checksum: 101842afc
+
+Time (s): cpu = 00:12:07 ; elapsed = 00:07:41 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 4.3 Placer Reporting
+
+Phase 4.3.1 Print Estimated Congestion
+INFO: [Place 30-612] Post-Placement Estimated Congestion 
+ ________________________________________________________________________
+|           | Global Congestion | Long Congestion   | Short Congestion  |
+| Direction | Region Size       | Region Size       | Region Size       |
+|___________|___________________|___________________|___________________|
+|      North|                1x1|                1x1|                1x1|
+|___________|___________________|___________________|___________________|
+|      South|                1x1|                4x4|                2x2|
+|___________|___________________|___________________|___________________|
+|       East|                1x1|                1x1|                4x4|
+|___________|___________________|___________________|___________________|
+|       West|                1x1|                1x1|                4x4|
+|___________|___________________|___________________|___________________|
+
+Phase 4.3.1 Print Estimated Congestion | Checksum: 101842afc
+
+Time (s): cpu = 00:12:08 ; elapsed = 00:07:42 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Phase 4.3 Placer Reporting | Checksum: 101842afc
+
+Time (s): cpu = 00:12:08 ; elapsed = 00:07:42 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 4.4 Final Placement Cleanup
+Netlist sorting complete. Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.047 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Time (s): cpu = 00:12:09 ; elapsed = 00:07:42 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Phase 4 Post Placement Optimization and Clean-Up | Checksum: 1a5913ad6
+
+Time (s): cpu = 00:12:09 ; elapsed = 00:07:42 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Ending Placer Task | Checksum: 19fde0e40
+
+Time (s): cpu = 00:12:09 ; elapsed = 00:07:42 . Memory (MB): peak = 4806.309 ; gain = 0.000
+122 Infos, 0 Warnings, 0 Critical Warnings and 0 Errors encountered.
+place_design completed successfully
+place_design: Time (s): cpu = 00:12:20 ; elapsed = 00:07:50 . Memory (MB): peak = 4806.309 ; gain = 0.000
+INFO: [Vivado 12-24838] Running report commands "report_control_sets, report_io, report_utilization" in parallel.
+Running report generation with 2 threads.
+INFO: [Vivado 12-24828] Executing command : report_io -file hpdp_top_io_placed.rpt
+report_io: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.159 . Memory (MB): peak = 4806.309 ; gain = 0.000
+INFO: [Vivado 12-24828] Executing command : report_control_sets -verbose -file hpdp_top_control_sets_placed.rpt
+report_control_sets: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.224 . Memory (MB): peak = 4806.309 ; gain = 0.000
+INFO: [Vivado 12-24828] Executing command : report_utilization -file hpdp_top_utilization_placed.rpt -pb hpdp_top_utilization_placed.pb
+INFO: [Timing 38-480] Writing timing data to binary archive.
+Write ShapeDB Complete: Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.166 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Wrote PlaceDB: Time (s): cpu = 00:00:08 ; elapsed = 00:00:03 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Wrote PulsedLatchDB: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Writing XDEF routing.
+Writing XDEF routing logical nets.
+Writing XDEF routing special nets.
+Wrote RouteStorage: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.133 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Wrote Netlist Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.078 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Wrote Device Cache: Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.022 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Write Physdb Complete: Time (s): cpu = 00:00:09 ; elapsed = 00:00:03 . Memory (MB): peak = 4806.309 ; gain = 0.000
+INFO: [Common 17-1381] The checkpoint 'C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/impl_1/hpdp_top_placed.dcp' has been generated.
+write_checkpoint: Time (s): cpu = 00:00:10 ; elapsed = 00:00:06 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Command: phys_opt_design
+Attempting to get a license for feature 'Implementation' and/or device 'xczu7ev'
+INFO: [Common 17-349] Got license for feature 'Implementation' and/or device 'xczu7ev'
+
+Starting Initial Update Timing Task
+
+Time (s): cpu = 00:00:20 ; elapsed = 00:00:13 . Memory (MB): peak = 4806.309 ; gain = 0.000
+INFO: [Vivado_Tcl 4-2279] Estimated Timing Summary | WNS= 0.235 | TNS= 0.000 | 
+INFO: [Vivado_Tcl 4-383] Design worst setup slack (WNS) is greater than or equal to 0.000 ns. All physical synthesis setup optimizations will be skipped.
+INFO: [Vivado_Tcl 4-232] No setup violation found. The netlist was not modified.
+INFO: [Common 17-83] Releasing license: Implementation
+133 Infos, 0 Warnings, 0 Critical Warnings and 0 Errors encountered.
+phys_opt_design completed successfully
+phys_opt_design: Time (s): cpu = 00:00:21 ; elapsed = 00:00:13 . Memory (MB): peak = 4806.309 ; gain = 0.000
+INFO: [Timing 38-480] Writing timing data to binary archive.
+Write ShapeDB Complete: Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.177 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Wrote PlaceDB: Time (s): cpu = 00:00:08 ; elapsed = 00:00:03 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Wrote PulsedLatchDB: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Writing XDEF routing.
+Writing XDEF routing logical nets.
+Writing XDEF routing special nets.
+Wrote RouteStorage: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.128 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Wrote Netlist Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.092 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Wrote Device Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.023 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Write Physdb Complete: Time (s): cpu = 00:00:08 ; elapsed = 00:00:03 . Memory (MB): peak = 4806.309 ; gain = 0.000
+INFO: [Common 17-1381] The checkpoint 'C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/impl_1/hpdp_top_physopt.dcp' has been generated.
+write_checkpoint: Time (s): cpu = 00:00:11 ; elapsed = 00:00:06 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Command: route_design
+Attempting to get a license for feature 'Implementation' and/or device 'xczu7ev'
+INFO: [Common 17-349] Got license for feature 'Implementation' and/or device 'xczu7ev'
+
+
+Starting Routing Task
+INFO: [Route 35-254] Multithreading enabled for route_design using a maximum of 2 CPUs
+
+Phase 1 Build RT Design
+Checksum: PlaceDB: 35b7fe5a ConstDB: 0 ShapeSum: d3dafd60 RouteDB: 964b1286
+Nodegraph reading from file.  Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.650 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Post Restoration Checksum: NetGraph: c0f50be7 | NumContArr: a5acf9b6 | Constraints: 18ecffe2 | Timing: c2a8fa9d
+Phase 1 Build RT Design | Checksum: 24238001c
+
+Time (s): cpu = 00:00:26 ; elapsed = 00:00:15 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 2 Router Initialization
+
+Phase 2.1 Fix Topology Constraints
+Phase 2.1 Fix Topology Constraints | Checksum: 24238001c
+
+Time (s): cpu = 00:00:26 ; elapsed = 00:00:15 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 2.2 Pre Route Cleanup
+Phase 2.2 Pre Route Cleanup | Checksum: 24238001c
+
+Time (s): cpu = 00:00:26 ; elapsed = 00:00:15 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 2.3 Global Clock Net Routing
+ Number of Nodes with overlaps = 0
+Phase 2.3 Global Clock Net Routing | Checksum: 18e8ac493
+
+Time (s): cpu = 00:00:30 ; elapsed = 00:00:18 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 2.4 Update Timing
+Phase 2.4 Update Timing | Checksum: 1710b567c
+
+Time (s): cpu = 00:00:41 ; elapsed = 00:00:26 . Memory (MB): peak = 4806.309 ; gain = 0.000
+INFO: [Route 35-416] Intermediate Timing Summary | WNS=0.274  | TNS=0.000  | WHS=-0.158 | THS=-49.710|
+
+
+Phase 2.5 Update Timing for Bus Skew
+
+Phase 2.5.1 Update Timing
+Phase 2.5.1 Update Timing | Checksum: 11096e839
+
+Time (s): cpu = 00:01:10 ; elapsed = 00:00:43 . Memory (MB): peak = 4806.309 ; gain = 0.000
+INFO: [Route 35-416] Intermediate Timing Summary | WNS=0.274  | TNS=0.000  | WHS=-0.224 | THS=-30.465|
+
+Phase 2.5 Update Timing for Bus Skew | Checksum: 1a1569711
+
+Time (s): cpu = 00:01:10 ; elapsed = 00:00:43 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 2.6 Soft Constraint Pins - Fast Budgeting
+Phase 2.6 Soft Constraint Pins - Fast Budgeting | Checksum: 1a1569711
+
+Time (s): cpu = 00:01:11 ; elapsed = 00:00:44 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Router Utilization Summary
+  Global Vertical Routing Utilization    = 0.000302509 %
+  Global Horizontal Routing Utilization  = 0.000752858 %
+  Routable Net Status*
+  *Does not include unroutable nets such as driverless and loadless.
+  Run report_route_status for detailed report.
+  Number of Failed Nets               = 89141
+    (Failed Nets is the sum of unrouted and partially routed nets)
+  Number of Unrouted Nets             = 72361
+  Number of Partially Routed Nets     = 16780
+  Number of Node Overlaps             = 0
+
+Phase 2 Router Initialization | Checksum: 1669ccb96
+
+Time (s): cpu = 00:01:13 ; elapsed = 00:00:45 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 3 Global Routing
+Phase 3 Global Routing | Checksum: 1669ccb96
+
+Time (s): cpu = 00:01:13 ; elapsed = 00:00:45 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 4 Initial Routing
+
+Phase 4.1 Initial Net Routing Pass
+Phase 4.1 Initial Net Routing Pass | Checksum: 1c853ddd2
+
+Time (s): cpu = 00:01:37 ; elapsed = 00:01:00 . Memory (MB): peak = 4806.309 ; gain = 0.000
+Phase 4 Initial Routing | Checksum: 2a5fe85ba
+
+Time (s): cpu = 00:01:39 ; elapsed = 00:01:00 . Memory (MB): peak = 4806.309 ; gain = 0.000
+
+Phase 5 Rip-up And Reroute
+
+Phase 5.1 Global Iteration 0
+ Number of Nodes with overlaps = 14242
+ Number of Nodes with overlaps = 1256
+ Number of Nodes with overlaps = 148
+ Number of Nodes with overlaps = 33
+ Number of Nodes with overlaps = 16
+ Number of Nodes with overlaps = 8
+ Number of Nodes with overlaps = 4
+ Number of Nodes with overlaps = 2
+ Number of Nodes with overlaps = 1
+ Number of Nodes with overlaps = 0
+INFO: [Route 35-416] Intermediate Timing Summary | WNS=0.077  | TNS=0.000  | WHS=-0.017 | THS=-0.110 |
+
+Phase 5.1 Global Iteration 0 | Checksum: 174cb532a
+
+Time (s): cpu = 00:03:41 ; elapsed = 00:02:27 . Memory (MB): peak = 5035.230 ; gain = 228.922
+
+Phase 5.2 Global Iteration 1
+ Number of Nodes with overlaps = 7
+ Number of Nodes with overlaps = 0
+INFO: [Route 35-416] Intermediate Timing Summary | WNS=0.077  | TNS=0.000  | WHS=N/A    | THS=N/A    |
+
+Phase 5.2 Global Iteration 1 | Checksum: 1cb425b0a
+
+Time (s): cpu = 00:03:50 ; elapsed = 00:02:33 . Memory (MB): peak = 5035.230 ; gain = 228.922
+Phase 5 Rip-up And Reroute | Checksum: 1cb425b0a
+
+Time (s): cpu = 00:03:50 ; elapsed = 00:02:33 . Memory (MB): peak = 5035.230 ; gain = 228.922
+
+Phase 6 Delay and Skew Optimization
+
+Phase 6.1 Delay CleanUp
+INFO: [Route 35-416] Intermediate Timing Summary | WNS=0.077  | TNS=0.000  | WHS=0.010  | THS=0.000  |
+
+INFO: [Route 35-416] Intermediate Timing Summary | WNS=0.077  | TNS=0.000  | WHS=0.010  | THS=0.000  |
+
+Phase 6.1 Delay CleanUp | Checksum: 24d58a37b
+
+Time (s): cpu = 00:04:03 ; elapsed = 00:02:41 . Memory (MB): peak = 5035.230 ; gain = 228.922
+
+Phase 6.2 Clock Skew Optimization
+Phase 6.2 Clock Skew Optimization | Checksum: 24d58a37b
+
+Time (s): cpu = 00:04:03 ; elapsed = 00:02:41 . Memory (MB): peak = 5035.230 ; gain = 228.922
+Phase 6 Delay and Skew Optimization | Checksum: 24d58a37b
+
+Time (s): cpu = 00:04:03 ; elapsed = 00:02:41 . Memory (MB): peak = 5035.230 ; gain = 228.922
+
+Phase 7 Post Hold Fix
+
+Phase 7.1 Hold Fix Iter
+INFO: [Route 35-416] Intermediate Timing Summary | WNS=0.077  | TNS=0.000  | WHS=0.010  | THS=0.000  |
+
+Phase 7.1 Hold Fix Iter | Checksum: 1e5d7ea52
+
+Time (s): cpu = 00:04:12 ; elapsed = 00:02:46 . Memory (MB): peak = 5035.230 ; gain = 228.922
+Phase 7 Post Hold Fix | Checksum: 1e5d7ea52
+
+Time (s): cpu = 00:04:12 ; elapsed = 00:02:46 . Memory (MB): peak = 5035.230 ; gain = 228.922
+
+Phase 8 Route finalize
+
+Router Utilization Summary
+  Global Vertical Routing Utilization    = 5.93921 %
+  Global Horizontal Routing Utilization  = 5.34199 %
+  Routable Net Status*
+  *Does not include unroutable nets such as driverless and loadless.
+  Run report_route_status for detailed report.
+  Number of Failed Nets               = 0
+    (Failed Nets is the sum of unrouted and partially routed nets)
+  Number of Unrouted Nets             = 0
+  Number of Partially Routed Nets     = 0
+  Number of Node Overlaps             = 0
+
+Phase 8 Route finalize | Checksum: 1e5d7ea52
+
+Time (s): cpu = 00:04:13 ; elapsed = 00:02:47 . Memory (MB): peak = 5035.230 ; gain = 228.922
+
+Phase 9 Verifying routed nets
+
+ Verification completed successfully
+Phase 9 Verifying routed nets | Checksum: 1e5d7ea52
+
+Time (s): cpu = 00:04:13 ; elapsed = 00:02:47 . Memory (MB): peak = 5035.230 ; gain = 228.922
+
+Phase 10 Depositing Routes
+INFO: [Route 35-467] Router swapped GT pin u_gt/inst/gen_gtwizard_gthe4_top.gt_link_gtwizard_gthe4_inst/gen_gtwizard_gthe4.gen_channel_container[2].gen_enabled_channel.gthe4_channel_wrapper_inst/channel_inst/gthe4_channel_gen.gen_gthe4_channel_inst[0].GTHE4_CHANNEL_PRIM_INST/GTREFCLK0 to physical pin GTHE4_CHANNEL_X0Y10/SOUTHREFCLK1
+INFO: [Route 35-467] Router swapped GT pin u_gt/inst/gen_gtwizard_gthe4_top.gt_link_gtwizard_gthe4_inst/gen_gtwizard_gthe4.gen_channel_container[2].gen_enabled_channel.gthe4_channel_wrapper_inst/channel_inst/gthe4_channel_gen.gen_gthe4_channel_inst[1].GTHE4_CHANNEL_PRIM_INST/GTREFCLK0 to physical pin GTHE4_CHANNEL_X0Y11/SOUTHREFCLK1
+Phase 10 Depositing Routes | Checksum: 1e5d7ea52
+
+Time (s): cpu = 00:04:19 ; elapsed = 00:02:52 . Memory (MB): peak = 5035.230 ; gain = 228.922
+
+Phase 11 Resolve XTalk
+Phase 11 Resolve XTalk | Checksum: 1e5d7ea52
+
+Time (s): cpu = 00:04:19 ; elapsed = 00:02:52 . Memory (MB): peak = 5035.230 ; gain = 228.922
+
+Phase 12 Post Process Routing
+Phase 12 Post Process Routing | Checksum: 1e5d7ea52
+
+Time (s): cpu = 00:04:20 ; elapsed = 00:02:53 . Memory (MB): peak = 5035.230 ; gain = 228.922
+
+Phase 13 Post Router Timing
+INFO: [Route 35-57] Estimated Timing Summary | WNS=0.077  | TNS=0.000  | WHS=0.010  | THS=0.000  |
+
+INFO: [Route 35-327] The final timing numbers are based on the router estimated timing analysis. For a complete and accurate timing signoff, please run report_timing_summary.
+Phase 13 Post Router Timing | Checksum: 1e5d7ea52
+
+Time (s): cpu = 00:04:20 ; elapsed = 00:02:53 . Memory (MB): peak = 5035.230 ; gain = 228.922
+Total Elapsed time in route_design: 173.043 secs
+
+Phase 14 Post-Route Event Processing
+Phase 14 Post-Route Event Processing | Checksum: 212964370
+
+Time (s): cpu = 00:04:21 ; elapsed = 00:02:53 . Memory (MB): peak = 5035.230 ; gain = 228.922
+INFO: [Route 35-16] Router Completed Successfully
+Ending Routing Task | Checksum: 212964370
+
+Time (s): cpu = 00:04:22 ; elapsed = 00:02:54 . Memory (MB): peak = 5035.230 ; gain = 228.922
+
+Routing Is Done.
+INFO: [Common 17-83] Releasing license: Implementation
+150 Infos, 0 Warnings, 0 Critical Warnings and 0 Errors encountered.
+route_design completed successfully
+route_design: Time (s): cpu = 00:04:23 ; elapsed = 00:02:55 . Memory (MB): peak = 5035.230 ; gain = 228.922
+INFO: [Vivado 12-24828] Executing command : report_drc -file hpdp_top_drc_routed.rpt -pb hpdp_top_drc_routed.pb -rpx hpdp_top_drc_routed.rpx
+Command: report_drc -file hpdp_top_drc_routed.rpt -pb hpdp_top_drc_routed.pb -rpx hpdp_top_drc_routed.rpx
+INFO: [IP_Flow 19-1839] IP Catalog is up to date.
+INFO: [DRC 23-27] Running DRC with 2 threads
+INFO: [Vivado_Tcl 2-168] The results of DRC are in file C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/impl_1/hpdp_top_drc_routed.rpt.
+report_drc completed successfully
+report_drc: Time (s): cpu = 00:00:16 ; elapsed = 00:00:12 . Memory (MB): peak = 5035.230 ; gain = 0.000
+INFO: [Vivado 12-24828] Executing command : report_methodology -file hpdp_top_methodology_drc_routed.rpt -pb hpdp_top_methodology_drc_routed.pb -rpx hpdp_top_methodology_drc_routed.rpx
+Command: report_methodology -file hpdp_top_methodology_drc_routed.rpt -pb hpdp_top_methodology_drc_routed.pb -rpx hpdp_top_methodology_drc_routed.rpx
+INFO: [Timing 38-35] Done setting XDC timing constraints.
+INFO: [DRC 23-133] Running Methodology with 2 threads
+INFO: [Vivado_Tcl 2-1520] The results of Report Methodology are in file C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/impl_1/hpdp_top_methodology_drc_routed.rpt.
+report_methodology completed successfully
+report_drc: Time (s): cpu = 00:00:31 ; elapsed = 00:00:18 . Memory (MB): peak = 5035.230 ; gain = 0.000
+INFO: [Vivado 12-24828] Executing command : report_timing_summary -max_paths 10 -routable_nets -report_unconstrained -file hpdp_top_timing_summary_routed.rpt -pb hpdp_top_timing_summary_routed.pb -rpx hpdp_top_timing_summary_routed.rpx -warn_on_violation 
+INFO: [Timing 38-35] Done setting XDC timing constraints.
+INFO: [Timing 38-91] UpdateTimingParams: Speed grade: -2, Temperature grade: E, Delay Type: min_max.
+INFO: [Timing 38-191] Multithreading enabled for timing update using a maximum of 2 CPUs
+WARNING: [Timing 38-436] There are set_bus_skew constraint(s) in this design. Please run report_bus_skew to ensure that bus skew requirements are met.
+report_timing_summary: Time (s): cpu = 00:00:11 ; elapsed = 00:00:08 . Memory (MB): peak = 5035.230 ; gain = 0.000
+INFO: [Vivado 12-24838] Running report commands "report_incremental_reuse, report_route_status" in parallel.
+Running report generation with 2 threads.
+INFO: [Vivado 12-24828] Executing command : report_incremental_reuse -file hpdp_top_incremental_reuse_routed.rpt
+INFO: [Vivado_Tcl 4-1062] Incremental flow is disabled. No incremental reuse Info to report.
+INFO: [Vivado 12-24828] Executing command : report_route_status -file hpdp_top_route_status.rpt -pb hpdp_top_route_status.pb
+INFO: [Vivado 12-24828] Executing command : report_power -file hpdp_top_power_routed.rpt -pb hpdp_top_power_summary_routed.pb -rpx hpdp_top_power_routed.rpx
+Command: report_power -file hpdp_top_power_routed.rpt -pb hpdp_top_power_summary_routed.pb -rpx hpdp_top_power_routed.rpx
+Running Vector-less Activity Propagation...
+
+Finished Running Vector-less Activity Propagation
+WARNING: [Power 33-332] Found switching activity that implies high-fanout reset nets being asserted for excessive periods of time which may result in inaccurate power analysis.
+Resolution: To review and fix problems, please run Power Constraints Advisor in the GUI from Tools > Power Constraints Advisor or run report_power with the -advisory option to generate a text report.
+167 Infos, 2 Warnings, 0 Critical Warnings and 0 Errors encountered.
+report_power completed successfully
+report_power: Time (s): cpu = 00:00:24 ; elapsed = 00:00:19 . Memory (MB): peak = 5035.230 ; gain = 0.000
+INFO: [Vivado 12-24828] Executing command : report_clock_utilization -file hpdp_top_clock_utilization_routed.rpt
+INFO: [Vivado 12-24828] Executing command : report_bus_skew -warn_on_violation -file hpdp_top_bus_skew_routed.rpt -pb hpdp_top_bus_skew_routed.pb -rpx hpdp_top_bus_skew_routed.rpx
+INFO: [Timing 38-91] UpdateTimingParams: Speed grade: -2, Temperature grade: E, Delay Type: min_max.
+INFO: [Timing 38-191] Multithreading enabled for timing update using a maximum of 2 CPUs
+generate_parallel_reports: Time (s): cpu = 00:01:27 ; elapsed = 00:01:01 . Memory (MB): peak = 5035.230 ; gain = 0.000
+INFO: [Timing 38-480] Writing timing data to binary archive.
+Write ShapeDB Complete: Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.132 . Memory (MB): peak = 5035.230 ; gain = 0.000
+Wrote PlaceDB: Time (s): cpu = 00:00:07 ; elapsed = 00:00:03 . Memory (MB): peak = 5035.230 ; gain = 0.000
+Wrote PulsedLatchDB: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 5035.230 ; gain = 0.000
+Writing XDEF routing.
+Writing XDEF routing logical nets.
+Writing XDEF routing special nets.
+Wrote RouteStorage: Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.628 . Memory (MB): peak = 5035.230 ; gain = 0.000
+Wrote Netlist Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.072 . Memory (MB): peak = 5035.230 ; gain = 0.000
+Wrote Device Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.018 . Memory (MB): peak = 5035.230 ; gain = 0.000
+Write Physdb Complete: Time (s): cpu = 00:00:08 ; elapsed = 00:00:03 . Memory (MB): peak = 5035.230 ; gain = 0.000
+INFO: [Common 17-1381] The checkpoint 'C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/vivado/hpdp.runs/impl_1/hpdp_top_routed.dcp' has been generated.
+write_checkpoint: Time (s): cpu = 00:00:10 ; elapsed = 00:00:06 . Memory (MB): peak = 5035.230 ; gain = 0.000
+INFO: [Memdata 28-167] Found XPM memory block u_system/system_i/sc_data/inst/s02_nodes/s02_w_node/inst/inst_mi_handler/gen_normal_area.inst_fifo_node_payld/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst with a P_MEMORY_PRIMITIVE property set to distributed. A value of block is required. You will not be able to use the updatemem program to update the bitstream with new data for the u_system/system_i/sc_data/inst/s02_nodes/s02_w_node/inst/inst_mi_handler/gen_normal_area.inst_fifo_node_payld/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst block.
+INFO: [Memdata 28-167] Found XPM memory block u_system/system_i/sc_data/inst/s02_nodes/s02_w_node/inst/inst_mi_handler/gen_normal_area.gen_fifo_req.inst_fifo_req/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst with a P_MEMORY_PRIMITIVE property set to distributed. A value of block is required. You will not be able to use the updatemem program to update the bitstream with new data for the u_system/system_i/sc_data/inst/s02_nodes/s02_w_node/inst/inst_mi_handler/gen_normal_area.gen_fifo_req.inst_fifo_req/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst block.
+INFO: [Memdata 28-167] Found XPM memory block u_system/system_i/sc_data/inst/s02_nodes/s02_b_node/inst/inst_mi_handler/gen_normal_area.inst_fifo_node_payld/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst with a P_MEMORY_PRIMITIVE property set to distributed. A value of block is required. You will not be able to use the updatemem program to update the bitstream with new data for the u_system/system_i/sc_data/inst/s02_nodes/s02_b_node/inst/inst_mi_handler/gen_normal_area.inst_fifo_node_payld/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst block.
+INFO: [Memdata 28-167] Found XPM memory block u_system/system_i/sc_data/inst/s02_nodes/s02_aw_node/inst/inst_mi_handler/gen_normal_area.inst_fifo_node_payld/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst with a P_MEMORY_PRIMITIVE property set to distributed. A value of block is required. You will not be able to use the updatemem program to update the bitstream with new data for the u_system/system_i/sc_data/inst/s02_nodes/s02_aw_node/inst/inst_mi_handler/gen_normal_area.inst_fifo_node_payld/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst block.
+INFO: [Memdata 28-167] Found XPM memory block u_system/system_i/sc_data/inst/s01_nodes/s01_w_node/inst/inst_mi_handler/gen_normal_area.inst_fifo_node_payld/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst with a P_MEMORY_PRIMITIVE property set to distributed. A value of block is required. You will not be able to use the updatemem program to update the bitstream with new data for the u_system/system_i/sc_data/inst/s01_nodes/s01_w_node/inst/inst_mi_handler/gen_normal_area.inst_fifo_node_payld/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst block.
+INFO: [Memdata 28-167] Found XPM memory block u_system/system_i/sc_data/inst/s01_nodes/s01_w_node/inst/inst_mi_handler/gen_normal_area.gen_fifo_req.inst_fifo_req/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst with a P_MEMORY_PRIMITIVE property set to distributed. A value of block is required. You will not be able to use the updatemem program to update the bitstream with new data for the u_system/system_i/sc_data/inst/s01_nodes/s01_w_node/inst/inst_mi_handler/gen_normal_area.gen_fifo_req.inst_fifo_req/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst block.
+INFO: [Memdata 28-167] Found XPM memory block u_system/system_i/sc_data/inst/s01_nodes/s01_b_node/inst/inst_mi_handler/gen_normal_area.inst_fifo_node_payld/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst with a P_MEMORY_PRIMITIVE property set to distributed. A value of block is required. You will not be able to use the updatemem program to update the bitstream with new data for the u_system/system_i/sc_data/inst/s01_nodes/s01_b_node/inst/inst_mi_handler/gen_normal_area.inst_fifo_node_payld/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst block.
+INFO: [Memdata 28-167] Found XPM memory block u_system/system_i/sc_data/inst/s01_nodes/s01_aw_node/inst/inst_mi_handler/gen_normal_area.inst_fifo_node_payld/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst with a P_MEMORY_PRIMITIVE property set to distributed. A value of block is required. You will not be able to use the updatemem program to update the bitstream with new data for the u_system/system_i/sc_data/inst/s01_nodes/s01_aw_node/inst/inst_mi_handler/gen_normal_area.inst_fifo_node_payld/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst block.
+INFO: [Memdata 28-167] Found XPM memory block u_system/system_i/sc_data/inst/s00_nodes/s00_r_node/inst/inst_mi_handler/gen_normal_area.inst_fifo_node_payld/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst with a P_MEMORY_PRIMITIVE property set to distributed. A value of block is required. You will not be able to use the updatemem program to update the bitstream with new data for the u_system/system_i/sc_data/inst/s00_nodes/s00_r_node/inst/inst_mi_handler/gen_normal_area.inst_fifo_node_payld/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst block.
+INFO: [Memdata 28-167] Found XPM memory block u_system/system_i/sc_data/inst/s00_nodes/s00_ar_node/inst/inst_mi_handler/gen_normal_area.inst_fifo_node_payld/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst with a P_MEMORY_PRIMITIVE property set to distributed. A value of block is required. You will not be able to use the updatemem program to update the bitstream with new data for the u_system/system_i/sc_data/inst/s00_nodes/s00_ar_node/inst/inst_mi_handler/gen_normal_area.inst_fifo_node_payld/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst block.
+INFO: [Memdata 28-167] Found XPM memory block u_system/system_i/sc_data/inst/m00_nodes/m00_w_node/inst/inst_si_handler/gen_si_handler.gen_request_fifos.gen_req_fifo[2].inst_req_fifo/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst with a P_MEMORY_PRIMITIVE property set to distributed. A value of block is required. You will not be able to use the updatemem program to update the bitstream with new data for the u_system/system_i/sc_data/inst/m00_nodes/m00_w_node/inst/inst_si_handler/gen_si_handler.gen_request_fifos.gen_req_fifo[2].inst_req_fifo/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst block.
+INFO: [Memdata 28-167] Found XPM memory block u_system/system_i/sc_data/inst/m00_nodes/m00_w_node/inst/inst_si_handler/gen_si_handler.gen_request_fifos.gen_req_fifo[1].inst_req_fifo/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst with a P_MEMORY_PRIMITIVE property set to distributed. A value of block is required. You will not be able to use the updatemem program to update the bitstream with new data for the u_system/system_i/sc_data/inst/m00_nodes/m00_w_node/inst/inst_si_handler/gen_si_handler.gen_request_fifos.gen_req_fifo[1].inst_req_fifo/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst block.
+INFO: [Memdata 28-167] Found XPM memory block u_system/system_i/sc_data/inst/m00_nodes/m00_w_node/inst/inst_mi_handler/gen_normal_area.inst_fifo_node_payld/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst with a P_MEMORY_PRIMITIVE property set to distributed. A value of block is required. You will not be able to use the updatemem program to update the bitstream with new data for the u_system/system_i/sc_data/inst/m00_nodes/m00_w_node/inst/inst_mi_handler/gen_normal_area.inst_fifo_node_payld/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst block.
+INFO: [Memdata 28-167] Found XPM memory block u_system/system_i/sc_data/inst/m00_nodes/m00_r_node/inst/inst_mi_handler/gen_normal_area.inst_fifo_node_payld/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst with a P_MEMORY_PRIMITIVE property set to distributed. A value of block is required. You will not be able to use the updatemem program to update the bitstream with new data for the u_system/system_i/sc_data/inst/m00_nodes/m00_r_node/inst/inst_mi_handler/gen_normal_area.inst_fifo_node_payld/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst block.
+INFO: [Memdata 28-167] Found XPM memory block u_system/system_i/sc_data/inst/m00_nodes/m00_r_node/inst/inst_mi_handler/gen_normal_area.gen_fifo_req.inst_fifo_req/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst with a P_MEMORY_PRIMITIVE property set to distributed. A value of block is required. You will not be able to use the updatemem program to update the bitstream with new data for the u_system/system_i/sc_data/inst/m00_nodes/m00_r_node/inst/inst_mi_handler/gen_normal_area.gen_fifo_req.inst_fifo_req/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst block.
+INFO: [Memdata 28-167] Found XPM memory block u_system/system_i/sc_data/inst/m00_nodes/m00_b_node/inst/inst_mi_handler/gen_normal_area.inst_fifo_node_payld/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst with a P_MEMORY_PRIMITIVE property set to distributed. A value of block is required. You will not be able to use the updatemem program to update the bitstream with new data for the u_system/system_i/sc_data/inst/m00_nodes/m00_b_node/inst/inst_mi_handler/gen_normal_area.inst_fifo_node_payld/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst block.
+INFO: [Memdata 28-167] Found XPM memory block u_system/system_i/sc_data/inst/m00_nodes/m00_b_node/inst/inst_mi_handler/gen_normal_area.gen_fifo_req.inst_fifo_req/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst with a P_MEMORY_PRIMITIVE property set to distributed. A value of block is required. You will not be able to use the updatemem program to update the bitstream with new data for the u_system/system_i/sc_data/inst/m00_nodes/m00_b_node/inst/inst_mi_handler/gen_normal_area.gen_fifo_req.inst_fifo_req/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst block.
+INFO: [Memdata 28-167] Found XPM memory block u_system/system_i/sc_data/inst/m00_nodes/m00_aw_node/inst/inst_mi_handler/gen_normal_area.inst_fifo_node_payld/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst with a P_MEMORY_PRIMITIVE property set to distributed. A value of block is required. You will not be able to use the updatemem program to update the bitstream with new data for the u_system/system_i/sc_data/inst/m00_nodes/m00_aw_node/inst/inst_mi_handler/gen_normal_area.inst_fifo_node_payld/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst block.
+INFO: [Memdata 28-167] Found XPM memory block u_system/system_i/sc_data/inst/m00_nodes/m00_ar_node/inst/inst_mi_handler/gen_normal_area.inst_fifo_node_payld/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst with a P_MEMORY_PRIMITIVE property set to distributed. A value of block is required. You will not be able to use the updatemem program to update the bitstream with new data for the u_system/system_i/sc_data/inst/m00_nodes/m00_ar_node/inst/inst_mi_handler/gen_normal_area.inst_fifo_node_payld/gen_xpm_memory_fifo.inst_fifo/gen_mem_rep[0].inst_xpm_memory/xpm_memory_base_inst block.
+INFO: [Memdata 28-167] Found XPM memory block u_system/system_i/hpdp/inst/u_core/u_fe/u_se/u_out/gnuram_async_fifo.xpm_fifo_base_inst/gen_sdpram.xpm_memory_base_inst with a P_MEMORY_PRIMITIVE property set to distributed. A value of block is required. You will not be able to use the updatemem program to update the bitstream with new data for the u_system/system_i/hpdp/inst/u_core/u_fe/u_se/u_out/gnuram_async_fifo.xpm_fifo_base_inst/gen_sdpram.xpm_memory_base_inst block.
+INFO: [Memdata 28-167] Found XPM memory block u_system/system_i/hpdp/inst/u_core/u_fe/u_rc/g_bank[1].u_table/u_mem/xpm_memory_base_inst with a P_MEMORY_PRIMITIVE property set to ultra. A value of block is required. You will not be able to use the updatemem program to update the bitstream with new data for the u_system/system_i/hpdp/inst/u_core/u_fe/u_rc/g_bank[1].u_table/u_mem/xpm_memory_base_inst block.
+INFO: [Memdata 28-167] Found XPM memory block u_system/system_i/hpdp/inst/u_core/u_fe/u_rc/g_bank[0].u_table/u_mem/xpm_memory_base_inst with a P_MEMORY_PRIMITIVE property set to ultra. A value of block is required. You will not be able to use the updatemem program to update the bitstream with new data for the u_system/system_i/hpdp/inst/u_core/u_fe/u_rc/g_bank[0].u_table/u_mem/xpm_memory_base_inst block.
+INFO: [Memdata 28-167] Found XPM memory block u_system/system_i/hpdp/inst/u_core/u_fe/u_ct/u_buf/u_mem/u_mem/xpm_memory_base_inst with a P_MEMORY_PRIMITIVE property set to ultra. A value of block is required. You will not be able to use the updatemem program to update the bitstream with new data for the u_system/system_i/hpdp/inst/u_core/u_fe/u_ct/u_buf/u_mem/u_mem/xpm_memory_base_inst block.
+INFO: [Memdata 28-167] Found XPM memory block u_system/system_i/hpdp/inst/u_core/u_cmp/u_nb/u_line/u_mem/u_mem/xpm_memory_base_inst with a P_MEMORY_PRIMITIVE property set to ultra. A value of block is required. You will not be able to use the updatemem program to update the bitstream with new data for the u_system/system_i/hpdp/inst/u_core/u_cmp/u_nb/u_line/u_mem/u_mem/xpm_memory_base_inst block.
+INFO: [Memdata 28-208] The XPM instance: <u_system/system_i/dma_gr/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/I_CMD_STATUS/I_CMD_FIFO/USE_ASYNC_FIFO.I_ASYNC_FIFO/I_ASYNC_FIFOGEN_FIFO/gnuram_async_fifo.xpm_fifo_base_inst/gen_sdpram.xpm_memory_base_inst> is part of IP: <u_system/system_i/dma_gr>. This XPM instance will be excluded from the .mmi because updatemem is prohibited from making changes to an XPM that is part of an IP.
+INFO: [Memdata 28-208] The XPM instance: <u_system/system_i/dma_gr/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/I_CMD_STATUS/GEN_INCLUDE_STATUS_FIFO.I_STS_FIFO/USE_ASYNC_FIFO.I_ASYNC_FIFO/I_ASYNC_FIFOGEN_FIFO/gnuram_async_fifo.xpm_fifo_base_inst/gen_sdpram.xpm_memory_base_inst> is part of IP: <u_system/system_i/dma_gr>. This XPM instance will be excluded from the .mmi because updatemem is prohibited from making changes to an XPM that is part of an IP.
+INFO: [Memdata 28-167] Found XPM memory block u_system/system_i/dma_gr/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_ENABLE_INDET_BTT_SF.I_INDET_BTT/I_XD_FIFO/NON_BLK_MEM.I_SYNC_FIFOGEN_FIFO/xpm_fifo_base_inst/gen_sdpram.xpm_memory_base_inst with a P_MEMORY_PRIMITIVE property set to auto. A value of block is required. You will not be able to use the updatemem program to update the bitstream with new data for the u_system/system_i/dma_gr/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_ENABLE_INDET_BTT_SF.I_INDET_BTT/I_XD_FIFO/NON_BLK_MEM.I_SYNC_FIFOGEN_FIFO/xpm_fifo_base_inst/gen_sdpram.xpm_memory_base_inst block.
+INFO: [Memdata 28-208] The XPM instance: <u_system/system_i/dma_gr/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_ENABLE_INDET_BTT_SF.I_INDET_BTT/I_DATA_FIFO/BLK_MEM.I_SYNC_FIFOGEN_FIFO/xpm_fifo_base_inst/gen_sdpram.xpm_memory_base_inst> is part of IP: <u_system/system_i/dma_gr>. This XPM instance will be excluded from the .mmi because updatemem is prohibited from making changes to an XPM that is part of an IP.
+INFO: [Memdata 28-208] The XPM instance: <u_system/system_i/dma/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/I_CMD_STATUS/I_CMD_FIFO/USE_ASYNC_FIFO.I_ASYNC_FIFO/I_ASYNC_FIFOGEN_FIFO/gnuram_async_fifo.xpm_fifo_base_inst/gen_sdpram.xpm_memory_base_inst> is part of IP: <u_system/system_i/dma>. This XPM instance will be excluded from the .mmi because updatemem is prohibited from making changes to an XPM that is part of an IP.
+INFO: [Memdata 28-208] The XPM instance: <u_system/system_i/dma/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/I_CMD_STATUS/GEN_INCLUDE_STATUS_FIFO.I_STS_FIFO/USE_ASYNC_FIFO.I_ASYNC_FIFO/I_ASYNC_FIFOGEN_FIFO/gnuram_async_fifo.xpm_fifo_base_inst/gen_sdpram.xpm_memory_base_inst> is part of IP: <u_system/system_i/dma>. This XPM instance will be excluded from the .mmi because updatemem is prohibited from making changes to an XPM that is part of an IP.
+INFO: [Memdata 28-167] Found XPM memory block u_system/system_i/dma/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_ENABLE_INDET_BTT_SF.I_INDET_BTT/I_XD_FIFO/NON_BLK_MEM.I_SYNC_FIFOGEN_FIFO/xpm_fifo_base_inst/gen_sdpram.xpm_memory_base_inst with a P_MEMORY_PRIMITIVE property set to auto. A value of block is required. You will not be able to use the updatemem program to update the bitstream with new data for the u_system/system_i/dma/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_ENABLE_INDET_BTT_SF.I_INDET_BTT/I_XD_FIFO/NON_BLK_MEM.I_SYNC_FIFOGEN_FIFO/xpm_fifo_base_inst/gen_sdpram.xpm_memory_base_inst block.
+INFO: [Memdata 28-208] The XPM instance: <u_system/system_i/dma/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_ENABLE_INDET_BTT_SF.I_INDET_BTT/I_DATA_FIFO/BLK_MEM.I_SYNC_FIFOGEN_FIFO/xpm_fifo_base_inst/gen_sdpram.xpm_memory_base_inst> is part of IP: <u_system/system_i/dma>. This XPM instance will be excluded from the .mmi because updatemem is prohibited from making changes to an XPM that is part of an IP.
+INFO: [Memdata 28-208] The XPM instance: <u_system/system_i/dma/U0/I_PRMRY_DATAMOVER/GEN_MM2S_FULL.I_MM2S_FULL_WRAPPER/I_CMD_STATUS/I_CMD_FIFO/USE_ASYNC_FIFO.I_ASYNC_FIFO/I_ASYNC_FIFOGEN_FIFO/gnuram_async_fifo.xpm_fifo_base_inst/gen_sdpram.xpm_memory_base_inst> is part of IP: <u_system/system_i/dma>. This XPM instance will be excluded from the .mmi because updatemem is prohibited from making changes to an XPM that is part of an IP.
+INFO: [Memdata 28-208] The XPM instance: <u_system/system_i/dma/U0/I_PRMRY_DATAMOVER/GEN_MM2S_FULL.I_MM2S_FULL_WRAPPER/I_CMD_STATUS/GEN_INCLUDE_STATUS_FIFO.I_STS_FIFO/USE_ASYNC_FIFO.I_ASYNC_FIFO/I_ASYNC_FIFOGEN_FIFO/gnuram_async_fifo.xpm_fifo_base_inst/gen_sdpram.xpm_memory_base_inst> is part of IP: <u_system/system_i/dma>. This XPM instance will be excluded from the .mmi because updatemem is prohibited from making changes to an XPM that is part of an IP.
+INFO: [Memdata 28-208] The XPM instance: <u_system/system_i/dma/U0/I_PRMRY_DATAMOVER/GEN_MM2S_FULL.I_MM2S_FULL_WRAPPER/GEN_INCLUDE_MM2S_SF.I_RD_SF/I_DATA_FIFO/BLK_MEM.I_SYNC_FIFOGEN_FIFO/xpm_fifo_base_inst/gen_sdpram.xpm_memory_base_inst> is part of IP: <u_system/system_i/dma>. This XPM instance will be excluded from the .mmi because updatemem is prohibited from making changes to an XPM that is part of an IP.
+Command: write_bitstream -force hpdp_top.bit
+Attempting to get a license for feature 'Implementation' and/or device 'xczu7ev'
+INFO: [Common 17-349] Got license for feature 'Implementation' and/or device 'xczu7ev'
+Running DRC as a precondition to command write_bitstream
+INFO: [IP_Flow 19-1839] IP Catalog is up to date.
+INFO: [DRC 23-27] Running DRC with 2 threads
+INFO: [Vivado 12-3199] DRC finished with 0 Errors
+INFO: [Vivado 12-3200] Please refer to the DRC report (report_drc) for more information.
+Integrating Hard IP ELF/MEM with the PDI.
+INFO: [Designutils 20-2272] Running write_bitstream with 2 threads.
+Loading data files...
+Loading site data...
+Loading route data...
+Processing options...
+Creating bitmap...
+Creating bitstream...
+Writing bitstream ./hpdp_top.bit...
+INFO: [Vivado 12-1842] Bitgen Completed Successfully.
+INFO: [Common 17-83] Releasing license: Implementation
+216 Infos, 2 Warnings, 0 Critical Warnings and 0 Errors encountered.
+write_bitstream completed successfully
+write_bitstream: Time (s): cpu = 00:00:48 ; elapsed = 00:00:33 . Memory (MB): peak = 5035.230 ; gain = 0.000
+INFO: [Common 17-206] Exiting Vivado at Tue Oct 13 14:57:25 2026...
+[Tue Oct 13 14:57:28 2026] impl_1 finished
+wait_on_runs: Time (s): cpu = 00:00:01 ; elapsed = 00:15:01 . Memory (MB): peak = 1993.797 ; gain = 0.000
+# if {[get_property PROGRESS [get_runs impl_1]] ne "100%"} { error "implementation failed" }
+# open_run impl_1
+Netlist sorting complete. Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.728 . Memory (MB): peak = 2048.238 ; gain = 0.000
+INFO: [Netlist 29-17] Analyzing 1862 Unisim elements for replacement
+INFO: [Netlist 29-28] Unisim Transformation completed in 0 CPU seconds
+INFO: [Project 1-479] Netlist was created with Vivado 2025.2
+INFO: [Project 1-570] Preparing netlist for logic optimization
+Read ShapeDB Complete: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.173 . Memory (MB): peak = 2208.176 ; gain = 22.359
+INFO: [Timing 38-478] Restoring timing data from binary archive.
+INFO: [Timing 38-479] Binary timing data restore complete.
+INFO: [Project 1-856] Restoring constraints from binary archive.
+INFO: [Project 1-853] Binary constraint restore complete.
+INFO: [Designutils 20-5722] Start Reading Physical Databases.
+Reading placement.
+Read Netlist Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.052 . Memory (MB): peak = 2697.145 ; gain = 0.000
+Reading placer database...
+Read Device Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.032 . Memory (MB): peak = 2697.145 ; gain = 0.000
+Read PlaceDB: Time (s): cpu = 00:00:03 ; elapsed = 00:00:03 . Memory (MB): peak = 2781.625 ; gain = 84.480
+Read PulsedLatchDB: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 2781.625 ; gain = 0.000
+Reading routing.
+Read RouteStorage: Time (s): cpu = 00:00:05 ; elapsed = 00:00:05 . Memory (MB): peak = 3342.770 ; gain = 561.145
+Read Physdb Files: Time (s): cpu = 00:00:08 ; elapsed = 00:00:08 . Memory (MB): peak = 3342.770 ; gain = 645.625
+Restored from archive | CPU: 10.000000 secs | Memory: 0.000000 MB |
+Finished XDEF File Restore: Time (s): cpu = 00:00:09 ; elapsed = 00:00:08 . Memory (MB): peak = 3342.770 ; gain = 645.625
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.026 . Memory (MB): peak = 3342.770 ; gain = 0.000
+INFO: [Project 1-111] Unisim Transformation Summary:
+  A total of 437 instances were transformed.
+  DSP48E2 => DSP48E2 (DSP_ALU, DSP_A_B_DATA, DSP_C_DATA, DSP_MULTIPLIER, DSP_M_DATA, DSP_OUTPUT, DSP_PREADD, DSP_PREADD_DATA): 21 instances
+  DSP48E2 => DSP48E2 (inverted pins: RSTA) (DSP_ALU, DSP_A_B_DATA, DSP_C_DATA, DSP_MULTIPLIER, DSP_M_DATA, DSP_OUTPUT, DSP_PREADD, DSP_PREADD_DATA): 1 instance 
+  DSP48E2 => DSP48E2 (inverted pins: RSTA, RSTB) (DSP_ALU, DSP_A_B_DATA, DSP_C_DATA, DSP_MULTIPLIER, DSP_M_DATA, DSP_OUTPUT, DSP_PREADD, DSP_PREADD_DATA): 1 instance 
+  DSP48E2 => DSP48E2 (inverted pins: RSTB) (DSP_ALU, DSP_A_B_DATA, DSP_C_DATA, DSP_MULTIPLIER, DSP_M_DATA, DSP_OUTPUT, DSP_PREADD, DSP_PREADD_DATA): 1 instance 
+  IBUFDS => IBUFDS (DIFFINBUF, IBUFCTRL): 1 instance 
+  LUT6_2 => LUT6_2 (LUT5, LUT6): 38 instances
+  RAM16X1D => RAM32X1D (RAMD32(x2)): 2 instances
+  RAM32M => RAM32M (RAMD32(x6), RAMS32(x2)): 9 instances
+  RAM32M16 => RAM32M16 (RAMD32(x14), RAMS32(x2)): 112 instances
+  RAM32X1D => RAM32X1D (RAMD32(x2)): 21 instances
+  RAM64M => RAM64M (RAMD64E(x4)): 50 instances
+  RAM64M8 => RAM64M8 (RAMD64E(x8)): 168 instances
+  RAM64X1D => RAM64X1D (RAMD64E(x2)): 12 instances
+
+open_run: Time (s): cpu = 00:00:24 ; elapsed = 00:00:24 . Memory (MB): peak = 3342.770 ; gain = 1348.973
+# set rpt [file join $build_dir reports]
+# file mkdir $rpt
+# report_timing_summary -max_paths 10 -file [file join $rpt timing_summary.rpt]
+INFO: [Timing 38-91] UpdateTimingParams: Speed grade: -2, Temperature grade: E, Delay Type: min_max.
+INFO: [Timing 38-191] Multithreading enabled for timing update using a maximum of 2 CPUs
+WARNING: [Timing 38-436] There are set_bus_skew constraint(s) in this design. Please run report_bus_skew to ensure that bus skew requirements are met.
+report_timing_summary: Time (s): cpu = 00:00:32 ; elapsed = 00:00:21 . Memory (MB): peak = 3622.641 ; gain = 279.871
+# report_utilization -file [file join $rpt utilization.rpt]
+# report_cdc -file [file join $rpt cdc.rpt]
+INFO: [Timing 38-91] UpdateTimingParams: Speed grade: -2, Temperature grade: E, Delay Type: min_max.
+INFO: [Timing 38-191] Multithreading enabled for timing update using a maximum of 2 CPUs
+INFO: [Timing 38-314] The report_cdc command only analyzes and reports clock domain crossing paths where clocks have been defined on both source and destination sides. Ports with no input delay constraint are skipped. Please run check_timing to verify there are no missing clock definitions in your design, nor any unconstrained input port.
+# report_methodology -file [file join $rpt methodology.rpt]
+Command: report_methodology -file {C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/reports/methodology.rpt}
+INFO: [Timing 38-35] Done setting XDC timing constraints.
+INFO: [DRC 23-133] Running Methodology with 2 threads
+INFO: [Vivado_Tcl 2-1520] The results of Report Methodology are in file C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/reports/methodology.rpt.
+report_methodology completed successfully
+report_methodology: Time (s): cpu = 00:00:20 ; elapsed = 00:00:12 . Memory (MB): peak = 3652.629 ; gain = 29.988
+# write_hw_platform -fixed -include_bit -force [file join $build_dir hpdp.xsa]
+INFO: [Projectvivado 1-1918] Creating Hardware Platform: C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/hpdp.xsa ...
+INFO: [Projectvivado 1-1943] The Hardware Platform can be used for Hardware
+INFO: [Projectvivado 1-1941] Successfully created Hardware Platform: C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/hpdp.xsa
+INFO: [Hsi 55-2053] elapsed time for repository (C:/AMDDesignTools/2025.2/Vivado/data/embeddedsw) loading 0 seconds
+write_hw_platform: Time (s): cpu = 00:00:12 ; elapsed = 00:00:13 . Memory (MB): peak = 4286.105 ; gain = 633.477
+# set wns [get_property STATS.WNS [get_runs impl_1]]
+# set whs [get_property STATS.WHS [get_runs impl_1]]
+# puts "Build done: WNS $wns ns, WHS $whs ns, XSA [file join $build_dir hpdp.xsa]"
+Build done: WNS 0.086788 ns, WHS 0.009509 ns, XSA C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/m7h/hpdp.xsa
+# if {$wns < 0 || $whs < 0} { error "timing not met" }
+INFO: [Common 17-206] Exiting Vivado at Tue Oct 13 14:58:40 2026...

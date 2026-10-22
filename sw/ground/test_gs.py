@@ -8,6 +8,8 @@ import struct
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "model" / "tests"))
 
@@ -52,9 +54,17 @@ def test_clean_capture_with_idle_frames():
 def test_errors_corrected_and_attributed_to_scenes():
     stream, corrected, _ = scenes_and_stream(2)
     noisy, _ = channel.inject_bit_errors(stream, 1e-3, seed=5)
-    results, st = run(records_of(noisy), crosscheck=True)
+    results, st = run(records_of(noisy))
     assert all(r.ok and r.scene.samples == corrected[r.scene_id].samples for r in results)
     assert st.rs_corrected > 0 and sum(r.rs_corrected for r in results) == st.rs_corrected
+
+
+def test_rs_crosscheck_with_reedsolo():
+    pytest.importorskip("reedsolo")
+    stream, _, _ = scenes_and_stream(2)
+    noisy, _ = channel.inject_bit_errors(stream, 1e-3, seed=5)
+    _, st = run(records_of(noisy), crosscheck=True)
+    assert st.rs_corrected > 0
     assert st.rs_crosscheck_mismatches == 0 and st.rs_crosschecked == st.records
 
 
