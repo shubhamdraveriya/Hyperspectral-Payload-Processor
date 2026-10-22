@@ -1,11 +1,11 @@
 # Moving the project to another computer
 
-The project travels as two zip files, made on 2026-10-15:
+The project travels as two zip files in `build/transfer/` (the newest of each):
 
 | File | Contents | Needed? |
 |---|---|---|
-| `HPDP_<date>.zip` | the repository with its whole git history (`.git`), the final builds and their reports, the built apps, the real-data results and the latest board-test logs | yes |
-| `HPDP_datasets_<date>.zip` | the public hyperspectral datasets, about 4 GB (`data/hsi/`) | only for the real-data experiment; they can also be downloaded again (docs/real_data.md) |
+| `HPDP_<date>.zip` (2026-10-22) | the repository with its whole git history (`.git`), including the PDF documents in `docs/pdf`; the final builds and their reports, the built apps, the real-data results and the latest board-test logs | yes |
+| `HPDP_datasets_<date>.zip` (2026-10-15; the datasets have not changed since) | the public hyperspectral datasets, about 4 GB (`data/hsi/`) | only for the real-data experiment; they can also be downloaded again (docs/real_data.md) |
 
 Unzip `HPDP_<date>.zip` anywhere; a path with spaces is fine (the scripts reach the
 tools through directory junctions, below). Unzip the datasets zip into the same
