@@ -311,7 +311,7 @@ def part_c():
               ["M3", "Sensor emulator, correction, corner turn", "bit-exact with the models, 250 MHz met"],
               ["M4", "First board run (compressor output to memory)", "15 scenes bit-exact, 99.8 Msamples/s"],
               ["M5", "Downlink chain and optical link", "PRBS, BER sweep and 10-minute rate test pass"],
-              ["M6", "PC ground station", "decode, display and verify; Ethernet upload a deviation"],
+              ["M6", "PC ground station", "decode, display and verify; Ethernet upload tested on the board"],
               ["M7", "Radiation protection", "SEM, ECC, TMR, watchdogs; fault campaign; final build m7h"]],
               [0.9, 2.8, 3.2], "The project milestones"),
           h2("21.4  Problems that the team found, and the lessons"),
@@ -331,7 +331,12 @@ def part_c():
               ["Long runs had underruns", "The debugger halted the processor to read memory",
                "Read memory with no halt"],
               ["The fault test changed nothing in half of the trials", "A simulator statement evaluated "
-               "twice", "Store the random index first"]],
+               "twice", "Store the random index first"],
+              ["The Ethernet upload stopped after approximately 290 kB", "No timer was selected for the "
+               "lwIP timers, so a lost TCP segment was never sent again", "Select a timer (TTC0) in the "
+                                                                          "software settings"],
+              ["The PC connection did not get to the board after a board reset", "Windows sent it "
+               "through the office network adapter", "Connect from the PC's own link-local address"]],
               [2.2, 2.3, 2.3], "Problems found during the project"),
           key(["A bit-exact Python model comes first; the hardware must match it bit for bit.",
                "87 regression tests, the 864-configuration matrix, a fault campaign and board tests "
@@ -389,7 +394,7 @@ def part_c():
               ["Radiation", "SEM upsets on the board", "198 corrected in 125 to 153 ms, 0 uncorrectable"],
               ["Radiation", "Fault campaign", "0 silent in 820 protected trials"],
               ["Timing", "All clocks (VER-09)", "met; WNS +0.087 ns; report_cdc clean"],
-              ["Requirements", "102 v1.0 shall/should items", "99 met, 1 partly met (SW-05), 2 pending (O-5)"]],
+              ["Requirements", "102 v1.0 shall/should items", "100 met, 2 pending (O-5)"]],
               [1.2, 2.6, 3.2], "The main results"),
           key(["The HPDP meets the mission rate, gets every test scene back bit-exactly and survives "
                "injected upsets."])]
@@ -397,10 +402,9 @@ def part_c():
     # ------------------------------------------------------------------ 24
     s += [h1("24  Status, limits and next steps")]
     s += [h2("24.1  Status"),
-          bullets(["99 of the 102 v1.0 requirements are met. None is unmet.",
-                   "<b>SW-05 is partly met.</b> The Ethernet upload of the received data is written and builds. It is not tested on the board, because the PC had no free Ethernet port. "
-                   "The data goes to the PC through JTAG. A USB-Ethernet adapter and approximately "
-                   "10 minutes would close this item.",
+          bullets(["100 of the 102 v1.0 requirements are met. None is unmet. The last one, SW-05 "
+                   "(the Ethernet upload of the received data), was tested on the board on 23 October "
+                   "2026.",
                    "<b>CMP-02 and MDL-02 are pending</b> (open item O-5). They need a check of the "
                    "compressor output with an independent CCSDS 123 decoder: ESA WhiteDwarf 2.0 or the "
                    "CNES tools. Both need a user account."]),
@@ -413,13 +417,11 @@ def part_c():
                    "(accepted residual risk)."]),
           h2("24.3  Possible next steps"),
           bullets(["Decode the test data with an independent CCSDS 123 decoder (closes O-5).",
-                   "Test the Ethernet upload with an adapter (closes the SW-05 deviation).",
                    "Near-lossless compression and the hybrid entropy coder.",
                    "A hardware RS decoder, a faster ground decoder (C or numba), and Linux in place of "
                    "bare-metal.",
                    "A return channel: the fiber cable has two fibers, so this is now possible."]),
-          key(["The project is complete except one deviation (Ethernet upload) and one external check "
-               "(independent decoder)."])]
+          key(["The project is complete except one external check (independent decoder)."])]
 
     # ------------------------------------------------------------------ 25
     s += [h1("25  Procedures")]

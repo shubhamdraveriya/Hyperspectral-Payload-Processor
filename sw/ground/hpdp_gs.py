@@ -49,7 +49,7 @@ def decode(a):
         host, port = host_port(a.tcp)
         source_name = f"tcp://{host}:{port}"
         print(f"connecting to {source_name} ...")
-        records = tcp_records(host, port, timeout=a.connect_timeout)
+        records = tcp_records(host, port, timeout=a.connect_timeout, idle_timeout=a.idle_timeout)
     else:
         source_name = a.capture
         records = capture_records(a.capture)
@@ -80,15 +80,21 @@ def decode(a):
         if viewer:
             viewer.feed(r, v, dec.stats)
 
+    errors = []
+
     def run():
         t0 = time.perf_counter()
         n = 0
-        for rec in records:
-            n += 1
-            for r in dec.feed(rec):
-                handle(r)
-            if viewer and n % 256 == 0:
-                viewer.feed(stats=dec.stats)
+        try:
+            for rec in records:
+                n += 1
+                for r in dec.feed(rec):
+                    handle(r)
+                if viewer and n % 256 == 0:
+                    viewer.feed(stats=dec.stats)
+        except OSError as exc:              # TCP: no connection, connection lost, or --idle-timeout
+            errors.append(exc)
+            print(f"{source_name}: {exc}: the stream is incomplete")
         for r in dec.flush():
             handle(r)
         if viewer:
@@ -117,10 +123,11 @@ def decode(a):
     if refs:
         passed = sum(v.status == "PASS" for v in verdicts.values())
         failed = sum(v.status == "FAIL" for v in verdicts.values())
-        print(("PASS" if not failed else "FAIL") + f": hpdp_gs, {passed} of {passed + failed} scenes bit-exact")
-        return 0 if not failed else 1
+        print(("PASS" if not failed and not errors else "FAIL") +
+              f": hpdp_gs, {passed} of {passed + failed} scenes bit-exact")
+        return 0 if not failed and not errors else 1
     print(f"done: {dec.stats.scenes_ok} scenes reconstructed, {dec.stats.scenes_failed} not")
-    return 0 if not dec.stats.scenes_failed else 1
+    return 0 if not dec.stats.scenes_failed and not errors else 1
 
 
 def view(a):
@@ -166,6 +173,7 @@ def main():
     d.add_argument("capture", nargs="?", help=".cap file (or gr.bin from run_m5.py)")
     d.add_argument("--tcp", metavar="HOST:PORT", help="live records from the board")
     d.add_argument("--connect-timeout", type=float, default=10.0)
+    d.add_argument("--idle-timeout", type=float, help="seconds without data before giving up (default: wait)")
     d.add_argument("--scid", type=lambda s: int(s, 0), default=0x42)
     d.add_argument("--vcid", type=int, default=1)
     d.add_argument("--apid", type=lambda s: int(s, 0), default=0x100)

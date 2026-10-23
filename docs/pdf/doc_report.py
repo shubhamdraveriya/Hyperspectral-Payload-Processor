@@ -6,10 +6,9 @@ from hpdp_pdf import CELL, HpdpDoc, PageBreak, Spacer, bullets, code, figure, h1
 
 TITLE = "HPDP Results Report"
 DOC_ID = "HPDP-RPT-001"
-REV = "A"
-DATE = "2026-10-16"
+REV = "B"
+DATE = "2026-10-23"
 PASS = "<font color='#006300'><b>PASS</b></font>"
-PART = "<font color='#a56b00'><b>PARTLY</b></font>"
 OPEN = "<font color='#52514e'><b>OPEN</b></font>"
 
 
@@ -22,8 +21,7 @@ def story(doc):
                           "NX_MAX 1024)"),
         ("Hardware", "AMD ZCU106, XCZU7EV-2; two 1000BASE-SX SFP modules; 1 m duplex OM3 fiber"),
         ("Specification", "SPEC.md v1.0 (102 shall / should requirements)"),
-        ("Result", "99 of 102 requirements met; 1 partly met (documented deviation); 2 pending an "
-                   "external tool"),
+        ("Result", "100 of 102 requirements met; 2 pending an external tool"),
     ], extra=[p("This report gives the measured results of the Hyperspectral Payload Data "
                 "Processor: throughput, compression, the optical link, end-to-end integrity, "
                 "radiation mitigation, implementation and verification coverage, followed by the "
@@ -47,8 +45,8 @@ def story(doc):
                                            "silent in 820 protected simulated trials", PASS],
               ["Timing (VER-09)", "All 11 clocks met; WNS +0.087 ns at 250 MHz; CDC clean", PASS],
               ["Compressor matrix (VER-02)", "864 of 864 configurations bit-exact", PASS],
-              ["Ethernet upload (SW-05)", "Written and built; board test not done (no Ethernet "
-                                          "port on the PC)", PART],
+              ["Ethernet upload (SW-05)", "1 814 528 bytes over TCP identical to the JTAG copy in "
+                                          "4 runs; 4 of 4 scenes bit-exact", PASS],
               ["Independent decoder (CMP-02, MDL-02)", "Needs ESA or CNES tool access (O-5)", OPEN]],
               [1.9, 3.6, 0.8]),
           Spacer(1, 6),
@@ -231,7 +229,7 @@ def story(doc):
                "864 of 864 bit-exact, 57 minutes"],
               ["Fault campaign", "tb_fault, 1300 trials", "0 silent in protected state"],
               ["Board", "M0 loopback; M4 15 scenes; M5 VER-06/07/08 and SYS-09; M7 runbook; real "
-                        "scenes, 1024 build, SD card and console", "All pass, JTAG only"]],
+                        "scenes, 1024 build, SD card and console, Ethernet upload", "All pass, JTAG only"]],
               [1.5, 3.6, 1.4])]
 
     # 8 ------------------------------------------------------------------------
@@ -248,7 +246,7 @@ def story(doc):
               ["Link (LNK-01 to 10)", "All, including LNK-10 (should)", "–"],
               ["Ground receiver (GR-01, 03 to 05)", "All (GR-02 byte-aligned)", "–"],
               ["Data movement (DM-01 to 03)", "All", "–"],
-              ["PS software (SW-01 to 06)", "01 to 04, 06", "SW-05 partly met (section 9)"],
+              ["PS software (SW-01 to 06)", "All", "–"],
               ["Ground station (GS-01 to 06)", "All; GS-02 with reedsolo", "–"],
               ["Models (MDL-01 to 04)", "01, 03, 04", "MDL-02: independent decoder (O-5)"],
               ["Radiation (RAD-01 to 07)", "All", "–"],
@@ -281,19 +279,11 @@ def story(doc):
               ["Scene guard", "A scene cut short is padded and ended, so one lost line cannot "
                               "merge scenes (found on the board in M5)."],
               ["TMR on the steering state (m7h)", "Added after the fault campaign."],
-              ["SW-05 upload not hardware-tested", "No Ethernet port free on the PC. The DDR "
-                                                   "capture is verified on every run and records "
-                                                   "reach the PC over JTAG; the TCP server is "
-                                                   "written and builds, and the ground station's "
-                                                   "TCP input is tested on the PC."],
               ["Residual risk", "Upsets in unprotected datapath registers are silent about one "
                                 "time in four in simulation; accepted."]],
               [1.8, 4.4]),
           h1("10  Open items"),
           table(["Item", "Needs", "Effort"], [
-              ["SW-05: TCP upload on the board (closes the deviation)",
-               "An Ethernet cable from the board to a PC port, for example through a USB-Ethernet "
-               "adapter", "About ten minutes"],
               ["CMP-02 / MDL-02 / O-5: independent CCSDS 123 decoder",
                "An account for ESA WhiteDwarf 2.0 (ESSR) or the CNES tools; then decode the RTL "
                "test vectors and the real-data scenes", "Half a day once available"]],
@@ -306,8 +296,8 @@ def story(doc):
             "to a bit-exact image at the ground, at the full mission rate, through a real optical "
             "link, with error correction that holds to a bit error rate of 2 × "
             "10<super>-3</super> and radiation mitigation that left no silent corruption in "
-            "protected logic. 99 of 102 requirements are met and none is unmet; the remaining "
-            "three need an Ethernet port and an external decoder."),
+            "protected logic. 100 of 102 requirements are met and none is unmet; the remaining "
+            "two need an external decoder."),
           h2("Appendix A: Reproducing the results"),
           code(["python -m pytest model                                  # Python models",
                 "vivado -mode batch -source tb/run_sim.tcl               # RTL regression (87 tests)",

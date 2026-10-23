@@ -2,9 +2,9 @@
 
 Status: **in progress** (2026-10-12). The ground station decodes captures from a file or
 a TCP stream, verifies every scene and displays it (GS-01 .. GS-06). The board's upload
-over Ethernet (SW-05) is written and builds, but is not tested on the board: skipped on
-2026-10-15 (no Ethernet port free on the PC), a documented deviation (project report
-§6). The records reach the PC over JTAG, which every board run verifies.
+over Ethernet (SW-05) is tested on the board (2026-10-23, below): the records fetched over
+TCP are identical to the copy read over JTAG, and the ground station decodes them live,
+every scene bit-exact.
 
 ```
 .cap file / TCP ──► records ──► RS(255,223) I=4 ──► AOS frame checks ──► packets ──► scenes ──► CCSDS 123
@@ -66,15 +66,19 @@ A note from the tests: an error pattern that repeats with a period dividing 255 
 valid RS codeword (zero syndromes for these generator roots), so it passes the decoder as
 "no errors" and is caught only by the frame header checks. Random errors do not do that.
 
-## Upload from the board (SW-05): written, not yet run on the board
+## Upload from the board (SW-05)
 
 `hpdp_run` (job and result version 3) serves the ground records over TCP when a
 DOWNLINK job sets `net_ctrl` bit 0 (`run_m5.py --upload`). `sw/baremetal/hpdp_run/src/net.c`:
 
 - lwIP 2.2, raw API, no OS (BSP settings of AMD's `lwip_tcp_perf_server`, added by
   `sw/baremetal/build.py`); GEM3, RGMII to the board's DP83867; locally administered MAC
-  `02:48:50:44:50:01`. A 50 ms xiltimer tick only sets flags: the lwIP timers, received
-  packets and sending all run in `net_poll()` from the main loop.
+  `02:48:50:44:50:01`. A 50 ms xiltimer tick (TTC0, `XILTIMER_tick_timer` in
+  `build.py`) only sets flags: the lwIP timers, received packets and sending all run in
+  `net_poll()` from the main loop.
+- The link: the lwIP port resets the PHY and waits only 5 s for its autonegotiation;
+  `net.c` then checks the PHY itself, up to 20 s at the start and every second after
+  (a slow link partner, or a cable plugged in later), and sets the MAC to 1000 Mbit/s.
 - Address: DHCP for up to 15 s (fine on the office network), else the link-local
   `169.254.77.10/16` (a cable straight to a PC port, where Windows takes a 169.254
   address by itself), or a fixed one (`--board-ip`). Printed on the UART and kept in a
@@ -88,7 +92,15 @@ DOWNLINK job sets `net_ctrl` bit 0 (`run_m5.py --upload`). `sw/baremetal/hpdp_ru
 
 `run_m5.py --upload` fetches the stream after the run and compares it byte for byte with
 the copy read over JTAG; `hpdp_gs.py decode --tcp <board>:5001 --show` decodes and
-displays it, during or after the run. Builds cleanly; not tested on the board (a
-deviation, above). The ground station's TCP input is tested on the PC against
-`hpdp_gs.py serve` (again on 2026-10-15 with the board's Indian Pines capture of
-docs/post_m7_board_tests.md: 3 960 records over TCP, the scene bit-exact).
+displays it, during or after the run. For a link-local board address the PC connects
+from its own link-local address (after the board's reset Windows otherwise can send the
+connection out of another adapter).
+
+On the board (2026-10-23, a USB-Ethernet adapter, docs/post_m7_board_tests.md §5):
+`run_m5.py --upload` four runs in a row (one with the cable plugged in only after the
+start), each 1 814 528 bytes over TCP identical to the JTAG copy; `hpdp_gs.py decode --tcp 169.254.77.10:5001`: 1 772 records, 4 of 4 scenes
+bit-exact. The first runs found two faults on the board (the lwIP timers never ran; a
+slow PHY autonegotiation left the MAC unconfigured) and one on the PC (the adapter
+choice); all three are fixed, see the runbook. The ground station's TCP input was tested
+on the PC before that against `hpdp_gs.py serve` (M6; 2026-10-15 with the board's Indian
+Pines capture: 3 960 records over TCP, the scene bit-exact).

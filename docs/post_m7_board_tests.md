@@ -102,8 +102,16 @@ status
 
 ## 5. Ethernet upload (SW-05)
 
-Needs the board's Ethernet connected to the PC (docs/m6): `run_m5.py --upload
---board-ip <ip>` and `python sw/ground/hpdp_gs.py decode --tcp <ip>:5001 --show`.
+Needs the board's Ethernet connected to the PC (docs/m6), and the fiber SFP0 ↔ SFP1 as in
+step 1. With a cable straight to a PC port (no DHCP server) the board takes
+`169.254.77.10` after 15 s and Windows a 169.254 address of its own:
+
+```
+python sw/host/run_m5.py --upload --work sw05          # TCP copy compared with the JTAG copy
+python sw/ground/hpdp_gs.py decode --tcp 169.254.77.10:5001 --ref build/runs/sw05 --show
+```
+
+On a network with DHCP, or with `--board-ip <ip>`, use the address the board prints.
 
 ## Results (2026-10-14, after the user's soak test)
 
@@ -113,10 +121,38 @@ Needs the board's Ethernet connected to the PC (docs/m6): `run_m5.py --upload
 | 2 | **PASS** on m7h over the fiber: AVIRIS 3 898 952 and 7 063 902 bytes, Hyperion 4 985 044, Indian Pines 3 476 350, each identical to the model and rebuilt bit-exactly at the ground; 99.3 – 99.6 Msamples/s; 0 code errors |
 | 3 | **PASS** on m7i_1024b (build 0x9018F99A): the 1024 × 32 × 242 real scene, 4 905 137 bytes; 1024 × 32 × 64 with the correction on (the table in pairs on the hardware); the ECC injection at corner-turn address 2¹⁸ + 8: 4 corrected reads, 0 uncorrectable, scenes intact; `status`: `NX_MAX 1024, NZ_MAX 256` |
 | 4 | **PASS** on m7h: no card reader, so `sd_put` wrote the 6 files to an empty card (each read back and compared); `ls` lists them; `cal` + `load` + `run`: 387 331 bytes (the model's, with the correction: 80 clamped, 1472 replaced); `correction off`, the two real scenes: 3 898 952 and 7 063 902 bytes; `prbs 10`: 12 Gbit, 0 errors; `help`, `show`, `mode`, `ei`, `seed`, `status` |
-| 5 | not run: skipped (decision 2026-10-15, no Ethernet port free on the PC); SW-05 is recorded as a deviation in the project report §6. The commands of §5 stay valid for a later test |
+| 5 | First skipped (2026-10-15, no Ethernet port free on the PC); run on 2026-10-23 through a USB-Ethernet adapter, board `169.254.77.10`, PC `169.254.204.148`. Three faults found and fixed (below). Then **PASS**: `run_m5.py --upload` four runs in a row (`pm7_sw05_fix6`, `_clean1`, `_clean2`, and `_cable` with the cable plugged in only after the start), each 1 814 528 bytes over TCP identical to the JTAG copy; `hpdp_gs.py decode --tcp`: 1 772 records, 4 of 4 scenes bit-exact, 0 RS corrections |
 
 Found and fixed: the per-scene bits/sample print overflowed 32 bits above 5 MB per scene
 (7 063 902 bytes printed as 1.84; data unaffected), and the RX word counter printed
 signed; `hpdp_run` fixed and re-checked on the board (7.69). `EXPECTED.txt` and
 docs/console.md had the synthetic scene's reference wrong (the clean scene instead of
 the correction of the raw one); corrected.
+
+Found and fixed in step 5 (2026-10-23):
+
+- **The lwIP timers never ran** (`sw/baremetal/build.py`). The BSP enabled xiltimer's
+  interval timer but named no timer for it; with the default `XILTIMER_tick_timer =
+  None` the BSP defines `XTIMER_NO_TICK_TIMER` and `XTimer_SetHandler()` does nothing.
+  Without `tcp_slowtmr` a lost segment is never sent again: the stream stopped for good
+  after about 290 kB (293 952 bytes sent, 228 468 acknowledged, one segment unacknowledged;
+  heap and TX descriptors fine). Now `XILTIMER_tick_timer = psu_ttc_0`: 300 ticks in the
+  15 s DHCP wait, and a lost segment mid-stream is resent within about a second.
+- **The PHY's autonegotiation can take longer than the lwIP port allows**
+  (`hpdp_run/src/net.c`). The port resets the PHY and waits 5 s; in 1 of the 9 starts on
+  the UART log it printed "Auto negotiation error", left the MAC unconfigured and the
+  board answered nothing on Ethernet. `net.c` now checks the PHY itself: up to 20 s at the start, then every second
+  (a cable plugged in later), and sets the MAC to 1000 Mbit/s. Tested with the cable
+  unplugged at the start and plugged in during the wait (`pm7_sw05_cable`): the port
+  printed "Auto negotiation error", `net.c` saw the link come up ("net: Ethernet link up,
+  1000 Mbit/s") and the upload passed; the check every second had also seen the cable
+  pulled from the running board before ("net: Ethernet link down").
+- **Windows sent the first connection out of the wrong adapter** (`sw/ground/gs_decode.py`).
+  The board's reset drops the link; afterwards Windows sent the connection to
+  `169.254.77.10` from the office LAN's address (`192.168.113.151 → 169.254.77.10:5001
+  SYN_SENT`, seen with netstat in two runs in a row), so the board never saw it and
+  `run_m5.py` timed out. For a link-local board address the client now connects from
+  the PC's own link-local address; the four runs after the change, each after a reset,
+  connected at once. Also: `run_m5.py` gives up after 30 s without data (before, a
+  stalled board held it forever; `hpdp_gs.py --idle-timeout` likewise), and a connection
+  lost part-way is reported as an error instead of ending the stream quietly.

@@ -8,8 +8,8 @@ from hpdp_pdf import (HpdpDoc, PageBreak, Spacer, bullets, caution, chain_diagra
 
 TITLE = "HPDP Process Description"
 DOC_ID = "HPDP-PRC-001"
-REV = "A"
-DATE = "2026-10-16"
+REV = "B"
+DATE = "2026-10-23"
 
 
 # Section 3.2: the blocks of the satellite part, in the order of the data. Section 3.3
@@ -250,7 +250,7 @@ def story(doc):
               ["M5", "12 Oct", "Link and end-to-end tests pass", "3.4 × 10<super>12</super> "
                                "bits with no error; scenes bit-exact up to BER 10<super>-3</super>"],
               ["M6", "12 to 15 Oct", "Ground station decodes and shows the data",
-               "Complete, except the Ethernet upload test on the board"],
+               "Complete; Ethernet upload tested on the board on 23 Oct"],
               ["M7", "13 Oct", "Radiation mitigation complete", "Upsets corrected in 153 ms or "
                                                                 "less; no silent error in "
                                                                 "protected parts"],
@@ -422,9 +422,11 @@ def story(doc):
             "It corrects the errors, takes out the packets and the scenes, and decompresses each "
             "scene. It compares each scene with the reference. It shows false-colour images and "
             "statistics."),
-          note("The upload of the records through Ethernet (requirement SW-05) is written, but "
-               "the team did not test it on the board. The PC had no free Ethernet port. The "
-               "records come to the PC through JTAG."),
+          note("The board also sends the records to the PC through Ethernet (requirement "
+               "SW-05). The team did the test of this function on the board on 23 October 2026. "
+               "The test found two faults in the board program and one fault in the PC program. "
+               "The team corrected the three faults. After that, the records that came through "
+               "Ethernet were the same as the records that came through JTAG."),
 
           h2("5.9  M7: Radiation mitigation"),
           h3("Objective"),
@@ -596,11 +598,9 @@ def story(doc):
 
     # ------------------------------------------------------------------ 8
     s += [h1("9  Status")]
-    s += [p("The HPDP meets 99 of the 102 requirements of version 1.0 of the specification. No "
-            "requirement has the status “not met”. Three requirements are open:"),
-          bullets(["<b>SW-05</b> (upload through Ethernet) is partly met. The code is written and "
-                   "it builds. The test on the board needs an Ethernet port on the PC.",
-                   "<b>CMP-02 and MDL-02</b> (comparison with an independent CCSDS 123 decoder) are "
+    s += [p("The HPDP meets 100 of the 102 requirements of version 1.0 of the specification. No "
+            "requirement has the status “not met”. Two requirements are open:"),
+          bullets(["<b>CMP-02 and MDL-02</b> (comparison with an independent CCSDS 123 decoder) are "
                    "open. They need an account for the ESA or the CNES tools."]),
           p("The results report (HPDP-RPT-001) gives the results, the status of each requirement "
             "and the open items.")]

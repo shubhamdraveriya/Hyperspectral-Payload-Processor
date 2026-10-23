@@ -101,6 +101,10 @@ domain.set_lib(lib_name=LWIP)
 for param, value in LWIP_CONFIG.items():
     domain.set_config(option="lib", param=param, value=value, lib_name=LWIP)
 domain.set_config(option="lib", param="XILTIMER_en_interval_timer", value="true", lib_name="xiltimer")
+# the interval timer needs a timer named for it: with the default "None" the BSP
+# defines XTIMER_NO_TICK_TIMER and XTimer_SetHandler() does nothing, so lwIP's TCP
+# retransmission and DHCP timers never run (a lost segment stalls the upload)
+domain.set_config(option="lib", param="XILTIMER_tick_timer", value="psu_ttc_0", lib_name="xiltimer")
 # FatFs for the console's SD card loading (hpdp_run/src/console.c, SW-02): long
 # file names (.hpdp is not an 8.3 name), read-only so the card is never written
 domain.set_lib(lib_name="xilffs")
