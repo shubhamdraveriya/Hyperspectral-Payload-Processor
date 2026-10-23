@@ -1,0 +1,2974 @@
+﻿
+****** Vivado v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:45:20 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source tb/run_sim.tcl
+# set tests {
+#     skid_buffer  tb_axis_skid_buffer  {}
+#     link         tb_link              {}
+#     scene_guard  tb_scene_guard       {}
+#     sample_ram   tb_sample_ram        {}
+#     corner_turn  tb_corner_turn       {}
+#     watchdog     tb_stall_watchdog    {}
+#     tmr_ram      tb_tmr_ram           {}
+#     regs_tmr     tb_regs_tmr          {}
+# }
+# set repo  [file normalize [file join [file dirname [info script]] ..]]
+# set build [file join $repo build sim]
+# file mkdir $build
+# cd $build
+# proc tool {name} {
+#     if {$::tcl_platform(platform) eq "windows"} { return "$name.bat" }
+#     return $name
+# }
+# proc run {args} {
+#     puts ">> [join $args]"
+#     set rc [catch {exec {*}$args 2>@1} out]
+#     puts $out
+#     if {$rc} { error "[lindex $args 0] failed" }
+#     return $out
+# }
+# proc sources {dir} {
+#     set root [file join $::repo $dir]
+#     set files [lsort [glob -nocomplain -directory $root -types f */*.sv *.sv]]
+#     set pkgs [lsearch -all -inline -glob $files *_pkg.sv]
+#     set rest [lsearch -all -inline -not -glob $files *_pkg.sv]
+#     set out {}
+#     foreach f [concat $pkgs $rest] {
+#         lappend out "../../$dir/[string range $f [string length $root/] end]"
+#     }
+#     return $out
+# }
+# set suites {
+#     c123    tb/ccsds123/gen_vectors.py   tb_c123_core
+#     fe      tb/frontend/gen_vectors.py   tb_frontend
+#     dl      tb/downlink/gen_vectors.py   tb_downlink
+#     gr      tb/ground/gen_vectors.py     tb_ground
+# }
+# set sys_tests {dma_basic dma_stalls max_dims ecc_dbe}
+# proc wanted {prefix} {
+#     expr {![llength $::selected] || [llength [lsearch -all -glob $::selected ${prefix}_*]]}
+# }
+# proc selected_has {name} {
+#     foreach p $::selected { if {[string match $p $name]} { return 1 } }
+#     return 0
+# }
+# set selected $argv
+# foreach {prefix gen top} $suites {
+#     if {![wanted $prefix] && !($prefix eq "fe" && ([wanted sys] || [wanted fault]))} continue
+#     run python ../../$gen $prefix
+#     if {![wanted $prefix]} continue
+#     set fh [open $prefix/tests.txt]
+#     foreach t [split [string trim [read $fh]] "\n"] {
+#         lappend tests ${prefix}_$t $top [list DIR=$prefix/$t]
+#     }
+#     close $fh
+# }
+>> python ../../tb/ccsds123/gen_vectors.py c123
+VER-02 matrix: 6 of 864 configurations, seed 750526 (again: HPDP_C123_SEED=750526)
+basic            3200 samples ->   3090 bytes
+stalls           3200 samples ->   3090 bytes
+reduced          3200 samples ->   3122 bytes
+narrow_nbr       3200 samples ->   3581 bytes
+wide_col         3200 samples ->   3147 bytes
+reduced_col      3200 samples ->   3598 bytes
+p0               3200 samples ->   3126 bytes
+p1               3200 samples ->   3102 bytes
+p15              3200 samples ->   3511 bytes
+omega4           3200 samples ->   3099 bytes
+omega19          3200 samples ->   3090 bytes
+wrap_r32         3200 samples ->   6766 bytes
+r64              3200 samples ->   3090 bytes
+fast_weights     3200 samples ->   4988 bytes
+umax8            3200 samples ->   5063 bytes
+umax32           3200 samples ->   3090 bytes
+counter          3200 samples ->   3339 bytes
+k0               3200 samples ->   3179 bytes
+d16              3200 samples ->   4690 bytes
+d8               3200 samples ->   2301 bytes
+d2               3200 samples ->   1037 bytes
+word3            3200 samples ->   3093 bytes
+word8            3200 samples ->   3096 bytes
+raw              3200 samples ->   4800 bytes
+max_dims         8192 samples ->   7980 bytes
+min_bands        3840 samples ->   3681 bytes
+one_column        480 samples ->    549 bytes
+one_row          1600 samples ->   1768 bytes
+all_zero         3200 samples ->   1734 bytes
+all_max          3200 samples ->   1734 bytes
+all_max_d16      3200 samples ->   1754 bytes
+mx_cnr_p15_d16_o13_u32   1600 samples ->   2795 bytes
+mx_cnr_p1_d12_o13_u18   1600 samples ->   1841 bytes
+mx_cwr_p0_d8_o13_u18   1600 samples ->   1166 bytes
+mx_nnf_p0_d12_o13_u8   1600 samples ->   1835 bytes
+mx_nnf_p1_d12_o13_u8   1600 samples ->   1775 bytes
+mx_nnr_p0_d8_o4_u32   1600 samples ->   1207 bytes
+>> python ../../tb/frontend/gen_vectors.py fe
+dma_basic      5760 samples ->   5835 bytes, last scene: 9 clamped, 156 replaced
+dma_stalls     5760 samples ->   5835 bytes, last scene: 9 clamped, 156 replaced
+clamp          5760 samples ->   9083 bytes, last scene: 244 clamped, 150 replaced
+bypass         5760 samples ->   7621 bytes, last scene: 0 clamped, 0 replaced
+d16            5760 samples ->   8750 bytes, last scene: 1 clamped, 156 replaced
+ramp           5760 samples ->   3026 bytes, last scene: 89 clamped, 126 replaced
+lfsr           5760 samples ->  12016 bytes, last scene: 0 clamped, 0 replaced
+min_period     5760 samples ->   5835 bytes, last scene: 9 clamped, 156 replaced
+overrun        5760 samples ->   3278 bytes, last scene: 89 clamped, 126 replaced
+one_column      320 samples ->    386 bytes, last scene: 1 clamped, 30 replaced
+max_dims       8192 samples ->   8155 bytes, last scene: 21 clamped, 356 replaced
+ecc_dbe        5760 samples ->   7621 bytes, last scene: 0 clamped, 0 replaced
+drop           6144 samples ->   9726 bytes, last scene: 0 clamped, 0 replaced
+nx1024        73728 samples ->  66671 bytes, last scene: 144 clamped, 2904 replaced
+>> python ../../tb/downlink/gen_vectors.py dl
+basic      3 scenes,   7155 packet bytes,  10 frames, 0 spills
+stalls     3 scenes,   7155 packet bytes,  10 frames, 0 spills
+spill      6 scenes,  11099 packet bytes,  17 frames, 1 spills
+exact      1 scenes,   2652 packet bytes,   3 frames, 0 spills
+one_byte   2 scenes,    465 packet bytes,   2 frames, 0 spills
+idle       2 scenes,   3942 packet bytes,   6 frames, 0 spills
+gap        1 scenes,   4028 packet bytes,   5 frames, 0 spills
+>> python ../../tb/ground/gen_vectors.py gr
+clean       12621 bytes,    0 flipped bits, records VLLLLLLLLLLL
+slip        16383 bytes,    0 flipped bits, records VLLLLLLFFFVLLLL
+asm_tol     12288 bytes,   24 flipped bits, records VLLLLLLLLLLL
+flywheel    16384 bytes,   12 flipped bits, records VLLFLLLFLLLFLLL
+lose_lock    8192 bytes,   40 flipped bits, records -
+ber         24576 bytes,  395 flipped bits, records VLLLLLLLLLLLLLLLLLLLLLLL
+burst       12288 bytes,  200 flipped bits, records VLLLLLLLLLL
+tol0        12288 bytes,    4 flipped bits, records VLFLLFLLFLL
+overflow    20480 bytes,    0 flipped bits, records VLLLLLLLLLLLLLLLLLLL
+# if {[wanted sys]} {
+#     foreach t $sys_tests { lappend tests sys_$t tb_hpdp_core [list DIR=fe/$t] }
+#     # at the NX_MAX 1024 build's size (SYS-04): table in pairs, 1024-pixel lines
+#     lappend tests sys_nx1024 tb_hpdp_core_1024 [list DIR=fe/nx1024]
+# }
+# if {[wanted fault]} {
+#     lappend tests fault_campaign tb_fault [list DIR=fe/dma_basic TRIALS=3 SEED=1]
+# }
+# if {[wanted fe]} {
+#     foreach t {dma_basic dma_stalls clamp max_dims drop} {
+#         lappend tests fe_pairs_$t tb_frontend_pairs [list DIR=fe/$t]
+#     }
+# }
+# if {[wanted fault]} {
+#     lappend tests fault_pairs_sbe tb_fault_pairs [list DIR=fe/dma_basic TRIALS=10 SEED=3 CLASS=0]
+#     lappend tests fault_pairs_dbe tb_fault_pairs [list DIR=fe/dma_basic TRIALS=10 SEED=4 CLASS=1]
+# }
+# file copy -force [file join $::env(XILINX_VIVADO) data verilog src glbl.v] .
+# run [tool xvlog] --sv {*}[sources rtl] {*}[sources tb]
+>> xvlog.bat --sv ../../rtl/ccsds123/c123_pkg.sv ../../rtl/common/ecc_pkg.sv ../../rtl/downlink/downlink_pkg.sv ../../rtl/frontend/frontend_pkg.sv ../../rtl/regs/hpdp_regs_pkg.sv ../../rtl/ccsds123/c123_coder.sv ../../rtl/ccsds123/c123_core.sv ../../rtl/ccsds123/c123_localdiff.sv ../../rtl/ccsds123/c123_neighborhood.sv ../../rtl/ccsds123/c123_packer.sv ../../rtl/ccsds123/c123_predictor.sv ../../rtl/common/axis_skid_buffer.sv ../../rtl/common/cdc_bus.sv ../../rtl/common/ecc_ram.sv ../../rtl/common/sample_ram.sv ../../rtl/common/sdp_ram.sv ../../rtl/common/stall_watchdog.sv ../../rtl/common/sync_fifo.sv ../../rtl/common/tmr_ram.sv ../../rtl/downlink/aos_framer.sv ../../rtl/downlink/cadu_framer.sv ../../rtl/downlink/error_injector.sv ../../rtl/downlink/rs_encoder.sv ../../rtl/downlink/space_packetizer.sv ../../rtl/frontend/corner_turn.sv ../../rtl/frontend/radiometric_corr.sv ../../rtl/frontend/scene_guard.sv ../../rtl/frontend/sensor_emulator.sv ../../rtl/frontend/sensor_frontend.sv ../../rtl/ground/frame_sync.sv ../../rtl/ground/gr_capture.sv ../../rtl/link/link_layer.sv ../../rtl/link/link_rx.sv ../../rtl/link/link_tx.sv ../../rtl/rad/sem_support.sv ../../rtl/regs/hpdp_regs.sv ../../rtl/system/hpdp_core.sv ../../rtl/system/hpdp_regs_tmr.sv ../../rtl/system/hpdp_top.sv ../../tb/system/hpdp_regs_addr_pkg.sv ../../tb/ccsds123/tb_c123_core.sv ../../tb/common/tb_axis_skid_buffer.sv ../../tb/common/tb_sample_ram.sv ../../tb/common/tb_stall_watchdog.sv ../../tb/common/tb_tmr_ram.sv ../../tb/downlink/tb_downlink.sv ../../tb/frontend/tb_corner_turn.sv ../../tb/frontend/tb_fault.sv ../../tb/frontend/tb_frontend.sv ../../tb/frontend/tb_frontend_pairs.sv ../../tb/frontend/tb_scene_guard.sv ../../tb/ground/tb_ground.sv ../../tb/link/tb_link.sv ../../tb/system/tb_hpdp_core.sv ../../tb/system/tb_hpdp_core_1024.sv ../../tb/system/tb_regs_tmr.sv
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/ccsds123/c123_pkg.sv" into library work
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/common/ecc_pkg.sv" into library work
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/downlink/downlink_pkg.sv" into library work
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/frontend/frontend_pkg.sv" into library work
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/regs/hpdp_regs_pkg.sv" into library work
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/ccsds123/c123_coder.sv" into library work
+INFO: [VRFC 10-311] analyzing module c123_coder
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/ccsds123/c123_core.sv" into library work
+INFO: [VRFC 10-311] analyzing module c123_core
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/ccsds123/c123_localdiff.sv" into library work
+INFO: [VRFC 10-311] analyzing module c123_localdiff
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/ccsds123/c123_neighborhood.sv" into library work
+INFO: [VRFC 10-311] analyzing module c123_neighborhood
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/ccsds123/c123_packer.sv" into library work
+INFO: [VRFC 10-311] analyzing module c123_packer
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/ccsds123/c123_predictor.sv" into library work
+INFO: [VRFC 10-311] analyzing module c123_predictor
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/common/axis_skid_buffer.sv" into library work
+INFO: [VRFC 10-311] analyzing module axis_skid_buffer
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/common/cdc_bus.sv" into library work
+INFO: [VRFC 10-311] analyzing module cdc_bus
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/common/ecc_ram.sv" into library work
+INFO: [VRFC 10-311] analyzing module ecc_ram
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/common/sample_ram.sv" into library work
+INFO: [VRFC 10-311] analyzing module sample_ram
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/common/sdp_ram.sv" into library work
+INFO: [VRFC 10-311] analyzing module sdp_ram
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/common/stall_watchdog.sv" into library work
+INFO: [VRFC 10-311] analyzing module stall_watchdog
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/common/sync_fifo.sv" into library work
+INFO: [VRFC 10-311] analyzing module sync_fifo
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/common/tmr_ram.sv" into library work
+INFO: [VRFC 10-311] analyzing module tmr_ram
+INFO: [VRFC 10-311] analyzing module lut_ram
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/downlink/aos_framer.sv" into library work
+INFO: [VRFC 10-311] analyzing module aos_framer
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/downlink/cadu_framer.sv" into library work
+INFO: [VRFC 10-311] analyzing module cadu_framer
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/downlink/error_injector.sv" into library work
+INFO: [VRFC 10-311] analyzing module error_injector
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/downlink/rs_encoder.sv" into library work
+INFO: [VRFC 10-311] analyzing module rs_encoder
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/downlink/space_packetizer.sv" into library work
+INFO: [VRFC 10-311] analyzing module space_packetizer
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/frontend/corner_turn.sv" into library work
+INFO: [VRFC 10-311] analyzing module corner_turn
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/frontend/radiometric_corr.sv" into library work
+INFO: [VRFC 10-311] analyzing module radiometric_corr
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/frontend/scene_guard.sv" into library work
+INFO: [VRFC 10-311] analyzing module scene_guard
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/frontend/sensor_emulator.sv" into library work
+INFO: [VRFC 10-311] analyzing module sensor_emulator
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/frontend/sensor_frontend.sv" into library work
+INFO: [VRFC 10-311] analyzing module sensor_frontend
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/ground/frame_sync.sv" into library work
+INFO: [VRFC 10-311] analyzing module frame_sync
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/ground/gr_capture.sv" into library work
+INFO: [VRFC 10-311] analyzing module gr_capture
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/link/link_layer.sv" into library work
+INFO: [VRFC 10-311] analyzing module link_layer
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/link/link_rx.sv" into library work
+INFO: [VRFC 10-311] analyzing module link_rx
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/link/link_tx.sv" into library work
+INFO: [VRFC 10-311] analyzing module link_tx
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/rad/sem_support.sv" into library work
+INFO: [VRFC 10-311] analyzing module sem_support
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/regs/hpdp_regs.sv" into library work
+INFO: [VRFC 10-311] analyzing module hpdp_regs
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/system/hpdp_core.sv" into library work
+INFO: [VRFC 10-311] analyzing module hpdp_core
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/system/hpdp_regs_tmr.sv" into library work
+INFO: [VRFC 10-311] analyzing module hpdp_regs_tmr
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/rtl/system/hpdp_top.sv" into library work
+INFO: [VRFC 10-311] analyzing module hpdp_top
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/system/hpdp_regs_addr_pkg.sv" into library work
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" into library work
+INFO: [VRFC 10-311] analyzing module tb_c123_core
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/common/tb_axis_skid_buffer.sv" into library work
+INFO: [VRFC 10-311] analyzing module tb_axis_skid_buffer
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/common/tb_sample_ram.sv" into library work
+INFO: [VRFC 10-311] analyzing module tb_sample_ram
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/common/tb_stall_watchdog.sv" into library work
+INFO: [VRFC 10-311] analyzing module tb_stall_watchdog
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/common/tb_tmr_ram.sv" into library work
+INFO: [VRFC 10-311] analyzing module tb_tmr_ram
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/downlink/tb_downlink.sv" into library work
+INFO: [VRFC 10-311] analyzing module tb_downlink
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_corner_turn.sv" into library work
+INFO: [VRFC 10-311] analyzing module tb_corner_turn
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_fault.sv" into library work
+INFO: [VRFC 10-311] analyzing module tb_fault
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_frontend.sv" into library work
+INFO: [VRFC 10-311] analyzing module tb_frontend
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_frontend_pairs.sv" into library work
+INFO: [VRFC 10-311] analyzing module tb_frontend_pairs
+INFO: [VRFC 10-311] analyzing module tb_fault_pairs
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_scene_guard.sv" into library work
+INFO: [VRFC 10-311] analyzing module tb_scene_guard
+WARNING: [VRFC 10-3824] variable 'n' must explicitly be declared as automatic or static [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_scene_guard.sv:33]
+WARNING: [VRFC 10-3824] variable 'v' must explicitly be declared as automatic or static [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_scene_guard.sv:34]
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ground/tb_ground.sv" into library work
+INFO: [VRFC 10-311] analyzing module tb_ground
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/link/tb_link.sv" into library work
+INFO: [VRFC 10-311] analyzing module tb_link
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/system/tb_hpdp_core.sv" into library work
+INFO: [VRFC 10-311] analyzing module tb_hpdp_core
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/system/tb_hpdp_core_1024.sv" into library work
+INFO: [VRFC 10-311] analyzing module tb_hpdp_core_1024
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/system/tb_regs_tmr.sv" into library work
+INFO: [VRFC 10-311] analyzing module tb_regs_tmr
+# run [tool xvlog] glbl.v
+>> xvlog.bat glbl.v
+INFO: [VRFC 10-2263] Analyzing Verilog file "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/build/sim/glbl.v" into library work
+INFO: [VRFC 10-311] analyzing module glbl
+# set results {}
+# set failed 0
+# set built {}
+# foreach {name top plusargs} $tests {
+#     if {[llength $selected] && ![selected_has $name]} continue
+# 
+#     if {[lsearch -exact $built $top] < 0} {
+#         run [tool xelab] -L unisims_ver -L xpm -s $top work.$top work.glbl
+#         lappend built $top
+#     }
+# 
+#     # Options go through a file: cmd.exe splits command-line arguments at '='
+#     set opts [list $top -R -log ${name}.log]
+#     foreach p $plusargs { lappend opts -testplusarg $p }
+#     set fh [open ${name}.opts w]
+#     puts $fh [join $opts "\n"]
+#     close $fh
+# 
+#     set rc [catch {run [tool xsim] -f ${name}.opts} out]
+#     if {!$rc && [regexp -line {^PASS:} $out] && ![regexp {FAIL|Error:|ERROR:|Fatal:|FATAL} $out]} {
+#         lappend results [format "  %-18s PASS" $name]
+#     } else {
+#         lappend results [format "  %-18s FAIL   (see build/sim/%s.log)" $name $name]
+#         incr failed
+#     }
+# }
+>> xelab.bat -L unisims_ver -L xpm -s tb_axis_skid_buffer work.tb_axis_skid_buffer work.glbl
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe -L unisims_ver -L xpm -s tb_axis_skid_buffer work.tb_axis_skid_buffer work.glbl 
+Multi-threading is on. Using 12 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module work.axis_skid_buffer(DATA_W=16,USER_...
+Compiling module work.tb_axis_skid_buffer
+Compiling module work.glbl
+Built simulation snapshot tb_axis_skid_buffer
+>> xsim.bat -f skid_buffer.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:45:43 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_axis_skid_buffer/xsim_script.tcl
+# xsim {tb_axis_skid_buffer} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: tb_axis_skid_buffer, 21000 transfers
+$finish called at time : 140134 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/common/tb_axis_skid_buffer.sv" Line 106
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:45:45 2026...
+>> xelab.bat -L unisims_ver -L xpm -s tb_link work.tb_link work.glbl
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe -L unisims_ver -L xpm -s tb_link work.tb_link work.glbl 
+Multi-threading is on. Using 12 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module xpm.xpm_cdc_sync_rst(DEST_SYNC_FF=2,...
+Compiling module xpm.xpm_fifo_rst(COMMON_CLOCK=0)
+Compiling module xpm.xpm_fifo_reg_bit
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=1...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=9...
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_cdc_gray(DEST_SYNC_FF=2,INIT...
+Compiling module xpm.xpm_fifo_reg_vec(REG_WIDTH=9)
+Compiling module xpm.xpm_cdc_gray(INIT_SYNC_FF=1,WIDT...
+Compiling module xpm.xpm_fifo_reg_vec(REG_WIDTH=10)
+Compiling module xpm.xpm_cdc_gray(DEST_SYNC_FF=2,INIT...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=2...
+Compiling module xpm.xpm_fifo_base(COMMON_CLOCK=0,FIF...
+Compiling module xpm.xpm_fifo_async(FIFO_MEMORY_TYPE=...
+Compiling module work.link_tx
+Compiling module work.link_rx
+Compiling module work.link_layer
+Compiling module work.tb_link
+Compiling module work.glbl
+Built simulation snapshot tb_link
+>> xsim.bat -f link.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:45:48 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_link/xsim_script.tcl
+# xsim {tb_link} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: tb_link, 29000 bytes, 14500 data / 7459 idle words sent, longest data run 63
+$finish called at time : 351675100 ps : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/link/tb_link.sv" Line 191
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:45:50 2026...
+>> xelab.bat -L unisims_ver -L xpm -s tb_scene_guard work.tb_scene_guard work.glbl
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe -L unisims_ver -L xpm -s tb_scene_guard work.tb_scene_guard work.glbl 
+Multi-threading is on. Using 12 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+WARNING: [VRFC 10-3645] port 'tmr_mismatch' remains unconnected for this instance [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_scene_guard.sv:20]
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module work.scene_guard
+Compiling module work.tb_scene_guard
+Compiling module work.glbl
+Built simulation snapshot tb_scene_guard
+>> xsim.bat -f scene_guard.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:45:52 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_scene_guard/xsim_script.tcl
+# xsim {tb_scene_guard} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: tb_scene_guard, 3201 inputs, 3600 outputs, 15 short scenes padded with 399 samples
+$finish called at time : 29738 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_scene_guard.sv" Line 115
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:45:53 2026...
+>> xelab.bat -L unisims_ver -L xpm -s tb_sample_ram work.tb_sample_ram work.glbl
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe -L unisims_ver -L xpm -s tb_sample_ram work.tb_sample_ram work.glbl 
+Multi-threading is on. Using 12 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling package work.ecc_pkg
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_memory_sdpram(MEMORY_SIZE=16...
+Compiling module work.ecc_ram(DEPTH=256,LATENCY=4)
+Compiling module work.sample_ram(DEPTH=1024,LATENCY=4)
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_memory_sdpram(MEMORY_SIZE=16...
+Compiling module work.ecc_ram(DEPTH=256,STYLE="block")
+Compiling module work.sample_ram(DEPTH=1024,STYLE="blo...
+Compiling module work.tb_sample_ram
+Compiling module work.glbl
+Built simulation snapshot tb_sample_ram
+>> xsim.bat -f sample_ram.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:45:56 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_sample_ram/xsim_script.tcl
+# xsim {tb_sample_ram} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: tb_sample_ram, ultra/L4: 41902 reads (571 SBE, 167 DBE, 219 injections), block/L2 with stalls: 31300 reads (412 SBE, 125 DBE, 168 injections)
+$finish called at time : 240038 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/common/tb_sample_ram.sv" Line 196
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:45:58 2026...
+>> xelab.bat -L unisims_ver -L xpm -s tb_corner_turn work.tb_corner_turn work.glbl
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe -L unisims_ver -L xpm -s tb_corner_turn work.tb_corner_turn work.glbl 
+Multi-threading is on. Using 12 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling package work.frontend_pkg
+Compiling package work.ecc_pkg
+Compiling module work.sync_fifo(WIDTH=28,DEPTH=16)
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_memory_sdpram(MEMORY_PRIMITI...
+Compiling module work.ecc_ram(DEPTH=32,STYLE="block",L...
+Compiling module work.sample_ram(DEPTH=128,STYLE="bloc...
+Compiling module work.sync_fifo(WIDTH=45,DEPTH=16)
+Compiling module work.axis_skid_buffer(DATA_W=16,USER_...
+Compiling module work.corner_turn(NX_MAX=8,NZ_MAX=8)
+Compiling module work.tb_corner_turn
+Compiling module work.glbl
+Built simulation snapshot tb_corner_turn
+>> xsim.bat -f corner_turn.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:46:00 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_corner_turn/xsim_script.tcl
+# xsim {tb_corner_turn} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: tb_corner_turn, 900 lines in, 429 sent (132 fill, 19 marked), 471 lost (155 of them first of a scene), buffer error on 4 samples, 30 control state upsets masked
+$finish called at time : 81130 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_corner_turn.sv" Line 221
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:46:02 2026...
+>> xelab.bat -L unisims_ver -L xpm -s tb_stall_watchdog work.tb_stall_watchdog work.glbl
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe -L unisims_ver -L xpm -s tb_stall_watchdog work.tb_stall_watchdog work.glbl 
+Multi-threading is on. Using 12 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module work.stall_watchdog
+Compiling module work.tb_stall_watchdog
+Compiling module work.glbl
+Built simulation snapshot tb_stall_watchdog
+>> xsim.bat -f watchdog.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:46:04 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_stall_watchdog/xsim_script.tcl
+# xsim {tb_stall_watchdog} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: tb_stall_watchdog, 1838 stalls
+$finish called at time : 80038 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/common/tb_stall_watchdog.sv" Line 57
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:46:05 2026...
+>> xelab.bat -L unisims_ver -L xpm -s tb_tmr_ram work.tb_tmr_ram work.glbl
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe -L unisims_ver -L xpm -s tb_tmr_ram work.tb_tmr_ram work.glbl 
+Multi-threading is on. Using 12 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module work.lut_ram(DEPTH=32)
+Compiling module work.tmr_ram(DEPTH=32)
+Compiling module work.tb_tmr_ram
+Compiling module work.glbl
+Built simulation snapshot tb_tmr_ram
+>> xsim.bat -f tmr_ram.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:46:07 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_tmr_ram/xsim_script.tcl
+# xsim {tb_tmr_ram} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: tb_tmr_ram, 4000 reads, 143 upsets, 522 reads flagged
+$finish called at time : 16134 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/common/tb_tmr_ram.sv" Line 72
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:46:09 2026...
+>> xelab.bat -L unisims_ver -L xpm -s tb_regs_tmr work.tb_regs_tmr work.glbl
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe -L unisims_ver -L xpm -s tb_regs_tmr work.tb_regs_tmr work.glbl 
+Multi-threading is on. Using 12 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling package work.hpdp_regs_pkg
+Compiling package work.hpdp_regs_addr_pkg
+Compiling module work.hpdp_regs
+Compiling module work.hpdp_regs_tmr_default
+Compiling module work.tb_regs_tmr
+Compiling module work.glbl
+Built simulation snapshot tb_regs_tmr
+>> xsim.bat -f regs_tmr.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:46:20 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_regs_tmr/xsim_script.tcl
+# xsim {tb_regs_tmr} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: tb_regs_tmr, an upset in each copy masked (output and reads) and healed
+$finish called at time : 715 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/system/tb_regs_tmr.sv" Line 85
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:46:22 2026...
+>> xelab.bat -L unisims_ver -L xpm -s tb_c123_core work.tb_c123_core work.glbl
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe -L unisims_ver -L xpm -s tb_c123_core work.tb_c123_core work.glbl 
+Multi-threading is on. Using 12 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+WARNING: [VRFC 10-3645] port 'fsm_mismatch' remains unconnected for this instance [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv:30]
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling package work.c123_pkg
+Compiling package work.ecc_pkg
+Compiling module work.lut_ram(DEPTH=64)
+Compiling module work.tmr_ram(DEPTH=64)
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_memory_sdpram(MEMORY_SIZE=65...
+Compiling module work.ecc_ram(STYLE="block")
+Compiling module work.sample_ram(DEPTH=4096,STYLE="blo...
+Compiling module work.c123_neighborhood(NX_MAX=64,NZ_M...
+Compiling module work.c123_localdiff
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_memory_sdpram(MEMORY_SIZE=28...
+Compiling module work.ecc_ram(WIDTH=448,DEPTH=64,STYLE...
+Compiling module work.c123_predictor(NZ_MAX=64)
+Compiling module work.lut_ram(WIDTH=43,DEPTH=64)
+Compiling module work.tmr_ram(WIDTH=43,DEPTH=64)
+Compiling module work.c123_coder(NZ_MAX=64)
+Compiling module work.sync_fifo(WIDTH=56)
+Compiling module work.sync_fifo(WIDTH=73,DEPTH=8)
+Compiling module work.c123_packer
+Compiling module work.c123_core(NX_MAX=64,NZ_MAX=64)
+Compiling module work.tb_c123_core
+Compiling module work.glbl
+Built simulation snapshot tb_c123_core
+>> xsim.bat -f c123_basic.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:46:25 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/basic -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/basic, 3200 samples, 3090 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/basic, 3090 bytes, 3200 samples
+$finish called at time : 900038 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:46:31 2026...
+>> xsim.bat -f c123_stalls.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:46:31 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/stalls -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/stalls, 3200 samples, 3090 bytes, in 60%, out 35%
+PASS: tb_c123_core c123/stalls, 3090 bytes, 3200 samples
+$finish called at time : 900038 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:46:37 2026...
+>> xsim.bat -f c123_reduced.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:46:37 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/reduced -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/reduced, 3200 samples, 3122 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/reduced, 3122 bytes, 3200 samples
+$finish called at time : 900038 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:46:42 2026...
+>> xsim.bat -f c123_narrow_nbr.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:46:43 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/narrow_nbr -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/narrow_nbr, 3200 samples, 3581 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/narrow_nbr, 3581 bytes, 3200 samples
+$finish called at time : 900038 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:46:48 2026...
+>> xsim.bat -f c123_wide_col.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:46:48 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/wide_col -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/wide_col, 3200 samples, 3147 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/wide_col, 3147 bytes, 3200 samples
+$finish called at time : 900038 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:46:53 2026...
+>> xsim.bat -f c123_reduced_col.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:46:54 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/reduced_col -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/reduced_col, 3200 samples, 3598 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/reduced_col, 3598 bytes, 3200 samples
+$finish called at time : 900038 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:46:59 2026...
+>> xsim.bat -f c123_p0.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:46:59 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/p0 -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/p0, 3200 samples, 3126 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/p0, 3126 bytes, 3200 samples
+$finish called at time : 900038 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:47:04 2026...
+>> xsim.bat -f c123_p1.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:47:05 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/p1 -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/p1, 3200 samples, 3102 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/p1, 3102 bytes, 3200 samples
+$finish called at time : 900038 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:47:10 2026...
+>> xsim.bat -f c123_p15.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:47:10 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/p15 -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/p15, 3200 samples, 3511 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/p15, 3511 bytes, 3200 samples
+$finish called at time : 900038 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:47:15 2026...
+>> xsim.bat -f c123_omega4.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:47:16 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/omega4 -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/omega4, 3200 samples, 3099 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/omega4, 3099 bytes, 3200 samples
+$finish called at time : 900038 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:47:20 2026...
+>> xsim.bat -f c123_omega19.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:47:21 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/omega19 -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/omega19, 3200 samples, 3090 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/omega19, 3090 bytes, 3200 samples
+$finish called at time : 900038 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:47:26 2026...
+>> xsim.bat -f c123_wrap_r32.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:47:26 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/wrap_r32 -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/wrap_r32, 3200 samples, 6766 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/wrap_r32, 6766 bytes, 3200 samples
+$finish called at time : 900038 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:47:31 2026...
+>> xsim.bat -f c123_r64.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:47:32 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/r64 -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/r64, 3200 samples, 3090 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/r64, 3090 bytes, 3200 samples
+$finish called at time : 900038 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:47:37 2026...
+>> xsim.bat -f c123_fast_weights.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:47:37 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/fast_weights -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/fast_weights, 3200 samples, 4988 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/fast_weights, 4988 bytes, 3200 samples
+$finish called at time : 900038 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:47:42 2026...
+>> xsim.bat -f c123_umax8.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:47:43 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/umax8 -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/umax8, 3200 samples, 5063 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/umax8, 5063 bytes, 3200 samples
+$finish called at time : 900038 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:47:48 2026...
+>> xsim.bat -f c123_umax32.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:47:48 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/umax32 -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/umax32, 3200 samples, 3090 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/umax32, 3090 bytes, 3200 samples
+$finish called at time : 900038 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:47:53 2026...
+>> xsim.bat -f c123_counter.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:47:54 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/counter -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/counter, 3200 samples, 3339 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/counter, 3339 bytes, 3200 samples
+$finish called at time : 900038 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:47:59 2026...
+>> xsim.bat -f c123_k0.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:47:59 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/k0 -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/k0, 3200 samples, 3179 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/k0, 3179 bytes, 3200 samples
+$finish called at time : 900038 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:48:04 2026...
+>> xsim.bat -f c123_d16.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:48:04 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/d16 -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/d16, 3200 samples, 4690 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/d16, 4690 bytes, 3200 samples
+$finish called at time : 900038 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:48:09 2026...
+>> xsim.bat -f c123_d8.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:48:10 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/d8 -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/d8, 3200 samples, 2301 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/d8, 2301 bytes, 3200 samples
+$finish called at time : 900038 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:48:15 2026...
+>> xsim.bat -f c123_d2.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:48:15 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/d2 -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/d2, 3200 samples, 1037 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/d2, 1037 bytes, 3200 samples
+$finish called at time : 900038 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:48:20 2026...
+>> xsim.bat -f c123_word3.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:48:21 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/word3 -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/word3, 3200 samples, 3093 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/word3, 3093 bytes, 3200 samples
+$finish called at time : 900038 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:48:26 2026...
+>> xsim.bat -f c123_word8.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:48:26 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/word8 -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/word8, 3200 samples, 3096 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/word8, 3096 bytes, 3200 samples
+$finish called at time : 900038 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:48:31 2026...
+>> xsim.bat -f c123_raw.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:48:32 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/raw -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/raw, 3200 samples, 4800 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/raw, 4800 bytes, 3200 samples
+$finish called at time : 900038 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:48:36 2026...
+>> xsim.bat -f c123_max_dims.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:48:37 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/max_dims -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/max_dims, 8192 samples, 7980 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/max_dims, 7980 bytes, 8192 samples
+$finish called at time : 2177990 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:08 . Memory (MB): peak = 195.363 ; gain = 0.074
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:48:47 2026...
+>> xsim.bat -f c123_min_bands.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:48:47 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/min_bands -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/min_bands, 3840 samples, 3681 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/min_bands, 3681 bytes, 3840 samples
+$finish called at time : 1063878 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:48:53 2026...
+>> xsim.bat -f c123_one_column.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:48:54 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/one_column -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/one_column, 480 samples, 549 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/one_column, 549 bytes, 480 samples
+$finish called at time : 203718 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:48:56 2026...
+>> xsim.bat -f c123_one_row.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:48:56 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/one_row -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/one_row, 1600 samples, 1768 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/one_row, 1768 bytes, 1600 samples
+$finish called at time : 490438 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:49:00 2026...
+>> xsim.bat -f c123_all_zero.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:49:00 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/all_zero -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/all_zero, 3200 samples, 1734 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/all_zero, 1734 bytes, 3200 samples
+$finish called at time : 900038 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:49:05 2026...
+>> xsim.bat -f c123_all_max.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:49:06 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/all_max -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/all_max, 3200 samples, 1734 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/all_max, 1734 bytes, 3200 samples
+$finish called at time : 900038 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:49:11 2026...
+>> xsim.bat -f c123_all_max_d16.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:49:11 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/all_max_d16 -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/all_max_d16, 3200 samples, 1754 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/all_max_d16, 1754 bytes, 3200 samples
+$finish called at time : 900038 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:49:16 2026...
+>> xsim.bat -f c123_mx_cnr_p15_d16_o13_u32.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:49:16 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/mx_cnr_p15_d16_o13_u32 -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/mx_cnr_p15_d16_o13_u32, 1600 samples, 2795 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/mx_cnr_p15_d16_o13_u32, 2795 bytes, 1600 samples
+$finish called at time : 490438 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:49:20 2026...
+>> xsim.bat -f c123_mx_cnr_p1_d12_o13_u18.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:49:20 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/mx_cnr_p1_d12_o13_u18 -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/mx_cnr_p1_d12_o13_u18, 1600 samples, 1841 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/mx_cnr_p1_d12_o13_u18, 1841 bytes, 1600 samples
+$finish called at time : 490438 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:49:24 2026...
+>> xsim.bat -f c123_mx_cwr_p0_d8_o13_u18.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:49:24 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/mx_cwr_p0_d8_o13_u18 -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/mx_cwr_p0_d8_o13_u18, 1600 samples, 1166 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/mx_cwr_p0_d8_o13_u18, 1166 bytes, 1600 samples
+$finish called at time : 490438 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:49:27 2026...
+>> xsim.bat -f c123_mx_nnf_p0_d12_o13_u8.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:49:28 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/mx_nnf_p0_d12_o13_u8 -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/mx_nnf_p0_d12_o13_u8, 1600 samples, 1835 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/mx_nnf_p0_d12_o13_u8, 1835 bytes, 1600 samples
+$finish called at time : 490438 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:49:31 2026...
+>> xsim.bat -f c123_mx_nnf_p1_d12_o13_u8.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:49:32 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/mx_nnf_p1_d12_o13_u8 -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/mx_nnf_p1_d12_o13_u8, 1600 samples, 1775 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/mx_nnf_p1_d12_o13_u8, 1775 bytes, 1600 samples
+$finish called at time : 490438 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:49:35 2026...
+>> xsim.bat -f c123_mx_nnr_p0_d8_o4_u32.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:49:36 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_c123_core/xsim_script.tcl
+# xsim {tb_c123_core} -testplusarg DIR=c123/mx_nnr_p0_d8_o4_u32 -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_c123_core: c123/mx_nnr_p0_d8_o4_u32, 1600 samples, 1207 bytes, in 100%, out 100%
+PASS: tb_c123_core c123/mx_nnr_p0_d8_o4_u32, 1207 bytes, 1600 samples
+$finish called at time : 490438 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ccsds123/tb_c123_core.sv" Line 210
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:49:39 2026...
+>> xelab.bat -L unisims_ver -L xpm -s tb_frontend work.tb_frontend work.glbl
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe -L unisims_ver -L xpm -s tb_frontend work.tb_frontend work.glbl 
+Multi-threading is on. Using 12 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+WARNING: [VRFC 10-3645] port 'ct_tmr_mismatch' remains unconnected for this instance [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_frontend.sv:72]
+WARNING: [VRFC 10-3645] port 'w_sbe' remains unconnected for this instance [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_frontend.sv:119]
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling package work.frontend_pkg
+Compiling package work.c123_pkg
+Compiling package work.ecc_pkg
+Compiling module xpm.xpm_cdc_sync_rst(DEST_SYNC_FF=2,...
+Compiling module xpm.xpm_fifo_rst(COMMON_CLOCK=0)
+Compiling module xpm.xpm_fifo_reg_bit
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=1...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=1...
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_cdc_gray(DEST_SYNC_FF=2,INIT...
+Compiling module xpm.xpm_fifo_reg_vec(REG_WIDTH=11)
+Compiling module xpm.xpm_cdc_gray(INIT_SYNC_FF=1,WIDT...
+Compiling module xpm.xpm_fifo_reg_vec(REG_WIDTH=12)
+Compiling module xpm.xpm_cdc_gray(DEST_SYNC_FF=2,INIT...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=2...
+Compiling module xpm.xpm_fifo_base(COMMON_CLOCK=0,FIF...
+Compiling module xpm.xpm_fifo_async(FIFO_MEMORY_TYPE=...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=6...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=5...
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_cdc_gray(DEST_SYNC_FF=2,INIT...
+Compiling module xpm.xpm_fifo_reg_vec(REG_WIDTH=5)
+Compiling module xpm.xpm_cdc_gray(INIT_SYNC_FF=1,WIDT...
+Compiling module xpm.xpm_fifo_reg_vec(REG_WIDTH=6)
+Compiling module xpm.xpm_cdc_gray(DEST_SYNC_FF=2,INIT...
+Compiling module xpm.xpm_fifo_base(COMMON_CLOCK=0,FIF...
+Compiling module xpm.xpm_fifo_async(FIFO_MEMORY_TYPE=...
+Compiling module work.sensor_emulator
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_memory_sdpram(MEMORY_SIZE=13...
+Compiling module work.ecc_ram(DEPTH=2048,STYLE="block"...
+Compiling module work.radiometric_corr(NX_MAX=64,NZ_MA...
+Compiling module work.sync_fifo(WIDTH=28,DEPTH=16)
+Compiling module work.sample_ram(DEPTH=8192,STYLE="blo...
+Compiling module work.sync_fifo(WIDTH=45,DEPTH=16)
+Compiling module work.axis_skid_buffer(DATA_W=16,USER_...
+Compiling module work.corner_turn(NX_MAX=64,NZ_MAX=64)
+Compiling module work.sensor_frontend(NX_MAX=64,NZ_MAX...
+Compiling module work.lut_ram(DEPTH=64)
+Compiling module work.tmr_ram(DEPTH=64)
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_memory_sdpram(MEMORY_SIZE=65...
+Compiling module work.ecc_ram(STYLE="block")
+Compiling module work.sample_ram(DEPTH=4096,STYLE="blo...
+Compiling module work.c123_neighborhood(NX_MAX=64,NZ_M...
+Compiling module work.c123_localdiff
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_memory_sdpram(MEMORY_SIZE=28...
+Compiling module work.ecc_ram(WIDTH=448,DEPTH=64,STYLE...
+Compiling module work.c123_predictor(NZ_MAX=64)
+Compiling module work.lut_ram(WIDTH=43,DEPTH=64)
+Compiling module work.tmr_ram(WIDTH=43,DEPTH=64)
+Compiling module work.c123_coder(NZ_MAX=64)
+Compiling module work.sync_fifo(WIDTH=56)
+Compiling module work.sync_fifo(WIDTH=73,DEPTH=8)
+Compiling module work.c123_packer
+Compiling module work.c123_core(NX_MAX=64,NZ_MAX=64)
+Compiling module work.tb_frontend
+Compiling module work.glbl
+Built simulation snapshot tb_frontend
+>> xsim.bat -f fe_dma_basic.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:49:43 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_frontend/xsim_script.tcl
+# xsim {tb_frontend} -testplusarg DIR=fe/dma_basic -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_frontend: fe/dma_basic, 24x6x20, 2 scenes, source 0, line period 521, bypass 0, dma 100%, out 100%
+PASS: tb_frontend fe/dma_basic, 5760 samples, 5835 bytes, 9 clamped, 156 replaced, 0 overruns, 0 dropped lines
+$finish called at time : 1040974 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_frontend.sv" Line 482
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:05 . Memory (MB): peak = 196.777 ; gain = 0.074
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:49:50 2026...
+>> xsim.bat -f fe_dma_stalls.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:49:51 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_frontend/xsim_script.tcl
+# xsim {tb_frontend} -testplusarg DIR=fe/dma_stalls -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_frontend: fe/dma_stalls, 24x6x20, 2 scenes, source 0, line period 521, bypass 0, dma 30%, out 50%
+PASS: tb_frontend fe/dma_stalls, 5760 samples, 5835 bytes, 9 clamped, 156 replaced, 0 overruns, 0 dropped lines
+$finish called at time : 1063342 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_frontend.sv" Line 482
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:06 . Memory (MB): peak = 196.086 ; gain = 0.078
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:49:58 2026...
+>> xsim.bat -f fe_clamp.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:49:59 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_frontend/xsim_script.tcl
+# xsim {tb_frontend} -testplusarg DIR=fe/clamp -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_frontend: fe/clamp, 24x6x20, 2 scenes, source 0, line period 521, bypass 0, dma 100%, out 100%
+PASS: tb_frontend fe/clamp, 5760 samples, 9083 bytes, 244 clamped, 150 replaced, 0 overruns, 0 dropped lines
+$finish called at time : 1040974 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_frontend.sv" Line 482
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:06 . Memory (MB): peak = 196.258 ; gain = 0.062
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:50:06 2026...
+>> xsim.bat -f fe_bypass.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:50:07 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_frontend/xsim_script.tcl
+# xsim {tb_frontend} -testplusarg DIR=fe/bypass -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_frontend: fe/bypass, 24x6x20, 2 scenes, source 0, line period 521, bypass 1, dma 100%, out 100%
+PASS: tb_frontend fe/bypass, 5760 samples, 7621 bytes, 0 clamped, 0 replaced, 0 overruns, 0 dropped lines
+$finish called at time : 1040974 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_frontend.sv" Line 482
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:06 . Memory (MB): peak = 196.570 ; gain = 0.059
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:50:14 2026...
+>> xsim.bat -f fe_d16.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:50:15 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_frontend/xsim_script.tcl
+# xsim {tb_frontend} -testplusarg DIR=fe/d16 -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_frontend: fe/d16, 24x6x20, 2 scenes, source 0, line period 521, bypass 0, dma 100%, out 100%
+PASS: tb_frontend fe/d16, 5760 samples, 8750 bytes, 1 clamped, 156 replaced, 0 overruns, 0 dropped lines
+$finish called at time : 1040974 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_frontend.sv" Line 482
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:06 . Memory (MB): peak = 196.484 ; gain = 0.074
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:50:22 2026...
+>> xsim.bat -f fe_ramp.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:50:23 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_frontend/xsim_script.tcl
+# xsim {tb_frontend} -testplusarg DIR=fe/ramp -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_frontend: fe/ramp, 24x6x20, 2 scenes, source 1, line period 521, bypass 0, dma 100%, out 100%
+PASS: tb_frontend fe/ramp, 5760 samples, 3026 bytes, 89 clamped, 126 replaced, 0 overruns, 0 dropped lines
+$finish called at time : 1036174 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_frontend.sv" Line 482
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:06 . Memory (MB): peak = 196.246 ; gain = 0.066
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:50:30 2026...
+>> xsim.bat -f fe_lfsr.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:50:31 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_frontend/xsim_script.tcl
+# xsim {tb_frontend} -testplusarg DIR=fe/lfsr -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_frontend: fe/lfsr, 24x6x20, 2 scenes, source 2, line period 521, bypass 1, dma 100%, out 100%
+PASS: tb_frontend fe/lfsr, 5760 samples, 12016 bytes, 0 clamped, 0 replaced, 0 overruns, 0 dropped lines
+$finish called at time : 1040974 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_frontend.sv" Line 482
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:06 . Memory (MB): peak = 196.574 ; gain = 0.074
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:50:38 2026...
+>> xsim.bat -f fe_min_period.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:50:39 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_frontend/xsim_script.tcl
+# xsim {tb_frontend} -testplusarg DIR=fe/min_period -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_frontend: fe/min_period, 24x6x20, 2 scenes, source 0, line period 481, bypass 0, dma 100%, out 100%
+PASS: tb_frontend fe/min_period, 5760 samples, 5835 bytes, 9 clamped, 156 replaced, 0 overruns, 0 dropped lines
+$finish called at time : 978974 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_frontend.sv" Line 482
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:05 . Memory (MB): peak = 196.062 ; gain = 0.074
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:50:46 2026...
+>> xsim.bat -f fe_overrun.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:50:46 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_frontend/xsim_script.tcl
+# xsim {tb_frontend} -testplusarg DIR=fe/overrun -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_frontend: fe/overrun, 24x6x20, 2 scenes, source 1, line period 281, bypass 0, dma 100%, out 100%
+PASS: tb_frontend fe/overrun, 5760 samples, 3278 bytes, 89 clamped, 126 replaced, 18 overruns, 0 dropped lines
+$finish called at time : 690974 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_frontend.sv" Line 482
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:50:52 2026...
+>> xsim.bat -f fe_one_column.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:50:52 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_frontend/xsim_script.tcl
+# xsim {tb_frontend} -testplusarg DIR=fe/one_column -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_frontend: fe/one_column, 1x10x16, 2 scenes, source 0, line period 57, bypass 0, dma 100%, out 100%
+PASS: tb_frontend fe/one_column, 320 samples, 386 bytes, 1 clamped, 30 replaced, 0 overruns, 0 dropped lines
+$finish called at time : 354898 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_frontend.sv" Line 482
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:50:56 2026...
+>> xsim.bat -f fe_max_dims.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:50:56 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_frontend/xsim_script.tcl
+# xsim {tb_frontend} -testplusarg DIR=fe/max_dims -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_frontend: fe/max_dims, 64x2x64, 1 scenes, source 0, line period 4097, bypass 0, dma 100%, out 100%
+PASS: tb_frontend fe/max_dims, 8192 samples, 8155 bytes, 21 clamped, 356 replaced, 0 overruns, 0 dropped lines
+$finish called at time : 1309494 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_frontend.sv" Line 482
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:08 . Memory (MB): peak = 196.418 ; gain = 0.074
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:51:06 2026...
+>> xsim.bat -f fe_ecc_dbe.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:51:06 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_frontend/xsim_script.tcl
+# xsim {tb_frontend} -testplusarg DIR=fe/ecc_dbe -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_frontend: fe/ecc_dbe, 24x6x20, 2 scenes, source 0, line period 521, bypass 1, dma 100%, out 100%
+PASS: tb_frontend fe/ecc_dbe, 5760 samples, 7621 bytes, 0 clamped, 0 replaced, 0 overruns, 0 dropped lines
+$finish called at time : 1040974 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_frontend.sv" Line 482
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:06 . Memory (MB): peak = 196.711 ; gain = 0.148
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:51:14 2026...
+>> xsim.bat -f fe_drop.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:51:15 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_frontend/xsim_script.tcl
+# xsim {tb_frontend} -testplusarg DIR=fe/drop -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_frontend: fe/drop, 16x8x16, 3 scenes, source 2, line period 257, bypass 1, dma 100%, out 4%
+PASS: tb_frontend fe/drop, 6144 samples, 8398 bytes, 0 clamped, 0 replaced, 0 overruns, 17 dropped lines
+$finish called at time : 1500154 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_frontend.sv" Line 482
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:08 . Memory (MB): peak = 196.652 ; gain = 0.059
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:51:25 2026...
+>> xelab.bat -L unisims_ver -L xpm -s tb_downlink work.tb_downlink work.glbl
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe -L unisims_ver -L xpm -s tb_downlink work.tb_downlink work.glbl 
+Multi-threading is on. Using 12 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling package work.downlink_pkg
+Compiling module xpm.xpm_fifo_rst_default
+Compiling module xpm.xpm_fifo_reg_bit
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=1...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=1...
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=2...
+Compiling module xpm.xpm_fifo_base(FIFO_MEMORY_TYPE=2...
+Compiling module xpm.xpm_fifo_sync(FIFO_MEMORY_TYPE="...
+Compiling module work.sync_fifo(WIDTH=13,DEPTH=8)
+Compiling module work.space_packetizer_default
+Compiling module work.sync_fifo(WIDTH=9,DEPTH=8)
+Compiling module work.axis_skid_buffer_default
+Compiling module work.aos_framer
+Compiling module work.rs_encoder_default
+Compiling module work.cadu_framer
+Compiling module work.tb_downlink
+Compiling module work.glbl
+Built simulation snapshot tb_downlink
+>> xsim.bat -f dl_basic.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:51:27 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_downlink/xsim_script.tcl
+# xsim {tb_downlink} -testplusarg DIR=dl/basic -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_downlink: dl/basic, 3 scenes, 7155 packet bytes, 10 science CADUs, idle 0, gap 0, in 100%, out 100%
+PASS: tb_downlink dl/basic, 5 packets, 10 science CADUs, 0 idle CADUs, 36 control state upsets masked
+$finish called at time : 53218 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/downlink/tb_downlink.sv" Line 325
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:51:29 2026...
+>> xsim.bat -f dl_stalls.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:51:30 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_downlink/xsim_script.tcl
+# xsim {tb_downlink} -testplusarg DIR=dl/stalls -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_downlink: dl/stalls, 3 scenes, 7155 packet bytes, 10 science CADUs, idle 0, gap 0, in 40%, out 50%
+PASS: tb_downlink dl/stalls, 5 packets, 10 science CADUs, 0 idle CADUs, 40 control state upsets masked
+$finish called at time : 93498 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/downlink/tb_downlink.sv" Line 325
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:51:32 2026...
+>> xsim.bat -f dl_spill.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:51:32 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_downlink/xsim_script.tcl
+# xsim {tb_downlink} -testplusarg DIR=dl/spill -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_downlink: dl/spill, 6 scenes, 11099 packet bytes, 17 science CADUs, idle 0, gap 0, in 100%, out 100%
+PASS: tb_downlink dl/spill, 100 packets, 17 science CADUs, 0 idle CADUs, 40 control state upsets masked
+$finish called at time : 74030 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/downlink/tb_downlink.sv" Line 325
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:51:34 2026...
+>> xsim.bat -f dl_exact.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:51:35 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_downlink/xsim_script.tcl
+# xsim {tb_downlink} -testplusarg DIR=dl/exact -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_downlink: dl/exact, 1 scenes, 2652 packet bytes, 3 science CADUs, idle 0, gap 0, in 100%, out 100%
+PASS: tb_downlink dl/exact, 2 packets, 3 science CADUs, 0 idle CADUs, 15 control state upsets masked
+$finish called at time : 21602 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/downlink/tb_downlink.sv" Line 325
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:51:37 2026...
+>> xsim.bat -f dl_one_byte.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:51:37 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_downlink/xsim_script.tcl
+# xsim {tb_downlink} -testplusarg DIR=dl/one_byte -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_downlink: dl/one_byte, 2 scenes, 465 packet bytes, 2 science CADUs, idle 0, gap 0, in 100%, out 100%
+PASS: tb_downlink dl/one_byte, 31 packets, 2 science CADUs, 0 idle CADUs, 8 control state upsets masked
+$finish called at time : 12378 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/downlink/tb_downlink.sv" Line 325
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:51:39 2026...
+>> xsim.bat -f dl_idle.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:51:40 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_downlink/xsim_script.tcl
+# xsim {tb_downlink} -testplusarg DIR=dl/idle -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_downlink: dl/idle, 2 scenes, 3942 packet bytes, 6 science CADUs, idle 1, gap 0, in 100%, out 30%
+PASS: tb_downlink dl/idle, 3 packets, 6 science CADUs, 1 idle CADUs, 40 control state upsets masked
+$finish called at time : 94734 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/downlink/tb_downlink.sv" Line 325
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:51:41 2026...
+>> xsim.bat -f dl_gap.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:51:42 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_downlink/xsim_script.tcl
+# xsim {tb_downlink} -testplusarg DIR=dl/gap -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_downlink: dl/gap, 1 scenes, 4028 packet bytes, 5 science CADUs, idle 1, gap 3000, in 100%, out 100%
+PASS: tb_downlink dl/gap, 2 packets, 5 science CADUs, 11 idle CADUs, 40 control state upsets masked
+$finish called at time : 66042 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/downlink/tb_downlink.sv" Line 325
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:51:44 2026...
+>> xelab.bat -L unisims_ver -L xpm -s tb_ground work.tb_ground work.glbl
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe -L unisims_ver -L xpm -s tb_ground work.tb_ground work.glbl 
+Multi-threading is on. Using 12 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling package work.downlink_pkg
+Compiling module work.error_injector
+Compiling module xpm.xpm_fifo_rst_default
+Compiling module xpm.xpm_fifo_reg_bit
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=1...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=1...
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=2...
+Compiling module xpm.xpm_fifo_base(FIFO_MEMORY_TYPE=2...
+Compiling module xpm.xpm_fifo_sync(FIFO_MEMORY_TYPE="...
+Compiling module work.frame_sync
+Compiling module work.tb_ground
+Compiling module work.glbl
+Built simulation snapshot tb_ground
+>> xsim.bat -f gr_clean.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:51:46 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_ground/xsim_script.tcl
+# xsim {tb_ground} -testplusarg DIR=gr/clean -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_ground: gr/clean, 12621 bytes, mode 0, 12 model records, tol 2, flywheel 3, in 50%, out 90%
+PASS: tb_ground gr/clean, 12 records (0 dropped, 1 past the model), 0 flipped bits, 0 sync losses, 38 ASM bit errors
+$finish called at time : 155478 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ground/tb_ground.sv" Line 191
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:51:48 2026...
+>> xsim.bat -f gr_slip.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:51:48 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_ground/xsim_script.tcl
+# xsim {tb_ground} -testplusarg DIR=gr/slip -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_ground: gr/slip, 16383 bytes, mode 0, 15 model records, tol 2, flywheel 3, in 50%, out 90%
+PASS: tb_ground gr/slip, 15 records (0 dropped, 1 past the model), 0 flipped bits, 1 sync losses, 88 ASM bit errors
+$finish called at time : 185542 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ground/tb_ground.sv" Line 191
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:51:50 2026...
+>> xsim.bat -f gr_asm_tol.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:51:50 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_ground/xsim_script.tcl
+# xsim {tb_ground} -testplusarg DIR=gr/asm_tol -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_ground: gr/asm_tol, 12288 bytes, mode 3, 12 model records, tol 2, flywheel 3, in 50%, out 90%
+PASS: tb_ground gr/asm_tol, 12 records (0 dropped, 1 past the model), 24 flipped bits, 0 sync losses, 62 ASM bit errors
+$finish called at time : 152686 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ground/tb_ground.sv" Line 191
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:51:52 2026...
+>> xsim.bat -f gr_flywheel.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:51:53 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_ground/xsim_script.tcl
+# xsim {tb_ground} -testplusarg DIR=gr/flywheel -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_ground: gr/flywheel, 16384 bytes, mode 3, 15 model records, tol 2, flywheel 3, in 50%, out 90%
+PASS: tb_ground gr/flywheel, 15 records (0 dropped, 1 past the model), 12 flipped bits, 0 sync losses, 47 ASM bit errors
+$finish called at time : 185550 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ground/tb_ground.sv" Line 191
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:51:55 2026...
+>> xsim.bat -f gr_lose_lock.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:51:55 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_ground/xsim_script.tcl
+# xsim {tb_ground} -testplusarg DIR=gr/lose_lock -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_ground: gr/lose_lock, 8192 bytes, mode 3, 0 model records, tol 2, flywheel 3, in 50%, out 90%
+PASS: tb_ground gr/lose_lock, 0 records (0 dropped, 0 past the model), 40 flipped bits, 0 sync losses, 0 ASM bit errors
+$finish called at time : 120106 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ground/tb_ground.sv" Line 191
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:51:57 2026...
+>> xsim.bat -f gr_ber.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:51:57 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_ground/xsim_script.tcl
+# xsim {tb_ground} -testplusarg DIR=gr/ber -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_ground: gr/ber, 24576 bytes, mode 1, 24 model records, tol 2, flywheel 3, in 50%, out 90%
+PASS: tb_ground gr/ber, 24 records (0 dropped, 1 past the model), 428 flipped bits, 0 sync losses, 38 ASM bit errors
+$finish called at time : 250446 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ground/tb_ground.sv" Line 191
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:51:59 2026...
+>> xsim.bat -f gr_burst.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:52:00 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_ground/xsim_script.tcl
+# xsim {tb_ground} -testplusarg DIR=gr/burst -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_ground: gr/burst, 12288 bytes, mode 2, 11 model records, tol 2, flywheel 3, in 50%, out 90%
+PASS: tb_ground gr/burst, 11 records (0 dropped, 1 past the model), 200 flipped bits, 0 sync losses, 38 ASM bit errors
+$finish called at time : 152686 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ground/tb_ground.sv" Line 191
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:52:02 2026...
+>> xsim.bat -f gr_tol0.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:52:02 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_ground/xsim_script.tcl
+# xsim {tb_ground} -testplusarg DIR=gr/tol0 -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_ground: gr/tol0, 12288 bytes, mode 3, 11 model records, tol 0, flywheel 1, in 50%, out 90%
+PASS: tb_ground gr/tol0, 11 records (0 dropped, 1 past the model), 4 flipped bits, 1 sync losses, 22 ASM bit errors
+$finish called at time : 152686 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ground/tb_ground.sv" Line 191
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:52:04 2026...
+>> xsim.bat -f gr_overflow.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:52:05 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_ground/xsim_script.tcl
+# xsim {tb_ground} -testplusarg DIR=gr/overflow -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_ground: gr/overflow, 20480 bytes, mode 0, 20 model records, tol 2, flywheel 3, in 100%, out 5%
+PASS: tb_ground gr/overflow, 2 records (18 dropped, 0 past the model), 0 flipped bits, 0 sync losses, 19 ASM bit errors
+$finish called at time : 383466 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/ground/tb_ground.sv" Line 191
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:52:06 2026...
+>> xelab.bat -L unisims_ver -L xpm -s tb_hpdp_core work.tb_hpdp_core work.glbl
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe -L unisims_ver -L xpm -s tb_hpdp_core work.tb_hpdp_core work.glbl 
+Multi-threading is on. Using 12 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling package work.hpdp_regs_addr_pkg
+Compiling package work.frontend_pkg
+Compiling package work.c123_pkg
+Compiling package work.ecc_pkg
+Compiling package work.hpdp_regs_pkg
+Compiling package work.downlink_pkg
+Compiling module work.hpdp_regs
+Compiling module work.hpdp_regs_tmr_default
+Compiling module xpm.xpm_cdc_array_single(DEST_SYNC_F...
+Compiling module xpm.xpm_cdc_async_rst(RST_ACTIVE_HIG...
+Compiling module xpm.xpm_cdc_single(DEST_SYNC_FF=2,SR...
+Compiling module xpm.xpm_cdc_handshake(DEST_EXT_HSK=0...
+Compiling module work.cdc_bus(WIDTH=655)
+Compiling module xpm.xpm_cdc_handshake(DEST_EXT_HSK=0...
+Compiling module work.cdc_bus(WIDTH=138)
+Compiling module xpm.xpm_cdc_handshake(DEST_EXT_HSK=0...
+Compiling module work.cdc_bus(WIDTH=51)
+Compiling module xpm.xpm_cdc_handshake(DEST_EXT_HSK=0...
+Compiling module work.cdc_bus(WIDTH=917)
+Compiling module xpm.xpm_cdc_handshake(DEST_EXT_HSK=0...
+Compiling module work.cdc_bus(WIDTH=422)
+Compiling module xpm.xpm_cdc_handshake(DEST_EXT_HSK=0...
+Compiling module work.cdc_bus(WIDTH=218)
+Compiling module xpm.xpm_cdc_handshake(DEST_EXT_HSK=0...
+Compiling module work.cdc_bus(WIDTH=347)
+Compiling module xpm.xpm_cdc_sync_rst(DEST_SYNC_FF=2,...
+Compiling module xpm.xpm_fifo_rst(COMMON_CLOCK=0)
+Compiling module xpm.xpm_fifo_reg_bit
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=1...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=1...
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_cdc_gray(DEST_SYNC_FF=2,INIT...
+Compiling module xpm.xpm_fifo_reg_vec(REG_WIDTH=11)
+Compiling module xpm.xpm_cdc_gray(INIT_SYNC_FF=1,WIDT...
+Compiling module xpm.xpm_fifo_reg_vec(REG_WIDTH=12)
+Compiling module xpm.xpm_cdc_gray(DEST_SYNC_FF=2,INIT...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=2...
+Compiling module xpm.xpm_fifo_base(COMMON_CLOCK=0,FIF...
+Compiling module xpm.xpm_fifo_async(FIFO_MEMORY_TYPE=...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=6...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=5...
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_cdc_gray(DEST_SYNC_FF=2,INIT...
+Compiling module xpm.xpm_fifo_reg_vec(REG_WIDTH=5)
+Compiling module xpm.xpm_cdc_gray(INIT_SYNC_FF=1,WIDT...
+Compiling module xpm.xpm_fifo_reg_vec(REG_WIDTH=6)
+Compiling module xpm.xpm_cdc_gray(DEST_SYNC_FF=2,INIT...
+Compiling module xpm.xpm_fifo_base(COMMON_CLOCK=0,FIF...
+Compiling module xpm.xpm_fifo_async(FIFO_MEMORY_TYPE=...
+Compiling module work.sensor_emulator
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_memory_sdpram(MEMORY_SIZE=13...
+Compiling module work.ecc_ram(DEPTH=2048,STYLE="block"...
+Compiling module work.radiometric_corr(NX_MAX=64,NZ_MA...
+Compiling module work.sync_fifo(WIDTH=28,DEPTH=16)
+Compiling module work.sample_ram(DEPTH=8192,STYLE="blo...
+Compiling module work.sync_fifo(WIDTH=45,DEPTH=16)
+Compiling module work.axis_skid_buffer(DATA_W=16,USER_...
+Compiling module work.corner_turn(NX_MAX=64,NZ_MAX=64)
+Compiling module work.sensor_frontend(NX_MAX=64,NZ_MAX...
+Compiling module work.scene_guard
+Compiling module work.lut_ram(DEPTH=64)
+Compiling module work.tmr_ram(DEPTH=64)
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_memory_sdpram(MEMORY_SIZE=65...
+Compiling module work.ecc_ram(STYLE="block")
+Compiling module work.sample_ram(DEPTH=4096,STYLE="blo...
+Compiling module work.c123_neighborhood(NX_MAX=64,NZ_M...
+Compiling module work.c123_localdiff
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_memory_sdpram(MEMORY_SIZE=28...
+Compiling module work.ecc_ram(WIDTH=448,DEPTH=64,STYLE...
+Compiling module work.c123_predictor(NZ_MAX=64)
+Compiling module work.lut_ram(WIDTH=43,DEPTH=64)
+Compiling module work.tmr_ram(WIDTH=43,DEPTH=64)
+Compiling module work.c123_coder(NZ_MAX=64)
+Compiling module work.sync_fifo(WIDTH=56)
+Compiling module work.sync_fifo(WIDTH=73,DEPTH=8)
+Compiling module work.c123_packer
+Compiling module work.c123_core(NX_MAX=64,NZ_MAX=64)
+Compiling module work.sync_fifo(WIDTH=24,DEPTH=16)
+Compiling module xpm.xpm_fifo_rst_default
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=1...
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_fifo_base(FIFO_MEMORY_TYPE=2...
+Compiling module xpm.xpm_fifo_sync(FIFO_MEMORY_TYPE="...
+Compiling module work.sync_fifo(WIDTH=13,DEPTH=8)
+Compiling module work.space_packetizer_default
+Compiling module work.sync_fifo(WIDTH=9,DEPTH=8)
+Compiling module work.axis_skid_buffer_default
+Compiling module work.aos_framer
+Compiling module work.rs_encoder_default
+Compiling module work.cadu_framer
+Compiling module work.error_injector
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=1...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=9...
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_cdc_gray(DEST_SYNC_FF=2,INIT...
+Compiling module xpm.xpm_fifo_reg_vec(REG_WIDTH=9)
+Compiling module xpm.xpm_cdc_gray(INIT_SYNC_FF=1,WIDT...
+Compiling module xpm.xpm_fifo_reg_vec(REG_WIDTH=10)
+Compiling module xpm.xpm_cdc_gray(DEST_SYNC_FF=2,INIT...
+Compiling module xpm.xpm_fifo_base(COMMON_CLOCK=0,FIF...
+Compiling module xpm.xpm_fifo_async(FIFO_MEMORY_TYPE=...
+Compiling module work.link_tx
+Compiling module work.link_rx
+Compiling module work.link_layer
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_fifo_base(FIFO_MEMORY_TYPE=2...
+Compiling module xpm.xpm_fifo_sync(FIFO_MEMORY_TYPE="...
+Compiling module work.frame_sync
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_fifo_base(FIFO_MEMORY_TYPE=2...
+Compiling module xpm.xpm_fifo_sync(FIFO_MEMORY_TYPE="...
+Compiling module work.gr_capture
+Compiling module work.stall_watchdog
+Compiling module xpm.xpm_cdc_handshake(DEST_EXT_HSK=0...
+Compiling module work.cdc_bus(WIDTH=61)
+Compiling module xpm.xpm_cdc_handshake(DEST_EXT_HSK=0...
+Compiling module work.cdc_bus(WIDTH=148)
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_fifo_base(COMMON_CLOCK=0,FIF...
+Compiling module xpm.xpm_fifo_async(FIFO_MEMORY_TYPE=...
+Compiling module work.hpdp_core(NX_MAX=64,NZ_MAX=64,BU...
+Compiling module work.tb_hpdp_core
+Compiling module work.glbl
+Built simulation snapshot tb_hpdp_core
+>> xsim.bat -f sys_dma_basic.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:52:17 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_hpdp_core/xsim_script.tcl
+# xsim {tb_hpdp_core} -testplusarg DIR=fe/dma_basic -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_hpdp_core: fe/dma_basic, 24x6x20, 2 scenes, 2 passes, dma 100%, out 100%
+  downlink: 16 CADUs, 8 packets, error injector mode 0 (0 bits), 16 records, received on SFP1
+PASS: tb_hpdp_core fe/dma_basic, 2 passes, 11670 bytes, 4 scenes; downlink 16 CADUs, 16 ground records in 16 transfers
+$finish called at time : 332755 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/system/tb_hpdp_core.sv" Line 792
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:52:24 2026...
+>> xsim.bat -f sys_dma_stalls.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:52:24 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_hpdp_core/xsim_script.tcl
+# xsim {tb_hpdp_core} -testplusarg DIR=fe/dma_stalls -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_hpdp_core: fe/dma_stalls, 24x6x20, 2 scenes, 2 passes, dma 30%, out 50%
+  downlink: 16 CADUs, 40 packets, error injector mode 1 (123 bits), 16 records, received on SFP0
+PASS: tb_hpdp_core fe/dma_stalls, 2 passes, 11670 bytes, 4 scenes; downlink 16 CADUs, 16 ground records in 6 transfers
+$finish called at time : 583185 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/system/tb_hpdp_core.sv" Line 792
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:08 . Memory (MB): peak = 201.492 ; gain = 0.000
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:52:34 2026...
+>> xsim.bat -f sys_max_dims.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:52:35 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_hpdp_core/xsim_script.tcl
+# xsim {tb_hpdp_core} -testplusarg DIR=fe/max_dims -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_hpdp_core: fe/max_dims, 64x2x64, 1 scenes, 2 passes, dma 100%, out 100%
+  downlink: 20 CADUs, 18 packets, error injector mode 2 (280 bits), 19 records,  fabric loopback
+PASS: tb_hpdp_core fe/max_dims, 2 passes, 16310 bytes, 2 scenes; downlink 20 CADUs, 19 ground records in 10 transfers
+$finish called at time : 676895 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/system/tb_hpdp_core.sv" Line 792
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:09 . Memory (MB): peak = 201.672 ; gain = 0.000
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:52:46 2026...
+>> xsim.bat -f sys_ecc_dbe.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:52:46 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_hpdp_core/xsim_script.tcl
+# xsim {tb_hpdp_core} -testplusarg DIR=fe/ecc_dbe -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_hpdp_core: fe/ecc_dbe, 24x6x20, 2 scenes, 2 passes, dma 100%, out 100%
+  downlink: 20 CADUs, 8 packets, error injector mode 0 (0 bits), 20 records, received on SFP1
+PASS: tb_hpdp_core fe/ecc_dbe, 2 passes, 15242 bytes, 4 scenes; downlink 20 CADUs, 20 ground records in 20 transfers
+$finish called at time : 358755 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/system/tb_hpdp_core.sv" Line 792
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:05 . Memory (MB): peak = 201.742 ; gain = 0.000
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:52:53 2026...
+>> xelab.bat -L unisims_ver -L xpm -s tb_hpdp_core_1024 work.tb_hpdp_core_1024 work.glbl
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe -L unisims_ver -L xpm -s tb_hpdp_core_1024 work.tb_hpdp_core_1024 work.glbl 
+Multi-threading is on. Using 12 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling package work.hpdp_regs_addr_pkg
+Compiling package work.frontend_pkg
+Compiling package work.c123_pkg
+Compiling package work.ecc_pkg
+Compiling package work.hpdp_regs_pkg
+Compiling package work.downlink_pkg
+Compiling module work.hpdp_regs
+Compiling module work.hpdp_regs_tmr_default
+Compiling module xpm.xpm_cdc_array_single(DEST_SYNC_F...
+Compiling module xpm.xpm_cdc_async_rst(RST_ACTIVE_HIG...
+Compiling module xpm.xpm_cdc_single(DEST_SYNC_FF=2,SR...
+Compiling module xpm.xpm_cdc_handshake(DEST_EXT_HSK=0...
+Compiling module work.cdc_bus(WIDTH=655)
+Compiling module xpm.xpm_cdc_handshake(DEST_EXT_HSK=0...
+Compiling module work.cdc_bus(WIDTH=138)
+Compiling module xpm.xpm_cdc_handshake(DEST_EXT_HSK=0...
+Compiling module work.cdc_bus(WIDTH=51)
+Compiling module xpm.xpm_cdc_handshake(DEST_EXT_HSK=0...
+Compiling module work.cdc_bus(WIDTH=917)
+Compiling module xpm.xpm_cdc_handshake(DEST_EXT_HSK=0...
+Compiling module work.cdc_bus(WIDTH=422)
+Compiling module xpm.xpm_cdc_handshake(DEST_EXT_HSK=0...
+Compiling module work.cdc_bus(WIDTH=218)
+Compiling module xpm.xpm_cdc_handshake(DEST_EXT_HSK=0...
+Compiling module work.cdc_bus(WIDTH=347)
+Compiling module xpm.xpm_cdc_sync_rst(DEST_SYNC_FF=2,...
+Compiling module xpm.xpm_fifo_rst(COMMON_CLOCK=0)
+Compiling module xpm.xpm_fifo_reg_bit
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=1...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=1...
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_cdc_gray(DEST_SYNC_FF=2,INIT...
+Compiling module xpm.xpm_fifo_reg_vec(REG_WIDTH=11)
+Compiling module xpm.xpm_cdc_gray(INIT_SYNC_FF=1,WIDT...
+Compiling module xpm.xpm_fifo_reg_vec(REG_WIDTH=12)
+Compiling module xpm.xpm_cdc_gray(DEST_SYNC_FF=2,INIT...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=2...
+Compiling module xpm.xpm_fifo_base(COMMON_CLOCK=0,FIF...
+Compiling module xpm.xpm_fifo_async(FIFO_MEMORY_TYPE=...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=6...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=5...
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_cdc_gray(DEST_SYNC_FF=2,INIT...
+Compiling module xpm.xpm_fifo_reg_vec(REG_WIDTH=5)
+Compiling module xpm.xpm_cdc_gray(INIT_SYNC_FF=1,WIDT...
+Compiling module xpm.xpm_fifo_reg_vec(REG_WIDTH=6)
+Compiling module xpm.xpm_cdc_gray(DEST_SYNC_FF=2,INIT...
+Compiling module xpm.xpm_fifo_base(COMMON_CLOCK=0,FIF...
+Compiling module xpm.xpm_fifo_async(FIFO_MEMORY_TYPE=...
+Compiling module work.sensor_emulator
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_memory_sdpram(MEMORY_SIZE=83...
+Compiling module work.ecc_ram(DEPTH=131072,LATENCY=4)
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_memory_sdpram(MEMORY_SIZE=26...
+Compiling module work.ecc_ram(DEPTH=4096,STYLE="block"...
+Compiling module work.radiometric_corr(NX_MAX=1024,TAB...
+Compiling module work.sync_fifo(WIDTH=28,DEPTH=16)
+Compiling module work.sample_ram(DEPTH=524288,LATENCY=...
+Compiling module work.sync_fifo(WIDTH=45,DEPTH=16)
+Compiling module work.axis_skid_buffer(DATA_W=16,USER_...
+Compiling module work.corner_turn(NX_MAX=1024)
+Compiling module work.sensor_frontend(NX_MAX=1024)
+Compiling module work.scene_guard
+Compiling module work.lut_ram
+Compiling module work.tmr_ram_default
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_memory_sdpram(MEMORY_SIZE=41...
+Compiling module work.ecc_ram(DEPTH=65536)
+Compiling module work.sample_ram(DEPTH=262144)
+Compiling module work.c123_neighborhood(NX_MAX=1024)
+Compiling module work.c123_localdiff
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_memory_sdpram(MEMORY_SIZE=11...
+Compiling module work.ecc_ram(WIDTH=448,DEPTH=256,STYL...
+Compiling module work.c123_predictor_default
+Compiling module work.lut_ram(WIDTH=43)
+Compiling module work.tmr_ram(WIDTH=43)
+Compiling module work.c123_coder_default
+Compiling module work.sync_fifo(WIDTH=56)
+Compiling module work.sync_fifo(WIDTH=73,DEPTH=8)
+Compiling module work.c123_packer
+Compiling module work.c123_core(NX_MAX=1024)
+Compiling module work.sync_fifo(WIDTH=24,DEPTH=16)
+Compiling module xpm.xpm_fifo_rst_default
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=1...
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_fifo_base(FIFO_MEMORY_TYPE=2...
+Compiling module xpm.xpm_fifo_sync(FIFO_MEMORY_TYPE="...
+Compiling module work.sync_fifo(WIDTH=13,DEPTH=8)
+Compiling module work.space_packetizer_default
+Compiling module work.sync_fifo(WIDTH=9,DEPTH=8)
+Compiling module work.axis_skid_buffer_default
+Compiling module work.aos_framer
+Compiling module work.rs_encoder_default
+Compiling module work.cadu_framer
+Compiling module work.error_injector
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=1...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=9...
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_cdc_gray(DEST_SYNC_FF=2,INIT...
+Compiling module xpm.xpm_fifo_reg_vec(REG_WIDTH=9)
+Compiling module xpm.xpm_cdc_gray(INIT_SYNC_FF=1,WIDT...
+Compiling module xpm.xpm_fifo_reg_vec(REG_WIDTH=10)
+Compiling module xpm.xpm_cdc_gray(DEST_SYNC_FF=2,INIT...
+Compiling module xpm.xpm_fifo_base(COMMON_CLOCK=0,FIF...
+Compiling module xpm.xpm_fifo_async(FIFO_MEMORY_TYPE=...
+Compiling module work.link_tx
+Compiling module work.link_rx
+Compiling module work.link_layer
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_fifo_base(FIFO_MEMORY_TYPE=2...
+Compiling module xpm.xpm_fifo_sync(FIFO_MEMORY_TYPE="...
+Compiling module work.frame_sync
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_fifo_base(FIFO_MEMORY_TYPE=2...
+Compiling module xpm.xpm_fifo_sync(FIFO_MEMORY_TYPE="...
+Compiling module work.gr_capture
+Compiling module work.stall_watchdog
+Compiling module xpm.xpm_cdc_handshake(DEST_EXT_HSK=0...
+Compiling module work.cdc_bus(WIDTH=61)
+Compiling module xpm.xpm_cdc_handshake(DEST_EXT_HSK=0...
+Compiling module work.cdc_bus(WIDTH=148)
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_fifo_base(COMMON_CLOCK=0,FIF...
+Compiling module xpm.xpm_fifo_async(FIFO_MEMORY_TYPE=...
+Compiling module work.hpdp_core(NX_MAX=1024,BUILD_ID=3...
+Compiling module work.tb_hpdp_core(NX_MAX=1024,NZ_MAX=...
+Compiling module work.tb_hpdp_core_1024
+Compiling module work.glbl
+Built simulation snapshot tb_hpdp_core_1024
+>> xsim.bat -f sys_nx1024.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:53:03 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_hpdp_core_1024/xsim_script.tcl
+# xsim {tb_hpdp_core_1024} -testplusarg DIR=fe/nx1024 -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_hpdp_core: fe/nx1024, 1024x3x24, 1 scenes, 2 passes, dma 100%, out 100%
+  downlink: 152 CADUs, 66 packets, error injector mode 0 (0 bits), 152 records, received on SFP1
+PASS: tb_hpdp_core fe/nx1024, 2 passes, 133342 bytes, 2 scenes; downlink 152 CADUs, 152 ground records in 152 transfers
+$finish called at time : 2057445 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/system/tb_hpdp_core.sv" Line 792
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:32 . Memory (MB): peak = 201.289 ; gain = 0.000
+exit
+INFO: xsimkernel Simulation Memory Usage: 34200 KB (Peak: 34200 KB), Simulation CPU Usage: 31562 ms
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:53:37 2026...
+>> xelab.bat -L unisims_ver -L xpm -s tb_fault work.tb_fault work.glbl
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe -L unisims_ver -L xpm -s tb_fault work.tb_fault work.glbl 
+Multi-threading is on. Using 12 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling package work.frontend_pkg
+Compiling package work.c123_pkg
+Compiling package work.ecc_pkg
+Compiling package work.downlink_pkg
+Compiling module xpm.xpm_cdc_sync_rst(DEST_SYNC_FF=2,...
+Compiling module xpm.xpm_fifo_rst(COMMON_CLOCK=0)
+Compiling module xpm.xpm_fifo_reg_bit
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=1...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=1...
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_cdc_gray(DEST_SYNC_FF=2,INIT...
+Compiling module xpm.xpm_fifo_reg_vec(REG_WIDTH=11)
+Compiling module xpm.xpm_cdc_gray(INIT_SYNC_FF=1,WIDT...
+Compiling module xpm.xpm_fifo_reg_vec(REG_WIDTH=12)
+Compiling module xpm.xpm_cdc_gray(DEST_SYNC_FF=2,INIT...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=2...
+Compiling module xpm.xpm_fifo_base(COMMON_CLOCK=0,FIF...
+Compiling module xpm.xpm_fifo_async(FIFO_MEMORY_TYPE=...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=6...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=5...
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_cdc_gray(DEST_SYNC_FF=2,INIT...
+Compiling module xpm.xpm_fifo_reg_vec(REG_WIDTH=5)
+Compiling module xpm.xpm_cdc_gray(INIT_SYNC_FF=1,WIDT...
+Compiling module xpm.xpm_fifo_reg_vec(REG_WIDTH=6)
+Compiling module xpm.xpm_cdc_gray(DEST_SYNC_FF=2,INIT...
+Compiling module xpm.xpm_fifo_base(COMMON_CLOCK=0,FIF...
+Compiling module xpm.xpm_fifo_async(FIFO_MEMORY_TYPE=...
+Compiling module work.sensor_emulator
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_memory_sdpram(MEMORY_SIZE=13...
+Compiling module work.ecc_ram(DEPTH=2048,STYLE="block"...
+Compiling module work.radiometric_corr(NX_MAX=64,NZ_MA...
+Compiling module work.sync_fifo(WIDTH=28,DEPTH=16)
+Compiling module work.sample_ram(DEPTH=8192,STYLE="blo...
+Compiling module work.sync_fifo(WIDTH=45,DEPTH=16)
+Compiling module work.axis_skid_buffer(DATA_W=16,USER_...
+Compiling module work.corner_turn(NX_MAX=64,NZ_MAX=64)
+Compiling module work.sensor_frontend(NX_MAX=64,NZ_MAX...
+Compiling module work.scene_guard
+Compiling module work.lut_ram(DEPTH=64)
+Compiling module work.tmr_ram(DEPTH=64)
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_memory_sdpram(MEMORY_SIZE=65...
+Compiling module work.ecc_ram(STYLE="block")
+Compiling module work.sample_ram(DEPTH=4096,STYLE="blo...
+Compiling module work.c123_neighborhood(NX_MAX=64,NZ_M...
+Compiling module work.c123_localdiff
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_memory_sdpram(MEMORY_SIZE=28...
+Compiling module work.ecc_ram(WIDTH=448,DEPTH=64,STYLE...
+Compiling module work.c123_predictor(NZ_MAX=64)
+Compiling module work.lut_ram(WIDTH=43,DEPTH=64)
+Compiling module work.tmr_ram(WIDTH=43,DEPTH=64)
+Compiling module work.c123_coder(NZ_MAX=64)
+Compiling module work.sync_fifo(WIDTH=56)
+Compiling module work.sync_fifo(WIDTH=73,DEPTH=8)
+Compiling module work.c123_packer
+Compiling module work.c123_core(NX_MAX=64,NZ_MAX=64)
+Compiling module xpm.xpm_fifo_rst_default
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=1...
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_fifo_base(FIFO_MEMORY_TYPE=2...
+Compiling module xpm.xpm_fifo_sync(FIFO_MEMORY_TYPE="...
+Compiling module work.sync_fifo(WIDTH=13,DEPTH=8)
+Compiling module work.space_packetizer_default
+Compiling module work.sync_fifo(WIDTH=9,DEPTH=8)
+Compiling module work.axis_skid_buffer_default
+Compiling module work.aos_framer
+Compiling module work.tb_fault
+Compiling module work.glbl
+Built simulation snapshot tb_fault
+>> xsim.bat -f fault_campaign.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:53:41 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_fault/xsim_script.tcl
+# xsim {tb_fault} -testplusarg DIR=fe/dma_basic -testplusarg TRIALS=3 -testplusarg SEED=1 -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_fault: fe/dma_basic, 24x6x20, 3 trials per class
+  reference: 4 AOS frames
+                                     class trials  masked corrected detected silent
+                 ECC SBE calibration table      3       0         3        0      0
+                 ECC DBE calibration table      3       0         0        3      0
+                ECC SBE corner-turn buffer      3       0         3        0      0
+                ECC DBE corner-turn buffer      3       0         0        3      0
+            ECC SBE compressor line buffer      3       0         3        0      0
+            ECC DBE compressor line buffer      3       0         0        3      0
+                ECC SBE compressor weights      3       0         3        0      0
+                ECC DBE compressor weights      3       0         0        3      0
+    TMR memory copy (coder, neighbourhood)      3       1         2        0      0
+                    TMR state machine copy      3       0         3        0      0
+                      unprotected register      3       3         0        0      0
+                                    target trials  masked corrected detected silent
+        coder state (accumulator, counter)      1       0         1        0      0
+                neighbourhood: west sample      1       0         1        0      0
+               neighbourhood: north sample      1       1         0        0      0
+         compressor packer: state (copy 2)      1       0         1        0      0
+                 corner turn: read address      1       0         1        0      0
+                packetizer: sequence count      1       0         1        0      0
+                   radiometric: difference      2       2         0        0      0
+             predictor: doubled prediction      1       1         0        0      0
+PASS: tb_fault, 33 trials, no silent corruption in a protected class
+$finish called at time : 1491626 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_fault.sv" Line 579
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:14 . Memory (MB): peak = 196.664 ; gain = 0.070
+exit
+INFO: xsimkernel Simulation Memory Usage: 14800 KB (Peak: 14800 KB), Simulation CPU Usage: 13905 ms
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:53:57 2026...
+>> xelab.bat -L unisims_ver -L xpm -s tb_frontend_pairs work.tb_frontend_pairs work.glbl
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe -L unisims_ver -L xpm -s tb_frontend_pairs work.tb_frontend_pairs work.glbl 
+Multi-threading is on. Using 12 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+WARNING: [VRFC 10-3645] port 'ct_tmr_mismatch' remains unconnected for this instance [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_frontend.sv:72]
+WARNING: [VRFC 10-3645] port 'w_sbe' remains unconnected for this instance [C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_frontend.sv:119]
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling package work.frontend_pkg
+Compiling package work.c123_pkg
+Compiling package work.ecc_pkg
+Compiling module xpm.xpm_cdc_sync_rst(DEST_SYNC_FF=2,...
+Compiling module xpm.xpm_fifo_rst(COMMON_CLOCK=0)
+Compiling module xpm.xpm_fifo_reg_bit
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=1...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=1...
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_cdc_gray(DEST_SYNC_FF=2,INIT...
+Compiling module xpm.xpm_fifo_reg_vec(REG_WIDTH=11)
+Compiling module xpm.xpm_cdc_gray(INIT_SYNC_FF=1,WIDT...
+Compiling module xpm.xpm_fifo_reg_vec(REG_WIDTH=12)
+Compiling module xpm.xpm_cdc_gray(DEST_SYNC_FF=2,INIT...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=2...
+Compiling module xpm.xpm_fifo_base(COMMON_CLOCK=0,FIF...
+Compiling module xpm.xpm_fifo_async(FIFO_MEMORY_TYPE=...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=6...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=5...
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_cdc_gray(DEST_SYNC_FF=2,INIT...
+Compiling module xpm.xpm_fifo_reg_vec(REG_WIDTH=5)
+Compiling module xpm.xpm_cdc_gray(INIT_SYNC_FF=1,WIDT...
+Compiling module xpm.xpm_fifo_reg_vec(REG_WIDTH=6)
+Compiling module xpm.xpm_cdc_gray(DEST_SYNC_FF=2,INIT...
+Compiling module xpm.xpm_fifo_base(COMMON_CLOCK=0,FIF...
+Compiling module xpm.xpm_fifo_async(FIFO_MEMORY_TYPE=...
+Compiling module work.sensor_emulator
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_memory_sdpram(MEMORY_SIZE=13...
+Compiling module work.ecc_ram(DEPTH=2048,LATENCY=4)
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_memory_sdpram(MEMORY_SIZE=40...
+Compiling module work.ecc_ram(DEPTH=64,STYLE="block",L...
+Compiling module work.radiometric_corr(NX_MAX=64,NZ_MA...
+Compiling module work.sync_fifo(WIDTH=28,DEPTH=16)
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_memory_sdpram(MEMORY_SIZE=13...
+Compiling module work.ecc_ram(DEPTH=2048,STYLE="block"...
+Compiling module work.sample_ram(DEPTH=8192,STYLE="blo...
+Compiling module work.sync_fifo(WIDTH=45,DEPTH=16)
+Compiling module work.axis_skid_buffer(DATA_W=16,USER_...
+Compiling module work.corner_turn(NX_MAX=64,NZ_MAX=64)
+Compiling module work.sensor_frontend(NX_MAX=64,NZ_MAX...
+Compiling module work.lut_ram(DEPTH=64)
+Compiling module work.tmr_ram(DEPTH=64)
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_memory_sdpram(MEMORY_SIZE=65...
+Compiling module work.ecc_ram(STYLE="block")
+Compiling module work.sample_ram(DEPTH=4096,STYLE="blo...
+Compiling module work.c123_neighborhood(NX_MAX=64,NZ_M...
+Compiling module work.c123_localdiff
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_memory_sdpram(MEMORY_SIZE=28...
+Compiling module work.ecc_ram(WIDTH=448,DEPTH=64,STYLE...
+Compiling module work.c123_predictor(NZ_MAX=64)
+Compiling module work.lut_ram(WIDTH=43,DEPTH=64)
+Compiling module work.tmr_ram(WIDTH=43,DEPTH=64)
+Compiling module work.c123_coder(NZ_MAX=64)
+Compiling module work.sync_fifo(WIDTH=56)
+Compiling module work.sync_fifo(WIDTH=73,DEPTH=8)
+Compiling module work.c123_packer
+Compiling module work.c123_core(NX_MAX=64,NZ_MAX=64)
+Compiling module work.tb_frontend(TABLE_PAIRS=1'b1)
+Compiling module work.tb_frontend_pairs
+Compiling module work.glbl
+Built simulation snapshot tb_frontend_pairs
+>> xsim.bat -f fe_pairs_dma_basic.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:54:01 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_frontend_pairs/xsim_script.tcl
+# xsim {tb_frontend_pairs} -testplusarg DIR=fe/dma_basic -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_frontend: fe/dma_basic, 24x6x20, 2 scenes, source 0, line period 521, bypass 0, dma 100%, out 100%
+PASS: tb_frontend fe/dma_basic, 5760 samples, 5835 bytes, 9 clamped, 156 replaced, 0 overruns, 0 dropped lines
+$finish called at time : 1041014 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_frontend.sv" Line 482
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:06 . Memory (MB): peak = 196.094 ; gain = 0.070
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:54:08 2026...
+>> xsim.bat -f fe_pairs_dma_stalls.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:54:09 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_frontend_pairs/xsim_script.tcl
+# xsim {tb_frontend_pairs} -testplusarg DIR=fe/dma_stalls -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_frontend: fe/dma_stalls, 24x6x20, 2 scenes, source 0, line period 521, bypass 0, dma 30%, out 50%
+PASS: tb_frontend fe/dma_stalls, 5760 samples, 5835 bytes, 9 clamped, 156 replaced, 0 overruns, 0 dropped lines
+$finish called at time : 1063382 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_frontend.sv" Line 482
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:05 . Memory (MB): peak = 196.930 ; gain = 0.059
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:54:16 2026...
+>> xsim.bat -f fe_pairs_clamp.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:54:16 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_frontend_pairs/xsim_script.tcl
+# xsim {tb_frontend_pairs} -testplusarg DIR=fe/clamp -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_frontend: fe/clamp, 24x6x20, 2 scenes, source 0, line period 521, bypass 0, dma 100%, out 100%
+PASS: tb_frontend fe/clamp, 5760 samples, 9083 bytes, 244 clamped, 150 replaced, 0 overruns, 0 dropped lines
+$finish called at time : 1041014 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_frontend.sv" Line 482
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:06 . Memory (MB): peak = 196.625 ; gain = 0.059
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:54:24 2026...
+>> xsim.bat -f fe_pairs_max_dims.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:54:24 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_frontend_pairs/xsim_script.tcl
+# xsim {tb_frontend_pairs} -testplusarg DIR=fe/max_dims -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_frontend: fe/max_dims, 64x2x64, 1 scenes, source 0, line period 4097, bypass 0, dma 100%, out 100%
+PASS: tb_frontend fe/max_dims, 8192 samples, 8155 bytes, 21 clamped, 356 replaced, 0 overruns, 0 dropped lines
+$finish called at time : 1309534 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_frontend.sv" Line 482
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:08 . Memory (MB): peak = 196.789 ; gain = 0.074
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:54:33 2026...
+>> xsim.bat -f fe_pairs_drop.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:54:34 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_frontend_pairs/xsim_script.tcl
+# xsim {tb_frontend_pairs} -testplusarg DIR=fe/drop -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_frontend: fe/drop, 16x8x16, 3 scenes, source 2, line period 257, bypass 1, dma 100%, out 4%
+PASS: tb_frontend fe/drop, 6144 samples, 8398 bytes, 0 clamped, 0 replaced, 0 overruns, 17 dropped lines
+$finish called at time : 1500194 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_frontend.sv" Line 482
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:08 . Memory (MB): peak = 196.379 ; gain = 0.059
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:54:44 2026...
+>> xelab.bat -L unisims_ver -L xpm -s tb_fault_pairs work.tb_fault_pairs work.glbl
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe -L unisims_ver -L xpm -s tb_fault_pairs work.tb_fault_pairs work.glbl 
+Multi-threading is on. Using 12 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling package work.frontend_pkg
+Compiling package work.c123_pkg
+Compiling package work.ecc_pkg
+Compiling package work.downlink_pkg
+Compiling module xpm.xpm_cdc_sync_rst(DEST_SYNC_FF=2,...
+Compiling module xpm.xpm_fifo_rst(COMMON_CLOCK=0)
+Compiling module xpm.xpm_fifo_reg_bit
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=1...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=1...
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_cdc_gray(DEST_SYNC_FF=2,INIT...
+Compiling module xpm.xpm_fifo_reg_vec(REG_WIDTH=11)
+Compiling module xpm.xpm_cdc_gray(INIT_SYNC_FF=1,WIDT...
+Compiling module xpm.xpm_fifo_reg_vec(REG_WIDTH=12)
+Compiling module xpm.xpm_cdc_gray(DEST_SYNC_FF=2,INIT...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=2...
+Compiling module xpm.xpm_fifo_base(COMMON_CLOCK=0,FIF...
+Compiling module xpm.xpm_fifo_async(FIFO_MEMORY_TYPE=...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=6...
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=5...
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_cdc_gray(DEST_SYNC_FF=2,INIT...
+Compiling module xpm.xpm_fifo_reg_vec(REG_WIDTH=5)
+Compiling module xpm.xpm_cdc_gray(INIT_SYNC_FF=1,WIDT...
+Compiling module xpm.xpm_fifo_reg_vec(REG_WIDTH=6)
+Compiling module xpm.xpm_cdc_gray(DEST_SYNC_FF=2,INIT...
+Compiling module xpm.xpm_fifo_base(COMMON_CLOCK=0,FIF...
+Compiling module xpm.xpm_fifo_async(FIFO_MEMORY_TYPE=...
+Compiling module work.sensor_emulator
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_memory_sdpram(MEMORY_SIZE=13...
+Compiling module work.ecc_ram(DEPTH=2048,LATENCY=4)
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_memory_sdpram(MEMORY_SIZE=40...
+Compiling module work.ecc_ram(DEPTH=64,STYLE="block",L...
+Compiling module work.radiometric_corr(NX_MAX=64,NZ_MA...
+Compiling module work.sync_fifo(WIDTH=28,DEPTH=16)
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_memory_sdpram(MEMORY_SIZE=13...
+Compiling module work.ecc_ram(DEPTH=2048,STYLE="block"...
+Compiling module work.sample_ram(DEPTH=8192,STYLE="blo...
+Compiling module work.sync_fifo(WIDTH=45,DEPTH=16)
+Compiling module work.axis_skid_buffer(DATA_W=16,USER_...
+Compiling module work.corner_turn(NX_MAX=64,NZ_MAX=64)
+Compiling module work.sensor_frontend(NX_MAX=64,NZ_MAX...
+Compiling module work.scene_guard
+Compiling module work.lut_ram(DEPTH=64)
+Compiling module work.tmr_ram(DEPTH=64)
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_memory_sdpram(MEMORY_SIZE=65...
+Compiling module work.ecc_ram(STYLE="block")
+Compiling module work.sample_ram(DEPTH=4096,STYLE="blo...
+Compiling module work.c123_neighborhood(NX_MAX=64,NZ_M...
+Compiling module work.c123_localdiff
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_memory_sdpram(MEMORY_SIZE=28...
+Compiling module work.ecc_ram(WIDTH=448,DEPTH=64,STYLE...
+Compiling module work.c123_predictor(NZ_MAX=64)
+Compiling module work.lut_ram(WIDTH=43,DEPTH=64)
+Compiling module work.tmr_ram(WIDTH=43,DEPTH=64)
+Compiling module work.c123_coder(NZ_MAX=64)
+Compiling module work.sync_fifo(WIDTH=56)
+Compiling module work.sync_fifo(WIDTH=73,DEPTH=8)
+Compiling module work.c123_packer
+Compiling module work.c123_core(NX_MAX=64,NZ_MAX=64)
+Compiling module xpm.xpm_fifo_rst_default
+Compiling module xpm.xpm_counter_updn(COUNTER_WIDTH=1...
+Compiling module xpm.xpm_memory_base(MEMORY_TYPE=1,ME...
+Compiling module xpm.xpm_fifo_base(FIFO_MEMORY_TYPE=2...
+Compiling module xpm.xpm_fifo_sync(FIFO_MEMORY_TYPE="...
+Compiling module work.sync_fifo(WIDTH=13,DEPTH=8)
+Compiling module work.space_packetizer_default
+Compiling module work.sync_fifo(WIDTH=9,DEPTH=8)
+Compiling module work.axis_skid_buffer_default
+Compiling module work.aos_framer
+Compiling module work.tb_fault(TABLE_PAIRS=1'b1)
+Compiling module work.tb_fault_pairs
+Compiling module work.glbl
+Built simulation snapshot tb_fault_pairs
+>> xsim.bat -f fault_pairs_sbe.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:54:48 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_fault_pairs/xsim_script.tcl
+# xsim {tb_fault_pairs} -testplusarg DIR=fe/dma_basic -testplusarg TRIALS=10 -testplusarg SEED=3 -testplusarg CLASS=0 -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_fault: fe/dma_basic, 24x6x20, 10 trials per class
+  reference: 4 AOS frames
+                                     class trials  masked corrected detected silent
+                 ECC SBE calibration table     10       0        10        0      0
+                                    target trials  masked corrected detected silent
+PASS: tb_fault, 10 trials, no silent corruption in a protected class
+$finish called at time : 492018 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_fault.sv" Line 579
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:54:54 2026...
+>> xsim.bat -f fault_pairs_dbe.opts
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 23 15:54:55 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_fault_pairs/xsim_script.tcl
+# xsim {tb_fault_pairs} -testplusarg DIR=fe/dma_basic -testplusarg TRIALS=10 -testplusarg SEED=4 -testplusarg CLASS=1 -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+tb_fault: fe/dma_basic, 24x6x20, 10 trials per class
+  reference: 4 AOS frames
+                                     class trials  masked corrected detected silent
+                 ECC DBE calibration table     10       0         0       10      0
+                                    target trials  masked corrected detected silent
+PASS: tb_fault, 10 trials, no silent corruption in a protected class
+$finish called at time : 489058 ns : File "C:/Users/shubham.draveriya/Desktop/Linux Boot/Hyperspectral-Payload-Processor/tb/frontend/tb_fault.sv" Line 579
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 23 15:55:01 2026...
+# puts "\nRegression summary:"
+
+Regression summary:
+# puts [join $results "\n"]
+  skid_buffer        PASS
+  link               PASS
+  scene_guard        PASS
+  sample_ram         PASS
+  corner_turn        PASS
+  watchdog           PASS
+  tmr_ram            PASS
+  regs_tmr           PASS
+  c123_basic         PASS
+  c123_stalls        PASS
+  c123_reduced       PASS
+  c123_narrow_nbr    PASS
+  c123_wide_col      PASS
+  c123_reduced_col   PASS
+  c123_p0            PASS
+  c123_p1            PASS
+  c123_p15           PASS
+  c123_omega4        PASS
+  c123_omega19       PASS
+  c123_wrap_r32      PASS
+  c123_r64           PASS
+  c123_fast_weights  PASS
+  c123_umax8         PASS
+  c123_umax32        PASS
+  c123_counter       PASS
+  c123_k0            PASS
+  c123_d16           PASS
+  c123_d8            PASS
+  c123_d2            PASS
+  c123_word3         PASS
+  c123_word8         PASS
+  c123_raw           PASS
+  c123_max_dims      PASS
+  c123_min_bands     PASS
+  c123_one_column    PASS
+  c123_one_row       PASS
+  c123_all_zero      PASS
+  c123_all_max       PASS
+  c123_all_max_d16   PASS
+  c123_mx_cnr_p15_d16_o13_u32 PASS
+  c123_mx_cnr_p1_d12_o13_u18 PASS
+  c123_mx_cwr_p0_d8_o13_u18 PASS
+  c123_mx_nnf_p0_d12_o13_u8 PASS
+  c123_mx_nnf_p1_d12_o13_u8 PASS
+  c123_mx_nnr_p0_d8_o4_u32 PASS
+  fe_dma_basic       PASS
+  fe_dma_stalls      PASS
+  fe_clamp           PASS
+  fe_bypass          PASS
+  fe_d16             PASS
+  fe_ramp            PASS
+  fe_lfsr            PASS
+  fe_min_period      PASS
+  fe_overrun         PASS
+  fe_one_column      PASS
+  fe_max_dims        PASS
+  fe_ecc_dbe         PASS
+  fe_drop            PASS
+  dl_basic           PASS
+  dl_stalls          PASS
+  dl_spill           PASS
+  dl_exact           PASS
+  dl_one_byte        PASS
+  dl_idle            PASS
+  dl_gap             PASS
+  gr_clean           PASS
+  gr_slip            PASS
+  gr_asm_tol         PASS
+  gr_flywheel        PASS
+  gr_lose_lock       PASS
+  gr_ber             PASS
+  gr_burst           PASS
+  gr_tol0            PASS
+  gr_overflow        PASS
+  sys_dma_basic      PASS
+  sys_dma_stalls     PASS
+  sys_max_dims       PASS
+  sys_ecc_dbe        PASS
+  sys_nx1024         PASS
+  fault_campaign     PASS
+  fe_pairs_dma_basic PASS
+  fe_pairs_dma_stalls PASS
+  fe_pairs_clamp     PASS
+  fe_pairs_max_dims  PASS
+  fe_pairs_drop      PASS
+  fault_pairs_sbe    PASS
+  fault_pairs_dbe    PASS
+# if {$failed} { error "$failed test(s) failed" }
+# puts "All tests passed"
+All tests passed
+INFO: [Common 17-206] Exiting Vivado at Fri Oct 23 15:55:01 2026...

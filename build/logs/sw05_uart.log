@@ -1,0 +1,389 @@
+--- uart_live start 2026-10-23 14:04:02
+status
+SYS.STATUS 0x00000004, build 0x577661AB, NX_MAX 512, NZ_MAX 256, LNK.STATUS 0x00000000 (locked 0)
+  emulator: 256 lines, 0 underruns, 0 overruns, 0 dropped; corner turn: 256 lines, 0 dropped, 0 unfilled
+  compressor: 2097152 samples in, 1552959 bytes out, 227465 output stalls
+  downlink: 760 packets, 4 scenes, 1772 science / 91110958 idle frames, 91112730 CADUs, 0 bits injected
+  link: 0 code errors, 0 lock losses, 3700045056 RX words; ground: 91112729 CADUs, 0 sync losses, 1772 captured
+  ECC corrected / uncorrectable: table 0 / 0, corner turn 0 / 0, line buffer 0 / 0, weights 0 / 0
+  TMR disagreements: memories 0, registers 0, state 0; watchdog stalls 0 / 0 / 0
+  SEM: status 0x004 (observing), 0 corrections, 0 uncorrectable
+hpdp> 
+HPDP M5: hpdp_run
+SYS.ID 0x48500100, build 0x577661AB, LNK.STATUS 0x00000F0F
+SEM controller observing after 395 ms
+SEM_ULTRA_V3_1SC 01FS 04AF 01ICAP OKRDBK OKINIT OKSC 02O> 
+console: type help (SD card scenes: ls, load, cal; then run)
+hpdp> 
+job 1: 128x64x64 D=12, 4 scenes, line period 8193, source 0, correction on, capture downlink
+Start PHY autonegotiation 
+Waiting for PHY to complete autonegotiation.
+Auto negotiation error 
+Phy setup error : link_speed invalid
+Phy setup failure init_emacps 
+net: DHCP ...
+net: no DHCP answer, using the link-local address
+net: listening on 169.254.77.10
+net: port 5001
+  upload: 0 of 1814528 bytes acknowledged, no client connected (served on request)
+  scene 0: 388201 bytes, 5.92 bits/sample
+  scene 1: 388285 bytes, 5.92 bits/sample
+  scene 2: 388076 bytes, 5.92 bits/sample
+  scene 3: 388397 bytes, 5.92 bits/sample
+  2 Msamples in 21 ms: 99 Msamples/s; ratio 2.02:1
+  emulator: 256 lines, 0 underruns, 0 overruns, 0 dropped; corner turn: 256 lines, 0 dropped, 0 unfilled; scene guard: 0 scenes padded
+  correction: 91 clamped, 2112 replaced (last scene); compressor: 1298625 cycles last scene, 228616 output stalls
+  memory ECC, corrected / uncorrectable reads: table 0 / 0, corner turn 0 / 0, line buffer 0 / 0
+  weights ECC: 0 corrected / 0 uncorrectable reads; TMR disagreements: compressor memories 0, registers 0, state machines 0
+  pipeline watchdog stalls: compressor 0, downlink 0, ground capture 0
+  SEM: status 0x004, 0 corrections, 0 uncorrectable, 9676 heartbeats
+  downlink: 760 packets, 4 scenes, 1772 science / 1741 idle frames, 3513 CADUs, 0 bits injected
+  link: 0 code errors, 0 lock losses, 1798576 RX words, 0 clock corrections, 0 buffer errors
+  ground: 3512 CADUs, 0 sync losses, 0 ASM bit errors, 0 dropped, 1740 idle skipped, 1772 captured (1814528 bytes)
+DONE: hpdp_run job 1, status 0, 4 scenes
+hpdp> 
+HPDP M5: hpdp_run
+SYS.ID 0x48500100, build 0x577661AB, LNK.STATUS 0x00000F0F
+SEM controller observing after 395 ms
+SEM_ULTRA_V3_1SC 01FS 04AF 01ICAP OKRDBK OKINIT OKSC 02O> 
+console: type help (SD card scenes: ls, load, cal; then run)
+hpdp> 
+job 1: 128x64x64 D=12, 4 scenes, line period 8193, source 0, correction on, capture downlink
+Start PHY autonegotiation 
+Waiting for PHY to complete autonegotiation.
+autonegotiation complete 
+Using default Speed from design
+link speed for phy address 12: 1000
+net: DHCP ...
+net: no DHCP answer, using the link-local address
+net: listening on 169.254.77.10
+net: port 5001
+  upload: 0 of 1814528 bytes acknowledged, no client connected (served on request)
+  scene 0: 388201 bytes, 5.92 bits/sample
+  scene 1: 388285 bytes, 5.92 bits/sample
+  scene 2: 388076 bytes, 5.92 bits/sample
+  scene 3: 388397 bytes, 5.92 bits/sample
+  2 Msamples in 21 ms: 99 Msamples/s; ratio 2.02:1
+  emulator: 256 lines, 0 underruns, 0 overruns, 0 dropped; corner turn: 256 lines, 0 dropped, 0 unfilled; scene guard: 0 scenes padded
+  correction: 91 clamped, 2112 replaced (last scene); compressor: 1300377 cycles last scene, 231965 output stalls
+  memory ECC, corrected / uncorrectable reads: table 0 / 0, corner turn 0 / 0, line buffer 0 / 0
+  weights ECC: 0 corrected / 0 uncorrectable reads; TMR disagreements: compressor memories 0, registers 0, state machines 0
+  pipeline watchdog stalls: compressor 0, downlink 0, ground capture 0
+  SEM: status 0x004, 0 corrections, 0 uncorrectable, 9679 heartbeats
+  downlink: 760 packets, 4 scenes, 1772 science / 1742 idle frames, 3514 CADUs, 0 bits injected
+  link: 0 code errors, 0 lock losses, 1799129 RX words, 0 clock corrections, 0 buffer errors
+  ground: 3513 CADUs, 0 sync losses, 0 ASM bit errors, 0 dropped, 1741 idle skipped, 1772 captured (1814528 bytes)
+DONE: hpdp_run job 1, status 0, 4 scenes
+hpdp> net: client 169.254.204.148
+dbg: sent 65472 acked 0 ready 1814528 | write err 0 sndbuf 63 queuelen 49 unsent 1 unacked 1 | tx free BDs 509 | heap 4K ok
+dbg: sent 293952 acked 228468 ready 1814528 | write err 0 sndbuf 51 queuelen 50 unsent 1 unacked 1 | tx free BDs 512 | heap 4K ok
+dbg: sent 293952 acked 228468 ready 1814528 | write err 0 sndbuf 51 queuelen 50 unsent 1 unacked 1 | tx free BDs 512 | heap 4K ok
+dbg: sent 293952 acked 228468 ready 1814528 | write err 0 sndbuf 51 queuelen 50 unsent 1 unacked 1 | tx free BDs 512 | heap 4K ok
+dbg: sent 293952 acked 228468 ready 1814528 | write err 0 sndbuf 51 queuelen 50 unsent 1 unacked 1 | tx free BDs 512 | heap 4K ok
+dbg: sent 293952 acked 228468 ready 1814528 | write err 0 sndbuf 51 queuelen 50 unsent 1 unacked 1 | tx free BDs 512 | heap 4K ok
+dbg: sent 293952 acked 228468 ready 1814528 | write err 0 sndbuf 51 queuelen 50 unsent 1 unacked 1 | tx free BDs 512 | heap 4K ok
+dbg: sent 293952 acked 228468 ready 1814528 | write err 0 sndbuf 51 queuelen 50 unsent 1 unacked 1 | tx free BDs 512 | heap 4K ok
+dbg: sent 293952 acked 228468 ready 1814528 | write err 0 sndbuf 51 queuelen 50 unsent 1 unacked 1 | tx free BDs 512 | heap 4K ok
+
+HPDP M5: hpdp_run
+SYS.ID 0x48500100, build 0x577661AB, LNK.STATUS 0x00000F0F
+SEM controller observing after 395 ms
+SEM_ULTRA_V3_1SC 01FS 04AF 01ICAP OKRDBK OKINIT OKSC 02O> 
+console: type help (SD card scenes: ls, load, cal; then run)
+hpdp> 
+job 1: 128x64x64 D=12, 4 scenes, line period 8193, source 0, correction on, capture downlink
+Start PHY autonegotiation 
+Waiting for PHY to complete autonegotiation.
+autonegotiation complete 
+Using default Speed from design
+link speed for phy address 12: 1000
+net: DHCP ...
+net: no DHCP answer, using the link-local address
+net: listening on 169.254.77.10
+net: port 5001 (dbg: 0 timer ticks since the start)
+  upload: 0 of 1814528 bytes acknowledged, no client connected (served on request)
+  scene 0: 388201 bytes, 5.92 bits/sample
+  scene 1: 388285 bytes, 5.92 bits/sample
+  scene 2: 388076 bytes, 5.92 bits/sample
+  scene 3: 388397 bytes, 5.92 bits/sample
+  2 Msamples in 21 ms: 99 Msamples/s; ratio 2.02:1
+  emulator: 256 lines, 0 underruns, 0 overruns, 0 dropped; corner turn: 256 lines, 0 dropped, 0 unfilled; scene guard: 0 scenes padded
+  correction: 91 clamped, 2112 replaced (last scene); compressor: 1298625 cycles last scene, 223255 output stalls
+  memory ECC, corrected / uncorrectable reads: table 0 / 0, corner turn 0 / 0, line buffer 0 / 0
+  weights ECC: 0 corrected / 0 uncorrectable reads; TMR disagreements: compressor memories 0, registers 0, state machines 0
+  pipeline watchdog stalls: compressor 0, downlink 0, ground capture 0
+  SEM: status 0x004, 0 corrections, 0 uncorrectable, 9677 heartbeats
+  downlink: 760 packets, 4 scenes, 1772 science / 1741 idle frames, 3513 CADUs, 0 bits injected
+  link: 0 code errors, 0 lock losses, 1798602 RX words, 0 clock corrections, 0 buffer errors
+  ground: 3512 CADUs, 0 sync losses, 0 ASM bit errors, 0 dropped, 1740 idle skipped, 1772 captured (1814528 bytes)
+DONE: hpdp_run job 1, status 0, 4 scenes
+hpdp> 
+HPDP M5: hpdp_run
+SYS.ID 0x48500100, build 0x577661AB, LNK.STATUS 0x00000F0F
+SEM controller observing after 395 ms
+SEM_ULTRA_V3_1SC 01FS 04AF 01ICAP OKRDBK OKINIT OKSC 02O> 
+console: type help (SD card scenes: ls, load, cal; then run)
+hpdp> 
+job 1: 128x64x64 D=12, 4 scenes, line period 8193, source 0, correction on, capture downlink
+Start PHY autonegotiation 
+Waiting for PHY to complete autonegotiation.
+autonegotiation complete 
+Using default Speed from design
+link speed for phy address 12: 1000
+net: DHCP ...
+net: no DHCP answer, using the link-local address
+net: listening on 169.254.77.10
+net: port 5001 (dbg: 0 timer ticks since the start)
+  upload: 0 of 1814528 bytes acknowledged, no client connected (served on request)
+  scene 0: 388201 bytes, 5.92 bits/sample
+  scene 1: 388285 bytes, 5.92 bits/sample
+  scene 2: 388076 bytes, 5.92 bits/sample
+  scene 3: 388397 bytes, 5.92 bits/sample
+  2 Msamples in 21 ms: 99 Msamples/s; ratio 2.02:1
+  emulator: 256 lines, 0 underruns, 0 overruns, 0 dropped; corner turn: 256 lines, 0 dropped, 0 unfilled; scene guard: 0 scenes padded
+  correction: 91 clamped, 2112 replaced (last scene); compressor: 1298625 cycles last scene, 231225 output stalls
+  memory ECC, corrected / uncorrectable reads: table 0 / 0, corner turn 0 / 0, line buffer 0 / 0
+  weights ECC: 0 corrected / 0 uncorrectable reads; TMR disagreements: compressor memories 0, registers 0, state machines 0
+  pipeline watchdog stalls: compressor 0, downlink 0, ground capture 0
+  SEM: status 0x004, 0 corrections, 0 uncorrectable, 9676 heartbeats
+  downlink: 760 packets, 4 scenes, 1772 science / 1741 idle frames, 3513 CADUs, 0 bits injected
+  link: 0 code errors, 0 lock losses, 1798606 RX words, 0 clock corrections, 0 buffer errors
+  ground: 3512 CADUs, 0 sync losses, 0 ASM bit errors, 0 dropped, 1740 idle skipped, 1772 captured (1814528 bytes)
+DONE: hpdp_run job 1, status 0, 4 scenes
+hpdp> 
+HPDP M5: hpdp_run
+SYS.ID 0x48500100, build 0x577661AB, LNK.STATUS 0x00000F0F
+DMA at 0xA0100000: initialization failed
+FAIL: hpdp_run: HPDP not found
+
+HPDP M5: hpdp_run
+SYS.ID 0x48500100, build 0x577661AB, LNK.STATUS 0x00000F0F
+SEM controller observing after 395 ms
+SEM_ULTRA_V3_1SC 01FS 04AF 01ICAP OKRDBK OKINIT OKSC 02O> 
+console: type help (SD card scenes: ls, load, cal; then run)
+hpdp> 
+job 1: 128x64x64 D=12, 4 scenes, line period 8193, source 0, correction on, capture downlink
+Start PHY autonegotiation 
+Waiting for PHY to complete autonegotiation.
+autonegotiation complete 
+Using default Speed from design
+link speed for phy address 12: 1000
+net: DHCP ...
+net: no DHCP answer, using the link-local address
+net: listening on 169.254.77.10
+net: port 5001 (dbg: 300 timer ticks since the start)
+  upload: 0 of 1814528 bytes acknowledged, no client connected (served on request)
+  scene 0: 388201 bytes, 5.92 bits/sample
+  scene 1: 388285 bytes, 5.92 bits/sample
+  scene 2: 388076 bytes, 5.92 bits/sample
+  scene 3: 388397 bytes, 5.92 bits/sample
+  2 Msamples in 21 ms: 99 Msamples/s; ratio 2.02:1
+  emulator: 256 lines, 0 underruns, 0 overruns, 0 dropped; corner turn: 256 lines, 0 dropped, 0 unfilled; scene guard: 0 scenes padded
+  correction: 91 clamped, 2112 replaced (last scene); compressor: 1300274 cycles last scene, 226741 output stalls
+  memory ECC, corrected / uncorrectable reads: table 0 / 0, corner turn 0 / 0, line buffer 0 / 0
+  weights ECC: 0 corrected / 0 uncorrectable reads; TMR disagreements: compressor memories 0, registers 0, state machines 0
+  pipeline watchdog stalls: compressor 0, downlink 0, ground capture 0
+  SEM: status 0x004, 0 corrections, 0 uncorrectable, 9679 heartbeats
+  downlink: 760 packets, 4 scenes, 1772 science / 1742 idle frames, 3514 CADUs, 0 bits injected
+  link: 0 code errors, 0 lock losses, 1799092 RX words, 0 clock corrections, 0 buffer errors
+  ground: 3513 CADUs, 0 sync losses, 0 ASM bit errors, 0 dropped, 1741 idle skipped, 1772 captured (1814528 bytes)
+DONE: hpdp_run job 1, status 0, 4 scenes
+hpdp> net: client 169.254.204.148
+dbg: ticks 2030 | sent 65472 acked 0 ready 1814528 | write err 0 sndbuf 63 queuelen 49 unsent 1 unacked 1 | tx free BDs 509 | heap 4K ok
+net: connection lost (-14)
+net: client 169.254.204.148
+dbg: ticks 3394 | sent 65472 acked 0 ready 1814528 | write err 0 sndbuf 63 queuelen 49 unsent 1 unacked 1 | tx free BDs 509 | heap 4K ok
+dbg: ticks 3414 | sent 304064 acked 238590 ready 1814528 | write err 0 sndbuf 61 queuelen 51 unsent 1 unacked 1 | tx free BDs 512 | heap 4K ok
+dbg: ticks 3434 | sent 1105600 acked 1040090 ready 1814528 | write err 0 sndbuf 25 queuelen 51 unsent 1 unacked 1 | tx free BDs 512 | heap 4K ok
+dbg: ticks 3454 | sent 1814528 acked 1774658 ready 1814528 | write err 0 sndbuf 25665 queuelen 31 unsent 0 unacked 1 | tx free BDs 512 | heap 4K ok
+dbg: ticks 3474 | sent 1814528 acked 1774658 ready 1814528 | write err 0 sndbuf 25665 queuelen 31 unsent 0 unacked 1 | tx free BDs 512 | heap 4K ok
+net: stream of 1814528 bytes delivered, connection closed
+
+HPDP M5: hpdp_run
+SYS.ID 0x48500100, build 0x577661AB, LNK.STATUS 0x00000F0F
+SEM controller observing after 395 ms
+SEM_ULTRA_V3_1SC 01FS 04AF 01ICAP OKRDBK OKINIT OKSC 02O> 
+console: type help (SD card scenes: ls, load, cal; then run)
+hpdp> 
+job 1: 128x64x64 D=12, 4 scenes, line period 8193, source 0, correction on, capture downlink
+Start PHY autonegotiation 
+Waiting for PHY to complete autonegotiation.
+autonegotiation complete 
+Using default Speed from design
+link speed for phy address 12: 1000
+net: DHCP ...
+net: no DHCP answer, using the link-local address
+net: listening on 169.254.77.10
+net: port 5001 (dbg: 299 timer ticks since the start)
+  upload: 0 of 1814528 bytes acknowledged, no client connected (served on request)
+  scene 0: 388201 bytes, 5.92 bits/sample
+  scene 1: 388285 bytes, 5.92 bits/sample
+  scene 2: 388076 bytes, 5.92 bits/sample
+  scene 3: 388397 bytes, 5.92 bits/sample
+  2 Msamples in 21 ms: 99 Msamples/s; ratio 2.02:1
+  emulator: 256 lines, 0 underruns, 0 overruns, 0 dropped; corner turn: 256 lines, 0 dropped, 0 unfilled; scene guard: 0 scenes padded
+  correction: 91 clamped, 2112 replaced (last scene); compressor: 1298625 cycles last scene, 231352 output stalls
+  memory ECC, corrected / uncorrectable reads: table 0 / 0, corner turn 0 / 0, line buffer 0 / 0
+  weights ECC: 0 corrected / 0 uncorrectable reads; TMR disagreements: compressor memories 0, registers 0, state machines 0
+  pipeline watchdog stalls: compressor 0, downlink 0, ground capture 0
+  SEM: status 0x004, 0 corrections, 0 uncorrectable, 9676 heartbeats
+  downlink: 760 packets, 4 scenes, 1772 science / 1741 idle frames, 3513 CADUs, 0 bits injected
+  link: 0 code errors, 0 lock losses, 1798578 RX words, 0 clock corrections, 0 buffer errors
+  ground: 3512 CADUs, 0 sync losses, 0 ASM bit errors, 0 dropped, 1740 idle skipped, 1772 captured (1814528 bytes)
+DONE: hpdp_run job 1, status 0, 4 scenes
+hpdp> net: client 169.254.204.148
+dbg: ticks 2235 | sent 65472 acked 0 ready 1814528 | write err 0 sndbuf 63 queuelen 49 unsent 1 unacked 1 | tx free BDs 509 | heap 4K ok
+net: connection lost (-14)
+net: client 169.254.204.148
+net: client 169.254.204.148
+net: client 169.254.204.148
+dbg: ticks 3184 | sent 65472 acked 0 ready 1814528 | write err 0 sndbuf 63 queuelen 49 unsent 1 unacked 1 | tx free BDs 509 | heap 4K ok
+net: connection lost (-14)
+
+HPDP M5: hpdp_run
+SYS.ID 0x48500100, build 0x577661AB, LNK.STATUS 0x00000F0F
+SEM controller observing after 395 ms
+SEM_ULTRA_V3_1SC 01FS 04AF 01ICAP OKRDBK OKINIT OKSC 02O> 
+console: type help (SD card scenes: ls, load, cal; then run)
+hpdp> 
+job 1: 128x64x64 D=12, 4 scenes, line period 8193, source 0, correction on, capture downlink
+Start PHY autonegotiation 
+Waiting for PHY to complete autonegotiation.
+autonegotiation complete 
+Using default Speed from design
+link speed for phy address 12: 1000
+net: DHCP ...
+net: no DHCP answer, using the link-local address
+net: listening on 169.254.77.10
+net: port 5001 (dbg: 300 timer ticks since the start)
+  upload: 0 of 1814528 bytes acknowledged, no client connected (served on request)
+  scene 0: 388201 bytes, 5.92 bits/sample
+  scene 1: 388285 bytes, 5.92 bits/sample
+  scene 2: 388076 bytes, 5.92 bits/sample
+  scene 3: 388397 bytes, 5.92 bits/sample
+  2 Msamples in 21 ms: 99 Msamples/s; ratio 2.02:1
+  emulator: 256 lines, 0 underruns, 0 overruns, 0 dropped; corner turn: 256 lines, 0 dropped, 0 unfilled; scene guard: 0 scenes padded
+  correction: 91 clamped, 2112 replaced (last scene); compressor: 1298625 cycles last scene, 226800 output stalls
+  memory ECC, corrected / uncorrectable reads: table 0 / 0, corner turn 0 / 0, line buffer 0 / 0
+  weights ECC: 0 corrected / 0 uncorrectable reads; TMR disagreements: compressor memories 0, registers 0, state machines 0
+  pipeline watchdog stalls: compressor 0, downlink 0, ground capture 0
+  SEM: status 0x004, 0 corrections, 0 uncorrectable, 9676 heartbeats
+  downlink: 760 packets, 4 scenes, 1772 science / 1741 idle frames, 3513 CADUs, 0 bits injected
+  link: 0 code errors, 0 lock losses, 1798583 RX words, 0 clock corrections, 0 buffer errors
+  ground: 3512 CADUs, 0 sync losses, 0 ASM bit errors, 0 dropped, 1740 idle skipped, 1772 captured (1814528 bytes)
+DONE: hpdp_run job 1, status 0, 4 scenes
+hpdp> net: client 169.254.204.148
+dbg: ticks 850 | sent 65472 acked 0 ready 1814528 | write err 0 sndbuf 63 queuelen 49 unsent 1 unacked 1 | tx free BDs 509 | heap 4K ok
+dbg: ticks 870 | sent 283840 acked 218346 ready 1814528 | write err 0 sndbuf 41 queuelen 51 unsent 1 unacked 1 | tx free BDs 512 | heap 4K ok
+dbg: ticks 890 | sent 1034752 acked 969240 ready 1814528 | write err 0 sndbuf 23 queuelen 51 unsent 1 unacked 1 | tx free BDs 512 | heap 4K ok
+dbg: ticks 910 | sent 1120064 acked 1054554 ready 1814528 | write err 0 sndbuf 25 queuelen 58 unsent 1 unacked 1 | tx free BDs 512 | heap 4K ok
+dbg: ticks 930 | sent 1753408 acked 1687902 ready 1814528 | write err 0 sndbuf 29 queuelen 51 unsent 1 unacked 1 | tx free BDs 512 | heap 4K ok
+net: stream of 1814528 bytes delivered, connection closed
+
+HPDP M5: hpdp_run
+SYS.ID 0x48500100, build 0x577661AB, LNK.STATUS 0x00000F0F
+SEM controller observing after 395 ms
+SEM_ULTRA_V3_1SC 01FS 04AF 01ICAP OKRDBK OKINIT OKSC 02O> 
+console: type help (SD card scenes: ls, load, cal; then run)
+hpdp> 
+job 1: 128x64x64 D=12, 4 scenes, line period 8193, source 0, correction on, capture downlink
+Start PHY autonegotiation 
+Waiting for PHY to complete autonegotiation.
+autonegotiation complete 
+Using default Speed from design
+link speed for phy address 12: 1000
+net: DHCP ...
+net: no DHCP answer, using the link-local address
+net: listening on 169.254.77.10
+net: port 5001
+  upload: 0 of 1814528 bytes acknowledged, no client connected (served on request)
+  scene 0: 388201 bytes, 5.92 bits/sample
+  scene 1: 388285 bytes, 5.92 bits/sample
+  scene 2: 388076 bytes, 5.92 bits/sample
+  scene 3: 388397 bytes, 5.92 bits/sample
+  2 Msamples in 21 ms: 99 Msamples/s; ratio 2.02:1
+  emulator: 256 lines, 0 underruns, 0 overruns, 0 dropped; corner turn: 256 lines, 0 dropped, 0 unfilled; scene guard: 0 scenes padded
+  correction: 91 clamped, 2112 replaced (last scene); compressor: 1298625 cycles last scene, 226600 output stalls
+  memory ECC, corrected / uncorrectable reads: table 0 / 0, corner turn 0 / 0, line buffer 0 / 0
+  weights ECC: 0 corrected / 0 uncorrectable reads; TMR disagreements: compressor memories 0, registers 0, state machines 0
+  pipeline watchdog stalls: compressor 0, downlink 0, ground capture 0
+  SEM: status 0x004, 0 corrections, 0 uncorrectable, 9676 heartbeats
+  downlink: 760 packets, 4 scenes, 1772 science / 1741 idle frames, 3513 CADUs, 0 bits injected
+  link: 0 code errors, 0 lock losses, 1798566 RX words, 0 clock corrections, 0 buffer errors
+  ground: 3512 CADUs, 0 sync losses, 0 ASM bit errors, 0 dropped, 1740 idle skipped, 1772 captured (1814528 bytes)
+DONE: hpdp_run job 1, status 0, 4 scenes
+hpdp> net: client 169.254.204.148
+net: stream of 1814528 bytes delivered, connection closed
+
+HPDP M5: hpdp_run
+SYS.ID 0x48500100, build 0x577661AB, LNK.STATUS 0x00000F0F
+SEM controller observing after 395 ms
+SEM_ULTRA_V3_1SC 01FS 04AF 01ICAP OKRDBK OKINIT OKSC 02O> 
+console: type help (SD card scenes: ls, load, cal; then run)
+hpdp> 
+job 1: 128x64x64 D=12, 4 scenes, line period 8193, source 0, correction on, capture downlink
+Start PHY autonegotiation 
+Waiting for PHY to complete autonegotiation.
+autonegotiation complete 
+Using default Speed from design
+link speed for phy address 12: 1000
+net: DHCP ...
+net: no DHCP answer, using the link-local address
+net: listening on 169.254.77.10
+net: port 5001
+  upload: 0 of 1814528 bytes acknowledged, no client connected (served on request)
+  scene 0: 388201 bytes, 5.92 bits/sample
+  scene 1: 388285 bytes, 5.92 bits/sample
+  scene 2: 388076 bytes, 5.92 bits/sample
+  scene 3: 388397 bytes, 5.92 bits/sample
+  2 Msamples in 21 ms: 99 Msamples/s; ratio 2.02:1
+  emulator: 256 lines, 0 underruns, 0 overruns, 0 dropped; corner turn: 256 lines, 0 dropped, 0 unfilled; scene guard: 0 scenes padded
+  correction: 91 clamped, 2112 replaced (last scene); compressor: 1298624 cycles last scene, 224488 output stalls
+  memory ECC, corrected / uncorrectable reads: table 0 / 0, corner turn 0 / 0, line buffer 0 / 0
+  weights ECC: 0 corrected / 0 uncorrectable reads; TMR disagreements: compressor memories 0, registers 0, state machines 0
+  pipeline watchdog stalls: compressor 0, downlink 0, ground capture 0
+  SEM: status 0x004, 0 corrections, 0 uncorrectable, 9676 heartbeats
+  downlink: 760 packets, 4 scenes, 1772 science / 1741 idle frames, 3513 CADUs, 0 bits injected
+  link: 0 code errors, 0 lock losses, 1798570 RX words, 0 clock corrections, 0 buffer errors
+  ground: 3512 CADUs, 0 sync losses, 0 ASM bit errors, 0 dropped, 1740 idle skipped, 1772 captured (1814528 bytes)
+DONE: hpdp_run job 1, status 0, 4 scenes
+hpdp> net: client 169.254.204.148
+net: stream of 1814528 bytes delivered, connection closed
+net: Ethernet link down
+
+HPDP M5: hpdp_run
+SYS.ID 0x48500100, build 0x577661AB, LNK.STATUS 0x00000F0F
+SEM controller observing after 395 ms
+SEM_ULTRA_V3_1SC 01FS 04AF 01ICAP OKRDBK OKINIT OKSC 02O> 
+console: type help (SD card scenes: ls, load, cal; then run)
+hpdp> 
+job 1: 128x64x64 D=12, 4 scenes, line period 8193, source 0, correction on, capture downlink
+Start PHY autonegotiation 
+Waiting for PHY to complete autonegotiation.
+Auto negotiation error 
+Phy setup error : link_speed invalid
+Phy setup failure init_emacps 
+net: PHY negotiation slower than the driver's 5 s: waiting up to 20 s
+net: Ethernet link up, 1000 Mbit/s
+net: DHCP ...
+net: no DHCP answer, using the link-local address
+net: listening on 169.254.77.10
+net: port 5001
+  upload: 0 of 1814528 bytes acknowledged, no client connected (served on request)
+  scene 0: 388201 bytes, 5.92 bits/sample
+  scene 1: 388285 bytes, 5.92 bits/sample
+  scene 2: 388076 bytes, 5.92 bits/sample
+  scene 3: 388397 bytes, 5.92 bits/sample
+  2 Msamples in 21 ms: 99 Msamples/s; ratio 2.02:1
+  emulator: 256 lines, 0 underruns, 0 overruns, 0 dropped; corner turn: 256 lines, 0 dropped, 0 unfilled; scene guard: 0 scenes padded
+  correction: 91 clamped, 2112 replaced (last scene); compressor: 1298624 cycles last scene, 224409 output stalls
+  memory ECC, corrected / uncorrectable reads: table 0 / 0, corner turn 0 / 0, line buffer 0 / 0
+  weights ECC: 0 corrected / 0 uncorrectable reads; TMR disagreements: compressor memories 0, registers 0, state machines 0
+  pipeline watchdog stalls: compressor 0, downlink 0, ground capture 0
+  SEM: status 0x004, 0 corrections, 0 uncorrectable, 9676 heartbeats
+  downlink: 760 packets, 4 scenes, 1772 science / 1741 idle frames, 3513 CADUs, 0 bits injected
+  link: 0 code errors, 0 lock losses, 1798552 RX words, 0 clock corrections, 0 buffer errors
+  ground: 3512 CADUs, 0 sync losses, 0 ASM bit errors, 0 dropped, 1740 idle skipped, 1772 captured (1814528 bytes)
+DONE: hpdp_run job 1, status 0, 4 scenes
+hpdp> net: client 169.254.204.148
+net: stream of 1814528 bytes delivered, connection closed

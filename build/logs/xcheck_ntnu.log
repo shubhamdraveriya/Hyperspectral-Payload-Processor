@@ -1,0 +1,83 @@
+944 images through the NTNU model (4 at a time)
+  basic#0: IDENTICAL, 1544 bytes
+  basic#1: IDENTICAL, 1546 bytes
+  stalls#0: IDENTICAL, 1544 bytes
+  stalls#1: IDENTICAL, 1546 bytes
+  reduced#0: IDENTICAL, 1561 bytes
+  reduced#1: IDENTICAL, 1561 bytes
+  narrow_nbr#0: IDENTICAL, 1793 bytes
+  narrow_nbr#1: IDENTICAL, 1788 bytes
+  wide_col#0: IDENTICAL, 1577 bytes
+  wide_col#1: IDENTICAL, 1570 bytes
+  reduced_col#0: IDENTICAL, 1801 bytes
+  reduced_col#1: IDENTICAL, 1797 bytes
+  p0#0: IDENTICAL, 1562 bytes
+  p0#1: IDENTICAL, 1564 bytes
+  p1#0: IDENTICAL, 1553 bytes
+  p1#1: IDENTICAL, 1549 bytes
+  p15#0: IDENTICAL, 1755 bytes
+  p15#1: IDENTICAL, 1756 bytes
+  omega4#0: IDENTICAL, 1549 bytes
+  omega4#1: IDENTICAL, 1550 bytes
+  omega19#0: IDENTICAL, 1544 bytes
+  omega19#1: IDENTICAL, 1546 bytes
+  wrap_r32#0: IDENTICAL, 3384 bytes
+  wrap_r32#1: IDENTICAL, 3382 bytes
+  r64#0: IDENTICAL, 1544 bytes
+  r64#1: IDENTICAL, 1546 bytes
+  fast_weights#0: IDENTICAL, 2496 bytes
+  fast_weights#1: IDENTICAL, 2492 bytes
+  umax8#0: IDENTICAL, 2528 bytes
+  umax8#1: IDENTICAL, 2535 bytes
+  umax32#0: IDENTICAL, 1544 bytes
+  umax32#1: IDENTICAL, 1546 bytes
+  counter#0: IDENTICAL, 1669 bytes
+  counter#1: IDENTICAL, 1670 bytes
+  k0#0: IDENTICAL, 1588 bytes
+  k0#1: IDENTICAL, 1591 bytes
+  d16#0: IDENTICAL, 2344 bytes
+  d16#1: IDENTICAL, 2346 bytes
+  d8#0: IDENTICAL, 1151 bytes
+  d8#1: IDENTICAL, 1150 bytes
+  d2#0: IDENTICAL, 523 bytes
+  d2#1: IDENTICAL, 514 bytes
+  word3#0: IDENTICAL, 1545 bytes
+  word3#1: IDENTICAL, 1548 bytes
+  word8#0: IDENTICAL, 1544 bytes
+  word8#1: IDENTICAL, 1552 bytes
+  max_dims#0: IDENTICAL, 7980 bytes
+  min_bands#0: IDENTICAL, 1839 bytes
+  min_bands#1: IDENTICAL, 1842 bytes
+  one_column#0: IDENTICAL, 275 bytes
+  one_column#1: IDENTICAL, 274 bytes
+  one_row#0: IDENTICAL, 883 bytes
+  one_row#1: IDENTICAL, 885 bytes
+  all_zero#0: IDENTICAL, 867 bytes
+  all_zero#1: IDENTICAL, 867 bytes
+  all_max#0: IDENTICAL, 867 bytes
+  all_max#1: IDENTICAL, 867 bytes
+  all_max_d16#0: IDENTICAL, 877 bytes
+  all_max_d16#1: IDENTICAL, 877 bytes
+  hpdp_m5_fiber_ber0#0: IDENTICAL, 388201 bytes
+  hpdp_m5_fiber_ber0#1: IDENTICAL, 388285 bytes
+  hpdp_m5_fiber_ber0#2: IDENTICAL, 388076 bytes
+  hpdp_m5_fiber_ber0#3: IDENTICAL, 388397 bytes
+  hpdp_m7h_base#0: IDENTICAL, 388201 bytes
+  hpdp_m7h_base#1: IDENTICAL, 388285 bytes
+  hpdp_m7h_base#2: IDENTICAL, 388076 bytes
+  hpdp_m7h_base#3: IDENTICAL, 388397 bytes
+  pm7_sw05_clean2#0: IDENTICAL, 388201 bytes
+  pm7_sw05_clean2#1: IDENTICAL, 388285 bytes
+  pm7_sw05_clean2#2: IDENTICAL, 388076 bytes
+  pm7_sw05_clean2#3: IDENTICAL, 388397 bytes
+  pm7_1024_syn#0: IDENTICAL, 1508494 bytes (Done! Script ran for 34.794 seconds; Memory usage: 835.41 MB)
+  pm7_1024_syn#1: IDENTICAL, 1508154 bytes (Done! Script ran for 34.476 seconds; Memory usage: 835.43 MB)
+  pm7_1024_ecc#0: IDENTICAL, 773343 bytes (Done! Script ran for 16.768 seconds; Memory usage: 443.07 MB)
+  pm7_1024_ecc#1: IDENTICAL, 772824 bytes (Done! Script ran for 16.859 seconds; Memory usage: 443.07 MB)
+  pm7_real_aviris#0: IDENTICAL, 3898952 bytes (Done! Script ran for 121.356 seconds; Memory usage: 2797.88 MB)
+  pm7_real_aviris#1: IDENTICAL, 7063902 bytes (Done! Script ran for 122.685 seconds; Memory usage: 2800.84 MB)
+  pm7_real_hyperion#0: IDENTICAL, 4985044 bytes (Done! Script ran for 128.912 seconds; Memory usage: 3019.82 MB)
+  pm7_1024_real#0: IDENTICAL, 4905137 bytes (Done! Script ran for 128.311 seconds; Memory usage: 3019.02 MB)
+  pm7_real_ip#0: IDENTICAL, 3476350 bytes (Done! Script ran for 73.982 seconds; Memory usage: 1782.76 MB)
+944 IDENTICAL
+PASS: 944 of 944 images byte-identical with the NTNU CCSDS 123.0-B-2 model

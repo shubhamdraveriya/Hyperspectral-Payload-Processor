@@ -1,0 +1,30 @@
+--- net_watch start 2026-10-23 14:49:48
+14:49:49 neighbour 02-48-50-44-50-01 Stale | address 169.254.204.148 Preferred | tcp none
+14:50:43 neighbour 02-48-50-44-50-01 Stale | address 169.254.204.148 Deprecated | tcp none
+14:50:45 neighbour 00-00-00-00-00-00 Unreachable | address 169.254.204.148 Preferred | tcp none
+14:51:28 neighbour 00-00-00-00-00-00 Unreachable | address 169.254.204.148 Preferred | tcp TCP 192.168.113.151:59030 169.254.77.10:5001 SYN_SENT
+14:51:38 neighbour 00-00-00-00-00-00 Unreachable | address 169.254.204.148 Preferred | tcp none
+14:52:37 neighbour 02-48-50-44-50-01 Reachable | address 169.254.204.148 Preferred | tcp none
+14:53:02 neighbour 02-48-50-44-50-01 Stale | address 169.254.204.148 Preferred | tcp none
+14:53:25 neighbour 02-48-50-44-50-01 Reachable | address 169.254.204.148 Preferred | tcp none
+14:53:50 neighbour 02-48-50-44-50-01 Stale | address 169.254.204.148 Preferred | tcp none
+14:54:36 neighbour 02-48-50-44-50-01 Stale | address 169.254.204.148 Deprecated | tcp none
+14:54:38 neighbour 00-00-00-00-00-00 Unreachable | address 169.254.204.148 Preferred | tcp none
+14:55:21 neighbour 02-48-50-44-50-01 Reachable | address 169.254.204.148 Preferred | tcp TCP 169.254.204.148:53145 169.254.77.10:5001 ESTABLISHED
+14:55:26 neighbour 02-48-50-44-50-01 Reachable | address 169.254.204.148 Preferred | tcp none
+14:55:51 neighbour 02-48-50-44-50-01 Stale | address 169.254.204.148 Preferred | tcp none
+15:01:38 neighbour 02-48-50-44-50-01 Stale | address 169.254.204.148 Deprecated | tcp none
+15:01:41 neighbour 00-00-00-00-00-00 Unreachable | address 169.254.204.148 Preferred | tcp none
+15:02:23 neighbour 02-48-50-44-50-01 Reachable | address 169.254.204.148 Preferred | tcp TCP 169.254.204.148:51389 169.254.77.10:5001 ESTABLISHED
+15:02:27 neighbour 02-48-50-44-50-01 Reachable | address 169.254.204.148 Preferred | tcp none
+15:02:52 neighbour 02-48-50-44-50-01 Stale | address 169.254.204.148 Preferred | tcp none
+15:03:20 neighbour 02-48-50-44-50-01 Stale | address 169.254.204.148 Deprecated | tcp none
+15:03:24 neighbour 00-00-00-00-00-00 Unreachable | address 169.254.204.148 Preferred | tcp none
+15:04:08 neighbour 02-48-50-44-50-01 Reachable | address 169.254.204.148 Preferred | tcp TCP 169.254.204.148:56996 169.254.77.10:5001 ESTABLISHED
+15:04:12 neighbour 02-48-50-44-50-01 Reachable | address 169.254.204.148 Preferred | tcp none
+15:04:37 neighbour 02-48-50-44-50-01 Stale | address 169.254.204.148 Preferred | tcp none
+15:09:06 neighbour 02-48-50-44-50-01 Stale | address 169.254.204.148 Deprecated | tcp none
+15:10:42 neighbour 00-00-00-00-00-00 Unreachable | address 169.254.204.148 Preferred | tcp none
+15:11:24 neighbour 02-48-50-44-50-01 Reachable | address 169.254.204.148 Preferred | tcp TCP 169.254.204.148:50575 169.254.77.10:5001 ESTABLISHED
+15:11:29 neighbour 02-48-50-44-50-01 Reachable | address 169.254.204.148 Preferred | tcp none
+15:11:53 neighbour 02-48-50-44-50-01 Stale | address 169.254.204.148 Preferred | tcp none

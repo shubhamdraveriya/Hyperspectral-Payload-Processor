@@ -1,0 +1,91 @@
+﻿attempting to launch hw_server
+
+****** Xilinx hw_server v2025.2
+  **** Build date : Oct 28 2025 at 10:03:13
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+INFO: hw_server application started
+INFO: Use Ctrl-C to exit hw_server application
+
+
+
+****** Xilinx hw_server v2025.2
+
+  **** Build date : Oct 28 2025 at 10:03:13
+
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+
+
+INFO: hw_server application started
+
+INFO: Use Ctrl-C to exit hw_server application
+
+
+
+
+INFO: To connect to this hw_server instance use url: TCP:127.0.0.1:3121
+
+
+
+WARNING: If the reset is being triggered after powering on the device,
+ 
+         write bootloop at reset vector address (0xffff0000), or use
+ 
+         -clear-registers option, to avoid unpredictable behavior.
+ 
+         Further warnings will be suppressed
+run_m5: result read back
+4 scenes 128x64x64 D=12, source dma, correction on: computing the expected output ...
+downlink: 760 packets in 1772 science frames
+files and XSDB script in C:\Users\shubham.draveriya\hpdp_runs\pm7_sw05
+running XSDB (JTAG; volatile configuration only) ...
+build 0x577661AB, 0 scenes compressed
+link: LNK.STATUS 0x00000F07 (tx 1, rx 1, aligned 1, locked 0, CPLL 11, power good 11), 4 RX resets during bring-up
+memory ECC, corrected / uncorrectable reads: table 0 / 0, corner turn 0 / 0, line buffer 0 / 0
+weights ECC: 0 corrected / 0 uncorrectable reads; TMR disagreements: compressor memories 0, registers 0, state machines 0
+SEM: status 0x004 (observing), 0 corrections, 0 uncorrectable, 6823870 heartbeats
+pipeline watchdog stalls: compressor 0, downlink 0, ground capture 0
+compressed scenes (capture DMA):
+build 0x577661AB, 0 scenes compressed
+  scene 0: 0 bytes, model 388201: first difference at byte 0
+  scene 1: 0 bytes, model 388285: first difference at byte 0
+  scene 2: 0 bytes, model 388076: first difference at byte 0
+  scene 3: 0 bytes, model 388397: first difference at byte 0
+compression: 2.03:1 over 4 scenes
+  problem: status 8 (link not locked)
+  problem: scene 0 differs from the model
+  problem: scene 1 differs from the model
+  problem: scene 2 differs from the model
+  problem: scene 3 differs from the model
+  problem: emulator lines: 0, expected 256
+  problem: corner turn lines: 0, expected 256
+  problem: clamped (last scene): 0, expected 91
+  problem: replaced (last scene): 0, expected 2112
+  problem: table words: 0, expected 4096
+  problem: compressor input samples: 0, expected 2097152
+FAIL: capture path, 4 scenes 128x64x64 D=12
+ground: 0 records (0 VERIFY, 0 LOCK, 0 FLYWHEEL), 0 ASM bit errors; RS: 0 symbols corrected, 0 codeblocks uncorrectable; 0 frames lost, 0 idle, 0 foreign
+  scene 0: NOT reconstructed (not received)
+  scene 1: NOT reconstructed (not received)
+  scene 2: NOT reconstructed (not received)
+  scene 3: NOT reconstructed (not received)
+downlink: 0 packets, 0 science + 5070724 idle frames, 0 bits injected (BER 0.00e+00 over 5070724 CADUs)
+link: 2420961764 code errors, 0 clock corrections, 1269227 buffer errors, 2595867993 data / 1268148 idle words sent
+  problem: status 8 (link not locked)
+  problem: link not LOCKED after bring-up
+  problem: scene 0 not reconstructed at the ground
+  problem: scene 1 not reconstructed at the ground
+  problem: scene 2 not reconstructed at the ground
+  problem: scene 3 not reconstructed at the ground
+  problem: packets: 0, expected 760
+  problem: packetized scenes: 0, expected 4
+  problem: science frames: 0, expected 1772
+  problem: link code errors: 2420961764, expected 0
+  problem: captured records: 0, expected 1772
+FAIL: run_m5, 4 scenes 128x64x64 D=12 over the link
+upload: board at 169.254.77.10:5001, during the run: no client connected (served on request), 0 bytes acknowledged
+  fetched 0 bytes over TCP: identical to the 0 bytes read over JTAG
