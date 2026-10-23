@@ -146,3 +146,17 @@ PS DDR4 ─HP0─ AXI DMA MM2S ──► hpdp_core ──► AXI DMA S2MM ─HP0
 an MMCM makes the 100 MHz sensor clock. The `hpdp_core` registers sit at
 `0xA000_0000`, the DMA registers at `0xA00A_0000` (SPEC.md §8.1). The M0 loopback
 design and its `dma_loopback` test are in the git history (commit dec38fc).
+
+## Licence
+
+The project's own work in this repository (RTL, constraints, scripts, register map,
+models, software, tests and documents) is licensed under the
+[Apache License 2.0](LICENSE). Copyright 2026 Shubham Draveriya.
+
+The AMD IP in the design is not covered by it and stays under AMD's own licence
+terms: the IP cores that the Vivado scripts generate (Zynq UltraScale+ PS, AXI DMA,
+SmartConnect, Clocking Wizard, Processor System Reset, Concat, Transceivers Wizard,
+SEM, In-System IBERT), the XPM macros and device primitives used in `rtl/`, the
+generated IP in `hpdp_vivado.xpr.zip` and the bitstreams in the XSA files. The
+prebuilt ELF files also contain AMD's embedded software (MIT), lwIP (BSD-3-Clause)
+and FatFs. [NOTICE](NOTICE) lists them with their notices.

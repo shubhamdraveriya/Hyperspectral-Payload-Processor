@@ -1,0 +1,92 @@
+Hyperspectral Payload Data Processor (HPDP)
+Copyright 2026 Shubham Draveriya
+
+Licensed under the Apache License, Version 2.0 (see LICENSE). The licence
+covers the project's own work in this repository: RTL, constraints, Tcl
+scripts, the register map, models, software, tests and documents.
+
+
+AMD IP
+------
+
+The design uses IP and library elements from AMD (Xilinx). They are not
+covered by the Apache License: they stay under AMD's own licence terms (the
+licence agreements of Vivado and Vitis 2025.2 and of each IP core).
+
+- IP cores that the Vivado scripts generate: Zynq UltraScale+ MPSoC processing
+  system (zynq_ultra_ps_e), AXI DMA (axi_dma), AXI SmartConnect
+  (smartconnect), Clocking Wizard (clk_wiz), Processor System Reset
+  (proc_sys_reset), Concat (xlconcat), UltraScale FPGAs Transceivers Wizard
+  (gtwizard_ultrascale), Soft Error Mitigation (sem_ultra) and In-System IBERT
+  (in_system_ibert, IBERT build only)
+- the XPM macros (xpm_cdc_*, xpm_fifo_*, xpm_memory_*) and the device
+  primitives instantiated in rtl/
+- the generated IP files in hpdp_vivado.xpr.zip, and the bitstreams and
+  hardware descriptions in build/m7h/hpdp.xsa and build/m7i_1024b/hpdp.xsa
+
+The scripts and RTL of this repository only configure and instantiate these
+elements. Building the design needs Vivado and the licences it requires for
+the target device.
+
+
+Third-party software in the prebuilt ELF files
+----------------------------------------------
+
+vitis/hpdp_run/build/hpdp_run.elf and build/vitis_sdput/sd_put/build/sd_put.elf
+contain, besides the project's own code:
+
+- AMD embedded software (standalone BSP, drivers, xiltimer, xilffs), MIT
+  License, notice below. Both files.
+- FatFs (part of xilffs), Copyright (C) 2024, ChaN, all right reserved. Both
+  files.
+- lwIP 2.2.0, BSD-3-Clause, notice below. hpdp_run.elf only.
+
+AMD embedded software:
+
+  Copyright (C) 2010 - 2022 Xilinx, Inc. All rights reserved.
+  Copyright (C) 2022 - 2025 Advanced Micro Devices, Inc. All rights reserved.
+
+  Permission is hereby granted, free of charge, to any person obtaining a
+  copy of this software and associated documentation files (the "Software"),
+  to deal in the Software without restriction, including without limitation
+  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+  and/or sell copies of the Software, and to permit persons to whom the
+  Software is furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+  DEALINGS IN THE SOFTWARE.
+
+lwIP:
+
+  Copyright (c) 2001, 2002 Swedish Institute of Computer Science.
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions are met:
+
+  1. Redistributions of source code must retain the above copyright notice,
+     this list of conditions and the following disclaimer.
+  2. Redistributions in binary form must reproduce the above copyright notice,
+     this list of conditions and the following disclaimer in the documentation
+     and/or other materials provided with the distribution.
+  3. The name of the author may not be used to endorse or promote products
+     derived from this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
+  WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+  EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+  OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+  OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
