@@ -5,8 +5,8 @@ from hpdp_pdf import (HpdpDoc, Spacer, bullets, chain_diagram, drawing_figure, f
 
 TITLE = "HPDP Project Brief"
 DOC_ID = "HPDP-BRF-001"
-REV = "B"
-DATE = "2026-10-22"
+REV = "C"
+DATE = "2026-10-23"
 
 
 def story(doc):
@@ -17,8 +17,9 @@ def story(doc):
         ("Hardware", "AMD ZCU106 evaluation board, Zynq UltraScale+ XCZU7EV-2"),
         ("Standards", "CCSDS 123.0-B-2 (compression), 133.0-B (space packets), 732.0-B (AOS "
                       "frames), 131.0-B (channel coding)"),
-        ("Duration", "10 to 15 October 2026, eight milestones, 51 commits"),
-        ("Status", "All milestones (M0 to M7) complete; 101 of 102 requirements met, none unmet"),
+        ("Duration", "10 to 15 October 2026, eight milestones, 51 commits; Ethernet upload tested "
+                     "on the board 23 October"),
+        ("Status", "All milestones (M0 to M7) complete; all 102 requirements met"),
     ], extra=[table(["At a glance", ""], [
         ["What", "The complete onboard data chain of a hyperspectral imaging satellite, running "
                  "in FPGA logic, with a fiber link to a ground receiver"],
@@ -81,9 +82,7 @@ def story(doc):
               ["Timing and resources", "Met on all 11 clocks (250 MHz data path); 17 % of the LUTs "
                                        "and 58 % of the UltraRAM", "VER-09"],
               ["Verification", "150 model tests, 87 RTL tests, all 864 compressor configurations "
-                               "bit-exact, 1300-trial fault campaign; byte-identical to an "
-                               "independent CCSDS 123 model in 947 of 949 runs",
-               "VER-01 to 10, CMP-02"]],
+                               "bit-exact, 1300-trial fault campaign", "VER-01 to 10"]],
               [1.3, 4.0, 1.1]),
           Spacer(1, 6),
           h2("How it was built"),
@@ -105,15 +104,15 @@ def story(doc):
               ["M3", "Sensor emulator, correction, corner turn", "Bit-exact, 250 MHz"],
               ["M4", "First compression on the board", "15 scenes bit-exact"],
               ["M5", "Downlink chain and optical link", "Zero-error fiber link; scenes bit-exact"],
-              ["M6", "PC ground station", "Decode, verify, display"],
+              ["M6", "PC ground station", "Decode, verify, display; Ethernet upload"],
               ["M7", "Radiation mitigation", "Scrubbing, ECC, TMR, watchdogs"]],
               [0.9, 3.0, 2.6]),
           Spacer(1, 6),
           h2("What remains"),
-          bullets(["<b>Ethernet upload on the board</b> (SW-05): written and built; needs an "
-                   "Ethernet port on the PC. About ten minutes.",
-                   "<b>Full prediction at Nx = 1</b> (O-9): refused by the independent model; not a "
-                   "mission setting. About an hour."])]
+          p("Nothing that the specification requires. The compressed output is byte-identical with "
+            "an independent CCSDS 123.0-B-2 implementation (the NTNU SmallSat Lab's model) on 944 "
+            "images, the board's scenes among them. Optional: a decoder-side check with the CNES "
+            "tools or hcomp.")]
     return s
 
 

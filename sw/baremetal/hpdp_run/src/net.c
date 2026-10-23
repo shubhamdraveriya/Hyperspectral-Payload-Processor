@@ -17,6 +17,8 @@
 #include "lwip/dhcp.h"
 #include "lwip/ip_addr.h"
 #include "netif/xadapter.h"
+#include "netif/xemacpsif.h"
+#include "xemac_ieee_reg.h"
 #if LWIP_DHCP_DOES_ACD_CHECK
 #include "lwip/acd.h"
 #endif
@@ -33,7 +35,11 @@
 #define EMAC_BASEADDR   XPAR_GEM3_BASEADDR          /* ZCU106: GEM3, RGMII to the DP83867 */
 #endif
 #define DHCP_TIMEOUT_MS 15000u
+#define LINK_WAIT_MS    20000u                      /* for a PHY slower than the driver's 5 s */
 #define CHUNK           16384u                      /* bytes per tcp_write */
+#define PHY_TI_STS      0x11u                       /* DP83867 PHYSTS: speed in bits 15:14 */
+
+extern u32_t phyaddrforemac;                        /* lwIP port: the PHY that detect_phy found */
 
 static struct netif nif;
 static struct tcp_pcb *listener, *client;
@@ -41,7 +47,7 @@ static volatile net_status_t *const status = (net_status_t *)NET_ADDR;
 static int started, start_result;
 
 static volatile u32 ticks;                          /* 50 ms */
-static volatile int fast_due, slow_due, dhcp_fine_due, dhcp_coarse_due, acd_due;
+static volatile int fast_due, slow_due, dhcp_fine_due, dhcp_coarse_due, acd_due, link_due;
 
 /* the stream */
 static const u8 *base;
@@ -72,6 +78,53 @@ static void tick(void *ref, u32 counter)
         dhcp_coarse_due = 1;                        /* dhcp_coarse_tmr: 60 s */
     if (ticks % 2 == 0)
         acd_due = 1;                                /* acd_tmr: 100 ms */
+    if (ticks % 20 == 0)
+        link_due = 1;                               /* Ethernet link check: 1 s */
+}
+
+/* ------------------------------------------------------------------------ */
+/* The Ethernet link. The lwIP port resets the PHY and waits only 5 s for its
+   autonegotiation (get_TI_phy_speed); with a slower link partner it gives up and
+   leaves the MAC unconfigured, and the board then answers nothing. So the link is
+   checked here, without resetting the PHY again: at the start (waiting up to
+   LINK_WAIT_MS) and every second (a cable plugged in later). The design's GEM clocks
+   are for 1000 Mbit/s, the speed the MAC is set to. */
+static int phy_link_ok(XEmacPs *e)
+{
+    u16_t bmsr;
+
+    XEmacPs_PhyRead(e, phyaddrforemac, IEEE_STATUS_REG_OFFSET, &bmsr);
+    XEmacPs_PhyRead(e, phyaddrforemac, IEEE_STATUS_REG_OFFSET, &bmsr);   /* link bit latches low */
+    return (bmsr & IEEE_STAT_LINK_STATUS) && (bmsr & IEEE_STAT_AUTONEGOTIATE_COMPLETE);
+}
+
+static void link_update(void)
+{
+    static int warned;
+    xemacpsif_s *x = (xemacpsif_s *)((struct xemac_s *)nif.state)->state;
+    XEmacPs *e = &x->emacps;
+    u16_t sts;
+    int up = phy_link_ok(e);
+
+    if (up && x->eth_link_status != ETH_LINK_UP) {
+        XEmacPs_PhyRead(e, phyaddrforemac, PHY_TI_STS, &sts);
+        if ((sts & 0xC000u) != 0x8000u) {
+            if (!warned)
+                xil_printf("net: link at %s Mbit/s, but the MAC runs at 1000 only\r\n",
+                           (sts & 0xC000u) == 0x4000u ? "100" : "10");
+            warned = 1;
+            return;
+        }
+        XEmacPs_SetOperatingSpeed(e, 1000);
+        x->eth_link_status = ETH_LINK_UP;
+        netif_set_link_up(&nif);
+        warned = 0;
+        xil_printf("net: Ethernet link up, 1000 Mbit/s\r\n");
+    } else if (!up && x->eth_link_status == ETH_LINK_UP) {
+        x->eth_link_status = ETH_LINK_DOWN;
+        netif_set_link_down(&nif);
+        xil_printf("net: Ethernet link down\r\n");
+    }
 }
 
 static void publish(void)
@@ -221,16 +274,30 @@ int net_start(u32 ip, u32 mask, u32 port)
     status->port = port;
     set_state(NET_DOWN);
 
-    XTimer_SetInterval(50);
-    XTimer_SetHandler(tick, 0, XINTERRUPT_DEFAULT_PRIORITY);
     lwip_init();
     if (!xemac_add(&nif, NULL, NULL, NULL, mac, EMAC_BASEADDR)) {
         xil_printf("net: Ethernet interface not added\r\n");
         set_state(NET_FAILED);
         return -1;
     }
+    /* the lwIP timer tick: xiltimer's interval timer, TTC0 (XILTIMER_tick_timer
+       in sw/baremetal/build.py; with no tick timer in the BSP these two calls
+       do nothing and the tick never runs: no TCP retransmission, no DHCP retry) */
+    XTimer_SetInterval(50);
+    XTimer_SetHandler(tick, 0, XINTERRUPT_DEFAULT_PRIORITY);
     netif_set_default(&nif);
     netif_set_up(&nif);
+    if (((xemacpsif_s *)((struct xemac_s *)nif.state)->state)->eth_link_status != ETH_LINK_UP) {
+        xemacpsif_s *x = (xemacpsif_s *)((struct xemac_s *)nif.state)->state;
+        xil_printf("net: PHY negotiation slower than the driver's 5 s: waiting up to %d s\r\n",
+                   (int)(LINK_WAIT_MS / 1000));
+        t0 = ms_now();
+        while (!phy_link_ok(&x->emacps) && ms_now() - t0 < LINK_WAIT_MS)
+            ;
+        link_update();
+        if (x->eth_link_status != ETH_LINK_UP)
+            xil_printf("net: no Ethernet link yet (cable?); checked again every second\r\n");
+    }
 
     if (ip == 0) {
 #if LWIP_DHCP
@@ -303,6 +370,10 @@ void net_poll(void)
         acd_tmr();
     }
 #endif
+    if (link_due) {
+        link_due = 0;
+        link_update();
+    }
     xemacif_input(&nif);
     push();
     if (ms_now() - last_publish >= 100u) {

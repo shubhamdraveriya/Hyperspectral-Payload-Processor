@@ -11,8 +11,10 @@ Section numbers in comments refer to CCSDS 123.0-B-2. Samples are processed
 in encoding order; prediction only uses samples already coded, so the same
 predictor serves the encoder and the decoder.
 
-The header field layout (5.3) must still be checked against an independent
-decoder (SPEC open item O-5).
+The output, header included, is byte-identical with an independent
+implementation, the NTNU SmallSat Lab's Issue 2 verification model, on the
+VER-02 matrix, the corner cases and the board's scenes (model/xcheck_ntnu.py,
+docs/independent_check.md; SPEC O-5).
 """
 
 from array import array
@@ -79,6 +81,9 @@ class _Ctx:
             (cfg.local_sum in LOCAL_SUMS, f"local_sum must be one of {LOCAL_SUMS}"),
             # With Nx = 1 the x = 0 and x = Nx-1 neighbour-sum cases of 4.4 coincide
             (self.nx >= 2 or cfg.local_sum.startswith("column"), "neighbour-oriented local sums need Nx >= 2"),
+            # With Nx = 1 the directional local differences of full prediction are always 0,
+            # and the independent NTNU model (model/xcheck_ntnu.py) refuses the mode (4.3.1)
+            (self.nx >= 2 or not cfg.full_prediction, "full prediction mode needs Nx >= 2; use reduced mode"),
             (4 <= cfg.omega <= 19, "omega must be 4..19"),
             (max(32, d + cfg.omega + 2) <= self.register_size <= 64, "register size R out of range"),
             (-6 <= cfg.v_min <= cfg.v_max <= 9, "need -6 <= v_min <= v_max <= 9"),

@@ -168,7 +168,9 @@ def test_invalid_parameters(bad):
 
 def test_single_column_images():
     scene = smooth(1, 6, 5, 12)
-    data = c.compress(scene, c.Config(local_sum="column_wide"))
+    data = c.compress(scene, c.Config(local_sum="column_wide", full_prediction=False))
     assert c.decompress(data).samples == scene.samples
-    with pytest.raises(ValueError, match="Nx >= 2"):
-        c.compress(scene, c.Config(local_sum="neighbor_wide"))
+    with pytest.raises(ValueError, match="local sums need Nx >= 2"):
+        c.compress(scene, c.Config(local_sum="neighbor_wide", full_prediction=False))
+    with pytest.raises(ValueError, match="full prediction mode needs Nx >= 2"):
+        c.compress(scene, c.Config(local_sum="column_wide"))

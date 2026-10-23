@@ -161,7 +161,7 @@ def check_upload(work, a):
         print("  problem: the board has no network address")
         return False
     try:
-        got = b"".join(tcp_records(ip_text(r["net_ip"]), NET_PORT, timeout=10))
+        got = b"".join(tcp_records(ip_text(r["net_ip"]), NET_PORT, timeout=10, idle_timeout=30))
     except OSError as exc:
         print(f"  problem: cannot fetch the records over TCP: {exc}")
         return False

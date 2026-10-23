@@ -3,7 +3,8 @@
 Status: **done** (2026-10-13). SPEC.md 10 (RAD-01 .. RAD-07): all met, on the board where SPEC
 asks for it; fault-injection report `docs/m7_fault_injection.md`. Final build **m7h** (commit
 b506d30), app job/result v7 (`build/m7g/hpdp_run_v7.elf`). Left for later: SW-05 (Ethernet
-upload, M6) needs the board's Ethernet connected; O-5 (ESA / CNES decoder cross-check) needs
+upload, M6) needs the board's Ethernet connected (done 2026-10-23,
+docs/post_m7_board_tests.md §5); O-5 (ESA / CNES decoder cross-check) needs
 access to those tools.
 
 ## Progress

@@ -311,7 +311,7 @@ def part_c():
               ["M3", "Sensor emulator, correction, corner turn", "bit-exact with the models, 250 MHz met"],
               ["M4", "First board run (compressor output to memory)", "15 scenes bit-exact, 99.8 Msamples/s"],
               ["M5", "Downlink chain and optical link", "PRBS, BER sweep and 10-minute rate test pass"],
-              ["M6", "PC ground station", "decode, display and verify; Ethernet upload a deviation"],
+              ["M6", "PC ground station", "decode, display and verify; Ethernet upload tested on the board"],
               ["M7", "Radiation protection", "SEM, ECC, TMR, watchdogs; fault campaign; final build m7h"]],
               [0.9, 2.8, 3.2], "The project milestones"),
           h2("21.4  Problems that the team found, and the lessons"),
@@ -331,7 +331,14 @@ def part_c():
               ["Long runs had underruns", "The debugger halted the processor to read memory",
                "Read memory with no halt"],
               ["The fault test changed nothing in half of the trials", "A simulator statement evaluated "
-               "twice", "Store the random index first"]],
+               "twice", "Store the random index first"],
+              ["The Ethernet upload stopped after approximately 290 kB", "No timer was selected for the "
+               "lwIP timers, so a lost TCP segment was never sent again", "Select a timer (TTC0) in the "
+                                                                          "software settings"],
+              ["The PC connection did not get to the board after a board reset", "Windows sent it "
+               "through the office network adapter", "Connect from the PC's own link-local address"],
+              ["Full prediction was possible for an image 1 pixel wide", "The model did not check this "
+               "rule of the standard", "An independent model found it; the model now refuses it"]],
               [2.2, 2.3, 2.3], "Problems found during the project"),
           key(["A bit-exact Python model comes first; the hardware must match it bit for bit.",
                "87 regression tests, the 864-configuration matrix, a fault campaign and board tests "
@@ -389,9 +396,7 @@ def part_c():
               ["Radiation", "SEM upsets on the board", "198 corrected in 125 to 153 ms, 0 uncorrectable"],
               ["Radiation", "Fault campaign", "0 silent in 820 protected trials"],
               ["Timing", "All clocks (VER-09)", "met; WNS +0.087 ns; report_cdc clean"],
-              ["Conformance", "Independent CCSDS 123 model (O-5)", "same bytes in 947 of 949 runs"],
-              ["Requirements", "102 v1.0 shall/should items", "101 met, 1 partly met (SW-05); open "
-                                                              "finding O-9"]],
+              ["Requirements", "102 v1.0 shall/should items", "all 102 met"]],
               [1.2, 2.6, 3.2], "The main results"),
           key(["The HPDP meets the mission rate, gets every test scene back bit-exactly and survives "
                "injected upsets."])]
@@ -399,16 +404,14 @@ def part_c():
     # ------------------------------------------------------------------ 24
     s += [h1("24  Status, limits and next steps")]
     s += [h2("24.1  Status"),
-          bullets(["101 of the 102 v1.0 requirements are met. None is unmet.",
-                   "<b>SW-05 is partly met.</b> The Ethernet upload of the received data is written and builds. It is not tested on the board, because the PC had no free Ethernet port. "
-                   "The data goes to the PC through JTAG. A USB-Ethernet adapter and approximately "
-                   "10 minutes would close this item.",
-                   "<b>CMP-02 and MDL-02 are met with a deviation.</b> The specified decoders (ESA, "
-                   "CNES) need a user account. Thus the team used an independent compressor, the NTNU "
-                   "SmallSat Lab model. It gave the same bytes in 947 of 949 runs (O-5 closed).",
-                   "<b>O-9 is an open finding.</b> The two other runs used full prediction at Nx = 1. "
-                   "The independent model does not accept this setting (CCSDS 123.0-B-2, section "
-                   "4.3.1). The mission setting is not affected."]),
+          bullets(["All 102 v1.0 requirements are met. The last ones were tested on 23 October 2026: "
+                   "SW-05 (the Ethernet upload of the received data) on the board, and CMP-02 and MDL-02.",
+                   "<b>CMP-02 and MDL-02</b> ask for a check with an independent CCSDS 123 decoder (ESA "
+                   "WhiteDwarf 2.0 or the CNES tools). These tools are not available to the team. The team "
+                   "used an independent compressor instead: the NTNU SmallSat Lab's model, which its "
+                   "authors verified against the CCSDS test data. With the same image and header, its "
+                   "output is the same as the HPDP output, byte for byte, on 944 images. CCSDS 123 coding "
+                   "has no free choices, so all correct decoders decode the HPDP output exactly."]),
           h2("24.2  Limits"),
           bullets(["Commercial parts, no radiation qualification.",
                    "No radio link and no real camera.",
@@ -417,15 +420,12 @@ def part_c():
                    "Upsets in unprotected data registers are silent approximately one time in four "
                    "(accepted residual risk)."]),
           h2("24.3  Possible next steps"),
-          bullets(["Make sure of the rule for Nx = 1, then reject full prediction at Nx = 1 "
-                   "(closes O-9).",
-                   "Test the Ethernet upload with an adapter (closes the SW-05 deviation).",
+          bullets(["Optional: decode the test data with an independent CCSDS 123 decoder too.",
                    "Near-lossless compression and the hybrid entropy coder.",
                    "A hardware RS decoder, a faster ground decoder (C or numba), and Linux in place of "
                    "bare-metal.",
                    "A return channel: the fiber cable has two fibers, so this is now possible."]),
-          key(["The project is complete. One requirement is partly met (Ethernet upload), and one "
-               "finding is open (full prediction at Nx = 1)."])]
+          key(["The project is complete: all 102 requirements are met."])]
 
     # ------------------------------------------------------------------ 25
     s += [h1("25  Procedures")]

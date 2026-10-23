@@ -19,8 +19,8 @@ from hpdp_pdf import HpdpDoc, PageBreak, h1, p  # noqa: E402
 
 TITLE = "HPDP Learning Guide"
 DOC_ID = "HPDP-GDE-001"
-REV = "B"
-DATE = "2026-10-22"
+REV = "C"
+DATE = "2026-10-23"
 
 
 def story(doc):

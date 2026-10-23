@@ -1,194 +1,159 @@
 #!/usr/bin/env python3
-"""Cross-check of the CCSDS 123 model against an independent implementation (SPEC O-5,
-CMP-02, MDL-02).
+"""Cross-check against an independent CCSDS 123.0-B-2 implementation (SPEC CMP-02, MDL-02, O-5).
 
-The NTNU SmallSat Lab's CCSDS 123.0-B-2 high-level model (Python, MIT per its README;
-checked by its authors against the CCSDS test vectors Test1-20190201 and the CNES tool;
-https://github.com/NTNU-SmallSat-Lab/ccsds123_issue_2_verification_model) compresses
-each scene with the settings it reads from our header. Its output must equal ours,
-header and body, byte for byte. The synthetic scenes are those of
-tb/ccsds123/gen_vectors.py, which the RTL matches bit for bit, so a match covers the
-RTL vectors too.
+    python model/xcheck_ntnu.py --hlm <clone> --python <its venv's python> [--matrix all|N]
+                                [--board RUN ...] [--jobs 8]
 
-    git clone https://github.com/NTNU-SmallSat-Lab/ccsds123_issue_2_verification_model <hlm>
-    pip install numpy bitarray
-    python model/xcheck_ntnu.py --hlm <hlm> [-j 4] [named | matrix | extra | all | test ...]
-    python model/xcheck_ntnu.py --hlm <hlm> --real indian_pines [--crop X0 Y0 NX NY]
+The independent implementation is the NTNU SmallSat Lab's Issue 2 verification model
+(github.com/NTNU-SmallSat-Lab/ccsds123_issue_2_verification_model), which its authors
+verified against the CCSDS test vector set. It is a compressor: given an image and the
+header our model wrote, its output (header and body) must be byte-identical to ours.
+CCSDS 123 coding is fully determined by the image and the header, so identical bytes
+mean that any conforming decoder decodes our output bit-exactly.
 
-named: the tests of gen_vectors.py except raw (not CCSDS 123 output); matrix: the 864
-configurations of VER-02; extra: BSQ and BI with M < Nz (model and ground station only;
-the RTL codes BIP) and Nx = 1 in reduced mode. --real: a crop (all bands) of a scene of model/hpdp_datasets.py,
-with the real-data experiment's settings. --hlm defaults to HPDP_NTNU_HLM. Each run's
-files are in --work (default build/xcheck_ntnu), deleted for matching runs unless
---keep; a mismatch reports the first differing byte and the first mapped prediction
-residual that differs (from the NTNU model's predictor-14 CSV).
+Cases: the named tests and the VER-02 matrix of tb/ccsds123/gen_vectors.py (the same
+scenes as the RTL test vectors; the RAW-mode test is not CCSDS 123 and is left out),
+and for each --board run (a run_m5.py / run_m4.py work folder) every scene: the board's
+compressed bytes from out.bin against the NTNU output for the scene's reference input
+(ref_NNNN.hpdp).
+
+The NTNU model always writes to <clone>/output, so each worker runs in a copy of the
+clone (under build/ext/xcheck_work). Its file-name parser reads the image size from the
+name and cannot take an "x" elsewhere in it, so every image is called "img-...". Its
+code runs unchanged, except that numpy.savetxt is a no-op: the CSV files of
+intermediate values would be gigabytes for a real scene; the bitstream and the header
+are written by other code.
 """
 
 import argparse
 import os
 import shutil
+import struct
 import subprocess
 import sys
-import time
-from array import array
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "model"))
 sys.path.insert(0, str(REPO / "tb" / "ccsds123"))
+sys.path.insert(0, str(REPO / "sw" / "host"))
 
-import gen_vectors as gv  # noqa: E402
 from hpdp_model import ccsds123 as c  # noqa: E402
 from hpdp_model import formats as f  # noqa: E402
 from hpdp_model import synth  # noqa: E402
+import gen_vectors as gv  # noqa: E402
 
-# One fresh interpreter per run: the NTNU model keeps state in class attributes. Paths
-# are relative to the run directory, because the model reads the image size from the
-# whole path (regex x(.+)x), so no other "x" may appear in it.
-RUNNER = """
-import sys
-from ccsds123_i2_hlm import ccsds123
-image = ccsds123.CCSDS123(sys.argv[1])
-image.output_folder = sys.argv[3]
-image.set_header_file(sys.argv[2])
-image.compress_image()
-"""
-
-EXTRA = {
-    "order_bsq": dict(cfg=dict(order="bsq")),
-    "order_bil": dict(cfg=dict(order="bi", interleave=1)),
-    "order_bi7": dict(cfg=dict(order="bi", interleave=7)),
-    # one_column in reduced mode: the NTNU model refuses full prediction at Nx = 1 (SPEC O-9)
-    "nx1_reduced_cw": dict(dims=(1, 12, 20), cfg=dict(local_sum="column_wide", full_prediction=False)),
-    "nx1_reduced_cn": dict(dims=(1, 12, 20), cfg=dict(local_sum="column_narrow", full_prediction=False)),
-}
+WORK = REPO / "build" / "ext" / "xcheck_work"
+ENTRY = "ccsds123_0_b_2_high_level_model.py"
+# runs the NTNU entry script (argv[1]) without its CSV dumps; the working folder (only
+# the image and the header) is taken off sys.path, the script's own folder put on it
+WRAPPER = ("import os, runpy, sys, numpy; numpy.savetxt = lambda *a, **k: None; "
+           "sys.argv = sys.argv[1:]; sys.path[:] = [p for p in sys.path if p not in ('', '.')]; "
+           "sys.path.insert(0, os.path.dirname(os.path.abspath(sys.argv[0]))); "
+           "runpy.run_path(sys.argv[0], run_name='__main__')")
 
 
-def synthetic(name, spec):
-    """[(run name, scene, Config, note)] of a gen_vectors test: the same scenes"""
-    t = {**gv.DEFAULT, **spec}
-    nx, ny, nz = t["dims"]
-    cfg = c.Config(**t["cfg"])
-    return [(name if t["scenes"] == 1 else f"{name}_s{k}",
-             synth.PATTERNS[t["pattern"]](nx, ny, nz, t["depth"], seed=100 * k + 7), cfg, "")
-            for k in range(t["scenes"])]
+def bsq_u16be(scene):
+    """The scene as the NTNU model reads it: BSQ, 16-bit big-endian."""
+    nx, ny, nz = scene.nx, scene.ny, scene.nz
+    out = bytearray(2 * nx * ny * nz)
+    i = 0
+    for z in range(nz):
+        for y in range(ny):
+            for x in range(nx):
+                struct.pack_into(">H", out, i, scene.samples[f.index(f.ORDER_BIL, nx, ny, nz, x, y, z)])
+                i += 2
+    return bytes(out)
 
 
-def crop(scene, x0, y0, nx, ny):
-    """pixels x0 .. x0+nx-1 of lines y0 .. y0+ny-1 of a BIL scene, all bands"""
-    if x0 + nx > scene.nx or y0 + ny > scene.ny:
-        raise ValueError(f"crop outside the {scene.nx} x {scene.ny} scene")
-    s = array("H")
-    for y in range(y0, y0 + ny):
-        for z in range(scene.nz):
-            start = (y * scene.nz + z) * scene.nx + x0
-            s.extend(scene.samples[start:start + nx])
-    return f.Scene(nx, ny, scene.nz, scene.depth, s)
+def vector_cases(matrix):
+    """(name, scene, our compressed bytes) for the gen_vectors tests."""
+    names = [n for n in gv.TESTS if not {**gv.DEFAULT, **gv.TESTS[n]}["raw"]]
+    mx = list(gv.MATRIX)
+    if matrix != "all":
+        mx = mx[:: max(1, len(mx) // int(matrix))][: int(matrix)]
+    for name in names + mx:
+        t = {**gv.DEFAULT, **(gv.TESTS[name] if name in gv.TESTS else gv.MATRIX[name])}
+        nx, ny, nz = t["dims"]
+        cfg = c.Config(**t["cfg"])
+        for k in range(t["scenes"]):
+            scene = synth.PATTERNS[t["pattern"]](nx, ny, nz, t["depth"], seed=100 * k + 7)
+            yield f"{name}#{k}", scene, c.compress(scene, cfg)
 
 
-def diagnose(d, ours, theirs, scene, trace):
-    n = min(len(ours), len(theirs))
-    first = next((i for i in range(n) if ours[i] != theirs[i]), n)
-    msg = (f"first differing byte {first} ({'header' if first < c.HEADER_BYTES else 'body'}), "
-           f"sizes {len(ours)} / {len(theirs)}")
-    csv = d / "ntnu" / "predictor-14-mapped_quantizer_index.csv"
-    if csv.exists():
-        rows = [[int(v) for v in line.split(",")] for line in csv.read_text().split()]
-        for z, y, x, *_, delta, _k in trace:
-            if rows[y * scene.nx + x][z] != delta:
-                return msg + f"; first mapped residual that differs: z {z} y {y} x {x}, ours {delta}, NTNU {rows[y * scene.nx + x][z]}"
-        msg += "; mapped residuals identical (entropy coder or packing differs)"
-    return msg
+def board_cases(run):
+    """(name, reference scene, the board's compressed bytes) for the scenes of a board run."""
+    from hpdp_job import MAX_SCENES
+    work = Path(run)
+    # any result version: the scene offset and size tables end the block (sw/host/hpdp_job.py),
+    # scenes_done is its sixth word in every version
+    data = (work / "result.bin").read_bytes()
+    words = struct.unpack(f"<{len(data) // 4}I", data)
+    offsets, sizes = words[-2 * MAX_SCENES:-MAX_SCENES], words[-MAX_SCENES:]
+    out = (work / "out.bin").read_bytes()
+    for k in range(words[5]):
+        scene = f.read_scene(work / f"ref_{k:04d}.hpdp")
+        yield f"{work.name}#{k}", scene, out[offsets[k]:offsets[k] + sizes[k]]
 
 
-def run(case, hlm, work, keep):
-    """(name, status, our bytes, NTNU bytes, note)"""
-    name, scene, cfg, note = case
-    d = work / name
-    shutil.rmtree(d, ignore_errors=True)
-    (d / "ntnu").mkdir(parents=True)
-    trace = []
-    ours = c.compress(scene, cfg, trace=trace)
-    bsq = scene.in_order(f.ORDER_BSQ)
-    if sys.byteorder == "little":
-        bsq.byteswap()                                  # the NTNU model reads u16be
-    raw = f"img-u16be-{scene.nz}x{scene.ny}x{scene.nx}.raw"
-    (d / raw).write_bytes(bsq.tobytes())
-    (d / "header.bin").write_bytes(ours[:c.HEADER_BYTES])
-    (d / "ours.bin").write_bytes(ours)
-    env = {**os.environ, "PYTHONPATH": os.pathsep.join(filter(None, [str(hlm), os.environ.get("PYTHONPATH")]))}
-    p = subprocess.run([sys.executable, "-c", RUNNER, raw, "header.bin", "ntnu"],
-                       cwd=d, env=env, capture_output=True, text=True)
-    out = d / "ntnu" / "z-output-bitstream.bin"
-    if p.returncode or not out.exists():
-        (d / "ntnu.log").write_text(p.stdout + p.stderr)
-        last = (p.stderr.strip().splitlines() or ["no output"])[-1]
-        return name, "ERROR", len(ours), 0, f"{last} ({d / 'ntnu.log'})"
-    theirs = out.read_bytes()
-    if theirs == ours:
-        if not keep:
-            shutil.rmtree(d)
-        return name, "match", len(ours), len(theirs), note
-    return name, "MISMATCH", len(ours), len(theirs), diagnose(d, ours, theirs, scene, trace) + (f"; {note}" if note else "")
+def run_ntnu(python, clone, name, scene, ours):
+    """Compress with the NTNU model, using our header; returns (verdict, detail)."""
+    hdr_len = c.parse_header(ours)[5]
+    w = WORK / f"w{os.getpid()}_{abs(hash(name)) % 10**8}"
+    shutil.rmtree(w, ignore_errors=True)
+    shutil.copytree(clone, w / "hlm", ignore=shutil.ignore_patterns(".git", "output"))
+    (w / "hlm" / "output").mkdir()
+    img = f"img-u16be-{scene.nz}x{scene.ny}x{scene.nx}.raw"
+    (w / img).write_bytes(bsq_u16be(scene))
+    (w / "hdr.bin").write_bytes(ours[:hdr_len])
+    try:
+        p = subprocess.run([python, "-E", "-s", "-c", WRAPPER, str(w / "hlm" / ENTRY), img, "--header", "hdr.bin"],
+                           cwd=w, capture_output=True, text=True, errors="replace")
+        if p.returncode:
+            last = (p.stderr.strip().splitlines() or ["?"])[-1]
+            return "REFUSED", last
+        theirs = (w / "hlm" / "output" / "z-output-bitstream.bin").read_bytes()
+        hdr_same = (w / "hlm" / "output" / "header.bin").read_bytes() == ours[:hdr_len]
+        cost = "; ".join(l.strip() for l in p.stdout.splitlines() if l.startswith(("Done!", "Memory")))
+        if theirs == ours:
+            return "IDENTICAL", f"{len(ours)} bytes" + ("" if hdr_same else ", but header.bin differs") + \
+                (f" ({cost})" if scene.nx * scene.ny * scene.nz > 10**6 else "")
+        first = next((i for i, (a, b) in enumerate(zip(theirs, ours)) if a != b), min(len(theirs), len(ours)))
+        return "DIFFERENT", f"ours {len(ours)} bytes, NTNU {len(theirs)}, first difference at byte {first}"
+    finally:
+        shutil.rmtree(w, ignore_errors=True)
 
 
 def main():
-    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("tests", nargs="*", help="named, matrix, extra, all, or test names (default named)")
-    p.add_argument("--hlm", default=os.environ.get("HPDP_NTNU_HLM"), help="the NTNU model's clone")
-    p.add_argument("--work", default=str(REPO / "build" / "xcheck_ntnu"))
-    p.add_argument("-j", "--jobs", type=int, default=4)
-    p.add_argument("--keep", action="store_true", help="keep the files of matching runs")
-    p.add_argument("--real", help="a scene of model/hpdp_datasets.py, e.g. indian_pines")
-    p.add_argument("--crop", type=int, nargs=4, default=[0, 0, 32, 16], metavar=("X0", "Y0", "NX", "NY"))
-    a = p.parse_args()
-    hlm = Path(a.hlm or "")
-    if not a.hlm or not (hlm / "ccsds123_i2_hlm").is_dir():
-        p.error("--hlm (or HPDP_NTNU_HLM) must point at a clone of the NTNU model")
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--hlm", required=True, help="the clone of ccsds123_issue_2_verification_model")
+    ap.add_argument("--python", required=True, help="a Python with numpy, bitarray and psutil")
+    ap.add_argument("--matrix", default="all", help="VER-02 matrix configurations: all or a number")
+    ap.add_argument("--board", nargs="*", default=[], help="board run folders (build/runs/<name>)")
+    ap.add_argument("--no-vectors", action="store_true", help="board runs only")
+    ap.add_argument("--jobs", type=int, default=os.cpu_count() or 4)
+    a = ap.parse_args()
 
-    named = {k: v for k, v in gv.TESTS.items() if not v.get("raw")}
-    groups = {"named": named, "matrix": gv.MATRIX, "extra": EXTRA}
-    groups["all"] = {**named, **gv.MATRIX, **EXTRA}
-    specs = {}
-    for t in a.tests or ([] if a.real else ["named"]):
-        if t in groups:
-            specs.update(groups[t])
-        elif t in groups["all"]:
-            specs[t] = groups["all"][t]
-        else:
-            p.error(f"unknown test {t}")
-    cases = [case for name, spec in specs.items() for case in synthetic(name, spec)]
-    if a.real:
-        import hpdp_datasets as ds
-        scene, _, _ = ds.load(a.real)
-        part = crop(scene, *a.crop)
-        print(f"{a.real}: {scene.nx} x {scene.ny} x {scene.nz}, D {scene.depth}; "
-              f"crop x {a.crop[0]} y {a.crop[1]}, {part.nx} x {part.ny} x {part.nz}")
-        cases += [(f"real_{k}", part, c.Config(**opts), label) for k, (label, opts) in enumerate(ds.SETTINGS)]
-
-    work = Path(a.work)
-    work.mkdir(parents=True, exist_ok=True)
-    print(f"{len(cases)} runs, {a.jobs} at a time, NTNU model {hlm}")
-    t0 = time.time()
-    results = []
+    cases = [] if a.no_vectors else list(vector_cases(a.matrix))
+    for run in a.board:
+        cases += list(board_cases(run))
+    WORK.mkdir(parents=True, exist_ok=True)
+    print(f"{len(cases)} images through the NTNU model ({a.jobs} at a time)")
+    tally = {}
+    python, clone = str(Path(a.python).absolute()), Path(a.hlm).absolute()   # workers run elsewhere
     with ThreadPoolExecutor(a.jobs) as pool:
-        for k, r in enumerate(pool.map(lambda case: run(case, hlm, work, a.keep), cases), 1):
-            results.append(r)
-            if r[1] != "match":
-                print(f"  {r[1]:8} {r[0]}: {r[4]}")
-            elif r[4]:
-                print(f"  match    {r[0]} ({r[4]}): {r[2]} bytes")
-            if k % 50 == 0 or k == len(cases):
-                print(f"  {k} of {len(cases)} done, {time.time() - t0:.0f} s")
-
-    bad = [r for r in results if r[1] != "match"]
-    lines = [f"{s:8} {n:28} {o:8} {t:8}  {note}" for n, s, o, t, note in results]
-    (work / "report.txt").write_text("status   run                          ours     NTNU     note\n"
-                                     + "\n".join(lines) + "\n")
-    print(f"{len(results) - len(bad)} of {len(results)} identical to the NTNU model; "
-          f"{time.time() - t0:.0f} s; report {work / 'report.txt'}")
-    return 1 if bad else 0
+        futures = [(n, pool.submit(run_ntnu, python, clone, n, s, o)) for n, s, o in cases]
+        for n, fut in futures:
+            verdict, detail = fut.result()
+            tally[verdict] = tally.get(verdict, 0) + 1
+            if verdict != "IDENTICAL" or not n.startswith("mx_"):
+                print(f"  {n}: {verdict}, {detail}", flush=True)
+    print(", ".join(f"{v} {k}" for k, v in sorted(tally.items())))
+    ok = set(tally) == {"IDENTICAL"}
+    print(("PASS" if ok else "FAIL") + f": {tally.get('IDENTICAL', 0)} of {len(cases)} images byte-identical "
+          "with the NTNU CCSDS 123.0-B-2 model")
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":

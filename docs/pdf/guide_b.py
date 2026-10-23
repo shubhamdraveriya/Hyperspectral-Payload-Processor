@@ -626,7 +626,12 @@ def part_b():
               [1, 5], "Ground station commands"),
           h2("16.3  How the data gets to the PC"),
           p("In the board tests, the host script reads the records from the DDR4 memory through JTAG. "
-            "The specification also asks for an upload over Ethernet (requirement SW-05). The board program has this function, and it builds. The team did not test it on the board, because the PC had no free Ethernet port. The project records this as a deviation."),
+            "The specification also asks for an upload over Ethernet (requirement SW-05). The board program has this function. "
+            "The team tested it on the board on 23 October 2026: the records that came over TCP were the same as the records that came through JTAG, "
+            "and the ground station rebuilt all the scenes bit-exactly."),
+          note("The first Ethernet test stopped after approximately 290 kB. The cause: the lwIP timers did not run, so a lost TCP segment "
+               "was never sent again. The software settings enabled the timer function but selected no timer for it, and with no timer the "
+               "function does nothing. A function that you enable is not always a function that operates: measure that it operates."),
           h2("16.4  Why the decoding is on the PC"),
           p("The ground side of a real mission has large computers. Thus the team put the RS decoding "
             "and the decompression in Python, where they are easy to check. The RS decoder agreed with "
@@ -637,8 +642,8 @@ def part_b():
                "output is a bit-exact reference."),
           key(["The ground station corrects errors, checks frames, extracts packets, rebuilds scenes, "
                "decompresses and compares bit for bit.",
-               "In the board tests, the records come to the PC through JTAG; the Ethernet upload is "
-               "a documented deviation."]),
+               "In the board tests, the records come to the PC through JTAG, and also over Ethernet "
+               "(SW-05, tested on the board)."]),
           check("Chapter 16: The ground station", [
               ("How does the ground station find a lost frame?",
                "The frame counter of the virtual channel has a gap."),

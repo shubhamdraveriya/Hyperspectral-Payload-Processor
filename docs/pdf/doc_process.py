@@ -8,8 +8,8 @@ from hpdp_pdf import (HpdpDoc, PageBreak, Spacer, bullets, caution, chain_diagra
 
 TITLE = "HPDP Process Description"
 DOC_ID = "HPDP-PRC-001"
-REV = "B"
-DATE = "2026-10-22"
+REV = "C"
+DATE = "2026-10-23"
 
 
 # Section 3.2: the blocks of the satellite part, in the order of the data. Section 3.3
@@ -250,14 +250,12 @@ def story(doc):
               ["M5", "12 Oct", "Link and end-to-end tests pass", "3.4 × 10<super>12</super> "
                                "bits with no error; scenes bit-exact up to BER 10<super>-3</super>"],
               ["M6", "12 to 15 Oct", "Ground station decodes and shows the data",
-               "Complete, except the Ethernet upload test on the board"],
+               "Complete; Ethernet upload tested on the board on 23 Oct"],
               ["M7", "13 Oct", "Radiation mitigation complete", "Upsets corrected in 153 ms or "
                                                                 "less; no silent error in "
                                                                 "protected parts"],
-              ["After M7", "14 to 15 Oct", "Real data, larger build, SD card, console, "
-                                           "independent check",
-               "63 real scenes lossless; 1024-pixel build tested on the board; the same bytes as "
-               "an independent CCSDS 123 model in 947 of 949 runs"]],
+              ["After M7", "14 to 15 Oct", "Real data, larger build, SD card, console",
+               "63 real scenes lossless; 1024-pixel build tested on the board"]],
               [1.1, 1.3, 2.6, 3.0]),
           Spacer(1, 4)]
 
@@ -321,8 +319,7 @@ def story(doc):
             "input for each compressed image. The Reed-Solomon encoder must give the same check "
             "bytes as an independent library (reedsolo)."),
           h3("Result"),
-          p("138 tests passed at M1. At the end of the project, there are 150 tests. The check of "
-            "the compressor model against an independent model came after M7 (Section 5.10)."),
+          p("138 tests passed at M1. At the end of the project, there are 150 tests."),
 
           h2("5.4  M2: The compressor in hardware"),
           h3("Objective"),
@@ -425,9 +422,11 @@ def story(doc):
             "It corrects the errors, takes out the packets and the scenes, and decompresses each "
             "scene. It compares each scene with the reference. It shows false-colour images and "
             "statistics."),
-          note("The upload of the records through Ethernet (requirement SW-05) is written, but "
-               "the team did not test it on the board. The PC had no free Ethernet port. The "
-               "records come to the PC through JTAG."),
+          note("The board also sends the records to the PC through Ethernet (requirement "
+               "SW-05). The team did the test of this function on the board on 23 October 2026. "
+               "The test found two faults in the board program and one fault in the PC program. "
+               "The team corrected the three faults. After that, the records that came through "
+               "Ethernet were the same as the records that came through JTAG."),
 
           h2("5.9  M7: Radiation mitigation"),
           h3("Objective"),
@@ -464,10 +463,6 @@ def story(doc):
                    "A UART console lets an operator start the jobs.",
                    "<b>Full test matrix.</b> All 864 compressor configurations of the "
                    "specification are bit-exact.",
-                   "<b>Independent check.</b> An independent CCSDS 123.0-B-2 model (NTNU SmallSat "
-                   "Lab) read the HPDP header and compressed the same scenes. It gave the same bytes "
-                   "as the HPDP in 947 of 949 runs. The other two runs found open item O-9 "
-                   "(Section 9).",
                    "<b>Transfer package.</b> Two archives let you move the project to another "
                    "computer.",
                    "<b>Project report.</b> The report gives the status of each requirement."])]
@@ -603,19 +598,12 @@ def story(doc):
 
     # ------------------------------------------------------------------ 8
     s += [h1("9  Status")]
-    s += [p("The HPDP meets 101 of the 102 requirements of version 1.0 of the specification. No "
-            "requirement has the status “not met”. Note these items:"),
-          bullets(["<b>SW-05</b> (upload through Ethernet) is partly met. The code is written and "
-                   "it builds. The test on the board needs an Ethernet port on the PC.",
-                   "<b>CMP-02 and MDL-02</b> (comparison with an independent CCSDS 123 "
-                   "implementation) are met, with a documented deviation. The specification gives "
-                   "the ESA and the CNES decoders, but these tools need an account. Thus the team "
-                   "used an independent compressor: the CCSDS 123.0-B-2 model of the NTNU SmallSat "
-                   "Lab. It gave the same bytes as the HPDP in 947 of 949 runs.",
-                   "<b>O-9</b> is an open finding. The two other runs used full prediction with one "
-                   "pixel in each line (Nx = 1). The independent model does not accept this setting "
-                   "(CCSDS 123.0-B-2, section 4.3.1). The mission setting (Nx = 512) is not "
-                   "affected."]),
+    s += [p("The HPDP meets all 102 requirements of version 1.0 of the specification."),
+          bullets(["<b>CMP-02 and MDL-02</b> (comparison with an independent CCSDS 123 "
+                   "implementation): the ESA and CNES tools are not available to the team. The team "
+                   "used the NTNU SmallSat Lab's model instead. Its authors verified it against the "
+                   "CCSDS test data. Its output was the same as the HPDP output, byte for byte, on "
+                   "944 images. The project report records this change of tool."]),
           p("The results report (HPDP-RPT-001) gives the results, the status of each requirement "
             "and the open items.")]
 

@@ -284,16 +284,43 @@ def capture_records(path):
         yield data[off:off + RECORD_BYTES]
 
 
-def tcp_records(host, port, timeout=None):
+def _connect(host, port, timeout):
+    """A TCP connection to the board. For a link-local board address (169.254/16,
+    the board's fallback without DHCP) it is made from the PC's own link-local
+    address: after the board's reset drops the link, Windows can send a new
+    connection to such an address out of another adapter (seen with the office
+    LAN's address as the source, so the board never sees it)."""
+    import ipaddress
+    import socket
+    try:
+        link_local = ipaddress.ip_address(host).is_link_local
+    except ValueError:                              # a host name
+        link_local = False
+    if link_local:
+        try:
+            local = socket.gethostbyname_ex(socket.gethostname())[2]
+        except OSError:
+            local = []
+        sources = [a for a in local if ipaddress.ip_address(a).is_link_local]
+        for i, src in enumerate(sources):
+            try:
+                return socket.create_connection((host, port), timeout=timeout, source_address=(src, 0))
+            except OSError:
+                if i == len(sources) - 1:
+                    raise
+    return socket.create_connection((host, port), timeout=timeout)
+
+
+def tcp_records(host, port, timeout=None, idle_timeout=None):
     """Records from a TCP stream of back-to-back 1024-byte capture records (the
     board's ground upload, SW-05); ends when the sender closes the connection.
     A thread receives as fast as the network delivers, so slow decoding does not
-    hold the sender back."""
+    hold the sender back. A receive error, or no data for idle_timeout seconds,
+    raises OSError (TimeoutError) instead of ending the stream."""
     import queue
-    import socket
     import threading
-    s = socket.create_connection((host, port), timeout=timeout)
-    s.settimeout(None)
+    s = _connect(host, port, timeout)
+    s.settimeout(idle_timeout)
     chunks = queue.Queue()
 
     def receive():
@@ -303,6 +330,8 @@ def tcp_records(host, port, timeout=None):
                 if not chunk:
                     break
                 chunks.put(chunk)
+        except OSError as exc:
+            chunks.put(exc)
         finally:
             s.close()
             chunks.put(None)
@@ -313,6 +342,8 @@ def tcp_records(host, port, timeout=None):
         chunk = chunks.get()
         if chunk is None:
             break
+        if isinstance(chunk, OSError):
+            raise chunk
         buf += chunk
         n = len(buf) // RECORD_BYTES * RECORD_BYTES
         for off in range(0, n, RECORD_BYTES):
