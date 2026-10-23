@@ -27,7 +27,7 @@ reference the RTL is checked against in M2–M5 (SPEC.md MDL-01..04).
 | CCSDS 123 encoder/decoder consistency | lossless round trip for 20 configurations × D ∈ {8, 12, 16}, noise at D ∈ {2, 5, 16}, constant images, BSQ / BIL / BIP / sub-frame orders | high |
 | Predictor behaviour | `test_interband_prediction_converges`: with the same texture in every band, the previous-band weight converges and the late residual falls below 0.5 (0.02 measured); spatial-only prediction cannot do this | high |
 | Near-lossless quantizer | max error ≤ m for m = 1, 3, 7 (body only; header subpart not implemented) | high |
-| CCSDS 123 conformance (equations, header bit layout) | written from CCSDS 123.0-B-2; **not yet checked against an independent decoder** | pending O-5 |
+| CCSDS 123 conformance (equations, header bit layout) | byte-identical, header included, with the NTNU SmallSat Lab's CCSDS 123.0-B-2 model on the VER-02 matrix, the corner cases and the board's scenes (2026-10-23, docs/independent_check.md) | high |
 | RS generator and dual basis | generator palindromic (reciprocal root pairs), zero syndromes on codewords, dual-basis table from libfec `ccsds_tal.c` | medium–high |
 | RS decoder | corrects every pattern of ≤ 16 symbol errors tested, flags ≥ 17 as uncorrectable, 64-byte burst at I = 4 corrected | high |
 | RS against an independent implementation | `test_matches_independent_implementation`: parity identical to `reedsolo` (same field and roots) | high |
@@ -38,11 +38,11 @@ reference the RTL is checked against in M2–M5 (SPEC.md MDL-01..04).
 
 Test count: 142 (138 at M1, 4 added for `sensor.py` in M3), all passing.
 
-## Still open for M1's "done when"
+## M1's "done when": the independent check
 
-1. **Independent CCSDS 123.0-B-2 decoder** (SPEC O-5): request ESA WhiteDwarf 2.0
-   and/or the CNES tools, then decompress `compress()` output with them, starting with
-   the header. Until then conformance rests on implementing the standard's text.
+1. ~~**Independent CCSDS 123.0-B-2 decoder** (SPEC O-5)~~ Done on 2026-10-23 with an
+   independent compressor instead of the named decoders, which are not available here
+   (docs/independent_check.md).
 
 ## Notes for M2 (RTL)
 

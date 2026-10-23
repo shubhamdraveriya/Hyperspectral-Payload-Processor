@@ -8,7 +8,7 @@ hyperspectral Earth-observation satellite, on the AMD ZCU106 (Zynq UltraScale+ X
 | Report date | 2026-10-14 |
 | Final builds | **m7h** (commit b506d30), `NX_MAX` 512: the board-tested build; **m7i_1024b** (commit d2eda42), `NX_MAX` 1024 (SYS-04, board-tested) |
 | Specification | [SPEC.md](../SPEC.md) v1.0 |
-| Milestone notes | [m0](m0_bringup.md), [m1](m1_models.md), [m2](m2_compressor.md), [m3](m3_frontend.md), [m4](m4_board_run.md), [m5](m5_downlink.md), [m6](m6_ground_station.md), [m7 plan](m7_plan.md), [m7 runbook](m7_board_runbook.md), [fault injection](m7_fault_injection.md); after M7: [UART console](console.md), [`NX_MAX` 1024](nx_max_1024.md), [real data](real_data.md) |
+| Milestone notes | [m0](m0_bringup.md), [m1](m1_models.md), [m2](m2_compressor.md), [m3](m3_frontend.md), [m4](m4_board_run.md), [m5](m5_downlink.md), [m6](m6_ground_station.md), [m7 plan](m7_plan.md), [m7 runbook](m7_board_runbook.md), [fault injection](m7_fault_injection.md); after M7: [UART console](console.md), [`NX_MAX` 1024](nx_max_1024.md), [real data](real_data.md), [independent CCSDS 123 check](independent_check.md) |
 
 ## 1. Summary
 
@@ -49,12 +49,14 @@ Results on the board:
 
 Status:
 
-- 100 of 102 v1.0 *shall* / *should* requirements are met; none is unmet. The last one,
-  SW-05 (the ground-record upload over Ethernet), was tested on the board on 2026-10-23:
-  the records fetched over TCP identical to the JTAG copy, the scenes bit-exact at the
-  ground station (docs/post_m7_board_tests.md §5).
-- **2 are pending:** the independent CCSDS 123 decoder check (CMP-02, MDL-02) needs ESA /
-  CNES tools (O-5). See §5.
+- All 102 v1.0 *shall* / *should* requirements are met; none is unmet. The last three,
+  on 2026-10-23: SW-05 (the ground-record upload over Ethernet), tested on the board, the
+  records fetched over TCP identical to the JTAG copy (docs/post_m7_board_tests.md §5);
+  CMP-02 and MDL-02 (the independent CCSDS 123 check, O-5), with an independent
+  compressor in place of the named decoders: the output of the NTNU SmallSat Lab's
+  CCSDS 123.0-B-2 model, verified by its authors against the CCSDS test vectors, is
+  byte-identical with ours on 944 images, the whole VER-02 matrix and 21 board scenes
+  among them (docs/independent_check.md; a substitution, §6).
 
 ## 2. System
 
@@ -192,7 +194,7 @@ separately.
 | Sensor emulator (SE-01 … 06) | all | – |
 | Radiometric correction (RC-01 … 05) | all | – |
 | Corner turn (CT-01 … 04) | all | – |
-| Compressor (CMP-01, 03 … 09) | all | **CMP-02**: no independent CCSDS 123 decoder yet (O-5) |
+| Compressor (CMP-01 … 09) | all; CMP-02 against the NTNU CCSDS 123.0-B-2 model instead of WhiteDwarf / CNES ([note](independent_check.md)) | – |
 | Packetizer, AOS framer (PKT, AOS) | all | – |
 | Channel coding (CC-01 … 06) | all; CC-06 cross-checked with `reedsolo` instead of libfec | – |
 | Error injector (EI-01 … 04) | all | – |
@@ -201,7 +203,7 @@ separately.
 | Data movement (DM-01 … 03) | all | – |
 | PS software (SW-01 … 06) | all; SW-02 and SW-04 on the board 2026-10-14 ([console.md](console.md)); SW-05's TCP upload on the board 2026-10-23 ([runbook](post_m7_board_tests.md) §5) | – |
 | Ground station (GS-01 … 06) | all; GS-02 cross-checked with `reedsolo` instead of libfec | – |
-| Models (MDL-01 … 04) | 01, 03, 04 | **MDL-02**: cross-validation against an independent decoder (O-5) |
+| Models (MDL-01 … 04) | all; MDL-02 against the NTNU model ([note](independent_check.md)) | – |
 | Radiation (RAD-01 … 07) | all | – |
 | Verification (VER-01 … 10) | all; VER-04 with `reedsolo`; VER-02: a random subset in every regression and the full matrix by one command (no scheduler runs it nightly) | – |
 
@@ -218,6 +220,7 @@ Other items:
 |---|---|
 | Job interface first, console later (SW-02, SW-04) | Since M4 the host builds each job (scenes, tables, settings) and loads it over JTAG together with the bitstream and the app; the app prints a summary and returns a result block that the host checks bit for bit. This made every board run reproducible and self-checking. The SD card loading and UART console came after M7 (2026-10-14): the console posts the same job block, so both paths share the app's checks |
 | `reedsolo` instead of libfec (CC-06, GS-02, VER-04) | An independent RS implementation in Python, with the same field and roots, available without building libfec on Windows |
+| NTNU model instead of WhiteDwarf / CNES (CMP-02, MDL-02, O-5) | The named decoders are not available here: ESA's ESSR registers only industry of ESA member states, the CNES tools need a registration of their own. The NTNU SmallSat Lab's CCSDS 123.0-B-2 verification model (open source, verified by its authors against the CCSDS test vectors and compared with the CNES tool) is a compressor: given our header, its output is byte-identical with ours, and CCSDS 123 coding is fully determined by the image and the header, so every conforming decoder decodes our streams exactly. It found one thing: full prediction with Nx = 1, now refused (docs/independent_check.md) |
 | Calibration table layouts (M7, SYS-04) | Layout A, one entry per 64-bit word, up to 512 × 256 (the user's choice); layout B, two entries' dark and gain per word and the bad flags apart, above it, so that `NX_MAX` 1024 fits in 80 of 96 UltraRAMs |
 | Test data (SPEC §11) | Indian Pines, and the GICI (Universitat Autònoma de Barcelona) test sets of 49 AVIRIS and 13 Hyperion scenes in place of Salinas and Pavia University: their usual source refuses this network and has no official mirror, and the CCSDS corpus is behind a login |
 | SYS-09 RAW overload: option (a) | RAW mode shows that raw data exceeds the link; whole scenes are not dropped on purpose (docs/m7_plan.md decision 1) |
@@ -231,7 +234,8 @@ Other items:
 
 | Item | Needs | Effort |
 |---|---|---|
-| CMP-02 / MDL-02 / O-5: independent CCSDS 123 decoder | an account: ESA's WhiteDwarf 2.0 (ESSR, essr.esa.int/project/whitedwarf-2-0) includes a 123.0-B-2 decompressor in source, ESA Community Licence v2.4 permissive (type 3); or CNES's object-code compressor and decompressor (connectbycnes.fr). Then decode the RTL test vectors and the real-data scenes with it | half a day once available |
+| Optional: a decoder-side CCSDS 123 check | hcomp (OCaml, an open-source CCSDS 123.0-B-2 decompressor) or the CNES tools if a registration becomes possible (docs/independent_check.md) | half a day |
+| Optional: `hpdp_run` refuses Nx = 1 in the console's default configuration | a check in the app and a board run of the console (docs/independent_check.md) | an hour |
 
 Stretch goals (SPEC §15) are untouched. The return channel is now possible: the cable
 is duplex (O-1).

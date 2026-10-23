@@ -598,10 +598,12 @@ def story(doc):
 
     # ------------------------------------------------------------------ 8
     s += [h1("9  Status")]
-    s += [p("The HPDP meets 100 of the 102 requirements of version 1.0 of the specification. No "
-            "requirement has the status “not met”. Two requirements are open:"),
-          bullets(["<b>CMP-02 and MDL-02</b> (comparison with an independent CCSDS 123 decoder) are "
-                   "open. They need an account for the ESA or the CNES tools."]),
+    s += [p("The HPDP meets all 102 requirements of version 1.0 of the specification."),
+          bullets(["<b>CMP-02 and MDL-02</b> (comparison with an independent CCSDS 123 "
+                   "implementation): the ESA and CNES tools are not available to the team. The team "
+                   "used the NTNU SmallSat Lab's model instead. Its authors verified it against the "
+                   "CCSDS test data. Its output was the same as the HPDP output, byte for byte, on "
+                   "944 images. The project report records this change of tool."]),
           p("The results report (HPDP-RPT-001) gives the results, the status of each requirement "
             "and the open items.")]
 

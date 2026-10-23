@@ -27,7 +27,7 @@ PDF documents in [docs/pdf/](docs/pdf/) (built by `docs/pdf/build_docs.py`):
 | Milestone | Content | State |
 |---|---|---|
 | M0 | Repository, tool flow, ZCU106 base design with DMA loopback | **done**: 64 MB loopback passes on the board at 3865 MB/s ([notes](docs/m0_bringup.md)) |
-| M1 | Python reference models (CCSDS 123, framing, RS) | models done, 150 tests pass; independent CCSDS 123 check pending (O-5) ([notes](docs/m1_models.md)) |
+| M1 | Python reference models (CCSDS 123, framing, RS) | **done**: 150 tests pass; byte-identical with an independent CCSDS 123.0-B-2 implementation (NTNU) on 944 images, the board's scenes among them ([notes](docs/m1_models.md), [check](docs/independent_check.md)) |
 | M2 | CCSDS 123 compressor RTL | **done**: bit-exact on all 864 configurations of the VER-02 matrix; 250 MHz met at 512 × 256 (13.6k LUT, 19 DSP, 8 URAM) ([notes](docs/m2_compressor.md)) |
 | M3 | Sensor emulator, radiometric correction, corner turn | **done**: bit-exact with the models through the compressor on 12 tests (incl. line drops with fill lines); 250 MHz met at 512 × 256 (1.1k LUT, 1 DSP, 32 URAM) ([notes](docs/m3_frontend.md)) |
 | M4 | On-board compression run | **done**: 15 scenes from the board identical to the model and decoded bit-exactly; 99.8 Msamples/s; 250 MHz met on the full chip, CDC clean ([notes](docs/m4_board_run.md)) |

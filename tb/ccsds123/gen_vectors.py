@@ -60,7 +60,7 @@ TESTS = {
     "raw":          dict(raw=True, cfg=dict(output_word_bytes=5)),
     "max_dims":     dict(dims=(NX_MAX, 2, NZ_MAX), scenes=1),
     "min_bands":    dict(dims=(24, 5, 16)),
-    "one_column":   dict(dims=(1, 12, 20), cfg=dict(local_sum="column_wide")),
+    "one_column":   dict(dims=(1, 12, 20), cfg=dict(local_sum="column_wide", full_prediction=False)),
     "one_row":      dict(dims=(40, 1, 20)),
     # corner-case images (VER-03); random, incompressible ones are the noise tests
     "all_zero":     dict(pattern="zero", cfg=dict(bands=15)),

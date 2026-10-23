@@ -9,7 +9,6 @@ DOC_ID = "HPDP-RPT-001"
 REV = "B"
 DATE = "2026-10-23"
 PASS = "<font color='#006300'><b>PASS</b></font>"
-OPEN = "<font color='#52514e'><b>OPEN</b></font>"
 
 
 def story(doc):
@@ -21,7 +20,7 @@ def story(doc):
                           "NX_MAX 1024)"),
         ("Hardware", "AMD ZCU106, XCZU7EV-2; two 1000BASE-SX SFP modules; 1 m duplex OM3 fiber"),
         ("Specification", "SPEC.md v1.0 (102 shall / should requirements)"),
-        ("Result", "100 of 102 requirements met; 2 pending an external tool"),
+        ("Result", "102 of 102 requirements met"),
     ], extra=[p("This report gives the measured results of the Hyperspectral Payload Data "
                 "Processor: throughput, compression, the optical link, end-to-end integrity, "
                 "radiation mitigation, implementation and verification coverage, followed by the "
@@ -47,7 +46,8 @@ def story(doc):
               ["Compressor matrix (VER-02)", "864 of 864 configurations bit-exact", PASS],
               ["Ethernet upload (SW-05)", "1 814 528 bytes over TCP identical to the JTAG copy in "
                                           "4 runs; 4 of 4 scenes bit-exact", PASS],
-              ["Independent decoder (CMP-02, MDL-02)", "Needs ESA or CNES tool access (O-5)", OPEN]],
+              ["Independent CCSDS 123 check (CMP-02, MDL-02)", "944 of 944 images byte-identical with the "
+                                                        "NTNU model, 21 board scenes among them", PASS]],
               [1.9, 3.6, 0.8]),
           Spacer(1, 6),
           h2("1.1  Test set-up"),
@@ -239,7 +239,7 @@ def story(doc):
               ["Sensor emulator (SE-01 to 06)", "All", "–"],
               ["Radiometric correction (RC-01 to 05)", "All", "–"],
               ["Corner turn (CT-01 to 04)", "All", "–"],
-              ["Compressor (CMP-01, 03 to 09)", "All", "CMP-02: independent decoder (O-5)"],
+              ["Compressor (CMP-01 to 09)", "All; CMP-02 with the NTNU model (section 9)", "–"],
               ["Packetizer, AOS framer", "All", "–"],
               ["Channel coding (CC-01 to 06)", "All; CC-06 with reedsolo instead of libfec", "–"],
               ["Error injector (EI-01 to 04)", "All", "–"],
@@ -248,7 +248,7 @@ def story(doc):
               ["Data movement (DM-01 to 03)", "All", "–"],
               ["PS software (SW-01 to 06)", "All", "–"],
               ["Ground station (GS-01 to 06)", "All; GS-02 with reedsolo", "–"],
-              ["Models (MDL-01 to 04)", "01, 03, 04", "MDL-02: independent decoder (O-5)"],
+              ["Models (MDL-01 to 04)", "All; MDL-02 with the NTNU model", "–"],
               ["Radiation (RAD-01 to 07)", "All", "–"],
               ["Verification (VER-01 to 10)", "All; VER-04 with reedsolo", "–"]],
               [2.4, 2.4, 2.2], zebra=True),
@@ -265,6 +265,13 @@ def story(doc):
                "Board runs are driven by job blocks loaded over JTAG with the bitstream and the "
                "software; every run returns a result block that the host checks bit for bit. The "
                "SD card loading and UART console came after M7 and post the same job block."],
+              ["NTNU model instead of WhiteDwarf / CNES (CMP-02, MDL-02, O-5)",
+               "The named decoders are not available here (ESA's repository registers only ESA "
+               "member states' industry). The NTNU SmallSat Lab's open-source CCSDS 123.0-B-2 "
+               "model, verified by its authors against the CCSDS test vectors, is a compressor: "
+               "given our header its output is byte-identical with ours, and the coding is fully "
+               "determined by image and header, so any conforming decoder decodes our streams. "
+               "It found one point: full prediction with Nx = 1, now refused."],
               ["reedsolo instead of libfec (CC-06, GS-02, VER-04)",
                "An independent RS implementation in Python with the same field and roots, "
                "available without building libfec on Windows."],
@@ -284,9 +291,11 @@ def story(doc):
               [1.8, 4.4]),
           h1("10  Open items"),
           table(["Item", "Needs", "Effort"], [
-              ["CMP-02 / MDL-02 / O-5: independent CCSDS 123 decoder",
-               "An account for ESA WhiteDwarf 2.0 (ESSR) or the CNES tools; then decode the RTL "
-               "test vectors and the real-data scenes", "Half a day once available"]],
+              ["Optional: a decoder-side CCSDS 123 check",
+               "hcomp (an open-source CCSDS 123.0-B-2 decompressor) or the CNES tools",
+               "Half a day"],
+              ["Optional: the app refuses Nx = 1 in the console's default configuration",
+               "A check in hpdp_run and a console run on the board", "An hour"]],
               [2.2, 3.2, 1.2]),
           Spacer(1, 4),
           p("The stretch goals of SPEC §15 are untouched. A return channel is now possible "
@@ -296,8 +305,8 @@ def story(doc):
             "to a bit-exact image at the ground, at the full mission rate, through a real optical "
             "link, with error correction that holds to a bit error rate of 2 × "
             "10<super>-3</super> and radiation mitigation that left no silent corruption in "
-            "protected logic. 100 of 102 requirements are met and none is unmet; the remaining "
-            "two need an external decoder."),
+            "protected logic. All 102 requirements are met; the output is byte-identical with an "
+            "independent CCSDS 123.0-B-2 implementation."),
           h2("Appendix A: Reproducing the results"),
           code(["python -m pytest model                                  # Python models",
                 "vivado -mode batch -source tb/run_sim.tcl               # RTL regression (87 tests)",

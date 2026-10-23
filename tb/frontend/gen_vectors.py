@@ -71,7 +71,7 @@ TESTS = {
     "min_period": dict(slack=0),
     # line period shorter than a line: lines start late, overruns counted, data intact
     "overrun":    dict(source=sensor.SOURCE_RAMP, slack=-200, overrun=True),
-    "one_column": dict(dims=(1, 10, 16), cfg=dict(local_sum="column_wide")),
+    "one_column": dict(dims=(1, 10, 16), cfg=dict(local_sum="column_wide", full_prediction=False)),
     # (downlink: burst errors, link looped back inside the FPGA)
     "max_dims":   dict(dims=(NX_MAX, 2, NZ_MAX), scenes=1, slack=0,
                        dl=dict(pkt_data=1000, ei_mode=ch.INJ_BURST, burst_len=40, period=3000,

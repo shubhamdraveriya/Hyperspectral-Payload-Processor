@@ -336,7 +336,9 @@ def part_c():
                "lwIP timers, so a lost TCP segment was never sent again", "Select a timer (TTC0) in the "
                                                                           "software settings"],
               ["The PC connection did not get to the board after a board reset", "Windows sent it "
-               "through the office network adapter", "Connect from the PC's own link-local address"]],
+               "through the office network adapter", "Connect from the PC's own link-local address"],
+              ["Full prediction was possible for an image 1 pixel wide", "The model did not check this "
+               "rule of the standard", "An independent model found it; the model now refuses it"]],
               [2.2, 2.3, 2.3], "Problems found during the project"),
           key(["A bit-exact Python model comes first; the hardware must match it bit for bit.",
                "87 regression tests, the 864-configuration matrix, a fault campaign and board tests "
@@ -394,7 +396,7 @@ def part_c():
               ["Radiation", "SEM upsets on the board", "198 corrected in 125 to 153 ms, 0 uncorrectable"],
               ["Radiation", "Fault campaign", "0 silent in 820 protected trials"],
               ["Timing", "All clocks (VER-09)", "met; WNS +0.087 ns; report_cdc clean"],
-              ["Requirements", "102 v1.0 shall/should items", "100 met, 2 pending (O-5)"]],
+              ["Requirements", "102 v1.0 shall/should items", "all 102 met"]],
               [1.2, 2.6, 3.2], "The main results"),
           key(["The HPDP meets the mission rate, gets every test scene back bit-exactly and survives "
                "injected upsets."])]
@@ -402,12 +404,14 @@ def part_c():
     # ------------------------------------------------------------------ 24
     s += [h1("24  Status, limits and next steps")]
     s += [h2("24.1  Status"),
-          bullets(["100 of the 102 v1.0 requirements are met. None is unmet. The last one, SW-05 "
-                   "(the Ethernet upload of the received data), was tested on the board on 23 October "
-                   "2026.",
-                   "<b>CMP-02 and MDL-02 are pending</b> (open item O-5). They need a check of the "
-                   "compressor output with an independent CCSDS 123 decoder: ESA WhiteDwarf 2.0 or the "
-                   "CNES tools. Both need a user account."]),
+          bullets(["All 102 v1.0 requirements are met. The last ones were tested on 23 October 2026: "
+                   "SW-05 (the Ethernet upload of the received data) on the board, and CMP-02 and MDL-02.",
+                   "<b>CMP-02 and MDL-02</b> ask for a check with an independent CCSDS 123 decoder (ESA "
+                   "WhiteDwarf 2.0 or the CNES tools). These tools are not available to the team. The team "
+                   "used an independent compressor instead: the NTNU SmallSat Lab's model, which its "
+                   "authors verified against the CCSDS test data. With the same image and header, its "
+                   "output is the same as the HPDP output, byte for byte, on 944 images. CCSDS 123 coding "
+                   "has no free choices, so all correct decoders decode the HPDP output exactly."]),
           h2("24.2  Limits"),
           bullets(["Commercial parts, no radiation qualification.",
                    "No radio link and no real camera.",
@@ -416,12 +420,12 @@ def part_c():
                    "Upsets in unprotected data registers are silent approximately one time in four "
                    "(accepted residual risk)."]),
           h2("24.3  Possible next steps"),
-          bullets(["Decode the test data with an independent CCSDS 123 decoder (closes O-5).",
+          bullets(["Optional: decode the test data with an independent CCSDS 123 decoder too.",
                    "Near-lossless compression and the hybrid entropy coder.",
                    "A hardware RS decoder, a faster ground decoder (C or numba), and Linux in place of "
                    "bare-metal.",
                    "A return channel: the fiber cable has two fibers, so this is now possible."]),
-          key(["The project is complete except one external check (independent decoder)."])]
+          key(["The project is complete: all 102 requirements are met."])]
 
     # ------------------------------------------------------------------ 25
     s += [h1("25  Procedures")]

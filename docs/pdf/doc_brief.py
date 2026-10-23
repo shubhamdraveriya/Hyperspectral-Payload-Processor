@@ -19,7 +19,7 @@ def story(doc):
                       "frames), 131.0-B (channel coding)"),
         ("Duration", "10 to 15 October 2026, eight milestones, 51 commits; Ethernet upload tested "
                      "on the board 23 October"),
-        ("Status", "All milestones (M0 to M7) complete; 100 of 102 requirements met, none unmet"),
+        ("Status", "All milestones (M0 to M7) complete; all 102 requirements met"),
     ], extra=[table(["At a glance", ""], [
         ["What", "The complete onboard data chain of a hyperspectral imaging satellite, running "
                  "in FPGA logic, with a fiber link to a ground receiver"],
@@ -109,8 +109,10 @@ def story(doc):
               [0.9, 3.0, 2.6]),
           Spacer(1, 6),
           h2("What remains"),
-          bullets(["<b>Independent decoder check</b> (CMP-02, MDL-02): decode the outputs with ESA's "
-                   "WhiteDwarf or the CNES tools; needs an account. About half a day."])]
+          p("Nothing that the specification requires. The compressed output is byte-identical with "
+            "an independent CCSDS 123.0-B-2 implementation (the NTNU SmallSat Lab's model) on 944 "
+            "images, the board's scenes among them. Optional: a decoder-side check with the CNES "
+            "tools or hcomp.")]
     return s
 
 
